@@ -19,5 +19,6 @@ namespace statsig {
 
     bool check_gate(const std::string& gate_name, bool default_value) {
       _instance->check_gate(gate_name, default_value);
+      return false;
     }
 }
