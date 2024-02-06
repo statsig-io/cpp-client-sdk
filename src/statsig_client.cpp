@@ -1,26 +1,46 @@
 #include "statsig_client.h"
 
 namespace statsig {
-    void StatsigClient::initialize() {
-      fetch_and_save_values();
-    }
 
-    void StatsigClient::shutdown() {
+StatsigClient &StatsigClient::Shared() {
+  static StatsigClient inst;
+  return inst;
+}
 
-    }
+void StatsigClient::Initialize(
+    const std::string &sdk_key,
+    StatsigUser *user,
+    StatsigOptions *options
+) {
+  StatsigContext ctx = StatsigContext(sdk_key, options, user);
+  this->context_ = ctx;
+}
 
-    void StatsigClient::update_user(StatsigUser *user) {
-      this->user_ = user;
-      fetch_and_save_values();
-    }
+void StatsigClient::Shutdown() {
 
-    bool StatsigClient::check_gate(const std::string &gate_name, bool default_value) {
-      return false;
-    }
+}
 
-    void StatsigClient::fetch_and_save_values() {
-      network_->fetch_for_user(user_);
-    }
+void StatsigClient::UpdateUser(StatsigUser *user) {
+//  this->context_.user = user;
+  fetch_and_save_values();
+}
+
+bool StatsigClient::CheckGate(const std::string &gate_name) {
+  if (!this->context_.has_value()) {
+    return false;
+  }
+
+  auto gate = this->context_->store->GetGate(gate_name);
+
+  return this->context_.has_value();
+}
+
+void StatsigClient::fetch_and_save_values() {
+  auto context = this->context_;
+
+  context->network->fetch_for_user(context->user);
+}
+
 }
 
 

@@ -1,5 +1,5 @@
 #include <iostream>
-#include "statsig_client.h"
+#include "../include/statsig_client.h"
 
 int main() {
   auto client = new statsig::StatsigClient("", nullptr, nullptr);

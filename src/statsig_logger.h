@@ -1,10 +1,9 @@
-#ifndef STATSIG_LOGGER_H
-#define STATSIG_LOGGER_H
+#pragma once
 
 namespace statsig {
-    class StatsigLogger {
 
-    };
+class StatsigLogger {
+
+};
+
 }
-
-#endif //STATSIG_LOGGER_H
