@@ -14,6 +14,8 @@ void StatsigClient::Initialize(
 ) {
   StatsigContext ctx = StatsigContext(sdk_key, options, user);
   this->context_ = ctx;
+
+  set_values_from_network();
 }
 
 void StatsigClient::Shutdown() {
@@ -22,7 +24,6 @@ void StatsigClient::Shutdown() {
 
 void StatsigClient::UpdateUser(StatsigUser *user) {
 //  this->context_.user = user;
-  fetch_and_save_values();
 }
 
 bool StatsigClient::CheckGate(const std::string &gate_name) {
@@ -32,13 +33,14 @@ bool StatsigClient::CheckGate(const std::string &gate_name) {
 
   auto gate = this->context_->store->GetGate(gate_name);
 
-  return this->context_.has_value();
+  // log
+
+  return gate;
 }
 
-void StatsigClient::fetch_and_save_values() {
-  auto context = this->context_;
-
-  context->network->fetch_for_user(context->user);
+void StatsigClient::set_values_from_network() {
+  auto ctx = this->context_;
+  ctx->network->FetchValues(ctx->user);
 }
 
 }

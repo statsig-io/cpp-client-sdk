@@ -3,7 +3,7 @@
 #include "statsig_user.h"
 #include "statsig_options.h"
 
-#include "../src/statsig_context.h"
+#include "../src/statsig_context.hpp"
 
 namespace statsig {
 
@@ -32,7 +32,7 @@ class StatsigClient {
  private:
   std::optional<StatsigContext> context_;
 
-  void fetch_and_save_values();
+  void set_values_from_network();
 };
 
 }

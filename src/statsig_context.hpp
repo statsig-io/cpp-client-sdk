@@ -1,8 +1,8 @@
 #pragma once
 
-#include "network_service.h"
-#include "statsig_logger.h"
-#include "evaluation_store.h"
+#include "network_service.hpp"
+#include "statsig_logger.hpp"
+#include "evaluation_store.hpp"
 #include "statsig_user.h"
 
 namespace statsig {
@@ -21,7 +21,9 @@ class StatsigContext {
       StatsigOptions *options,
       StatsigUser *user
   ) : sdk_key(std::move(sdk_key)), options(options), user(user) {
-    network = nullptr;
+
+    auto n = NetworkService("sdk_key", options);
+    network = &n;
     store = nullptr;
   }
 };
