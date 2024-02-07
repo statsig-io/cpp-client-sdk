@@ -12,16 +12,16 @@ class StatsigClient {
   static StatsigClient &Shared();
 
   void Initialize(
-      const std::string &sdk_key,
-      StatsigUser *user = nullptr,
-      StatsigOptions *options = nullptr
+      string sdk_key,
+      const optional<StatsigUser> &user = std::nullopt,
+      const optional<StatsigOptions> &options = std::nullopt
   );
 
   void Shutdown();
 
   void UpdateUser(StatsigUser *user);
 
-  bool CheckGate(const std::string &gate_name);
+  bool CheckGate(const string &gate_name);
 
 //        void get_config();
 //
@@ -30,7 +30,7 @@ class StatsigClient {
 //        void get_layer();
 
  private:
-  std::optional<StatsigContext> context_;
+  optional<StatsigContext> context_;
 
   void set_values_from_network();
 };

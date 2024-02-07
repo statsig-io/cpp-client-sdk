@@ -2,10 +2,12 @@
 
 #include <string>
 
+using namespace std;
+
 namespace statsig {
 
 struct StatsigOptions {
-  std::string api;
+  optional<string> api;
 };
 
 }
