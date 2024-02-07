@@ -1,4 +1,5 @@
 #include "statsig_client.h"
+#include "statsig_event.h"
 
 namespace statsig {
 
@@ -23,6 +24,15 @@ void StatsigClient::Shutdown() {
 void StatsigClient::UpdateUser(StatsigUser *user) {
 //  this->context_.user = user;
 }
+
+template<typename T>
+void StatsigClient::LogEvent(const StatsigEvent<T> &event) {
+
+}
+
+template void StatsigClient::LogEvent(const StatsigEvent<double> &event);
+template void StatsigClient::LogEvent(const StatsigEvent<int> &event);
+template void StatsigClient::LogEvent(const StatsigEvent<string> &event);
 
 bool StatsigClient::CheckGate(const std::string &gate_name) {
   auto gate = GetFeatureGate(gate_name);

@@ -23,6 +23,9 @@ class StatsigClient {
 
   void UpdateUser(StatsigUser *user);
 
+  template<typename T>
+  void LogEvent(const StatsigEvent<T> &event);
+
   bool CheckGate(const string &gate_name);
 
   FeatureGate GetFeatureGate(const string &gate_name);
