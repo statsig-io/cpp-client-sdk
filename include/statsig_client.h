@@ -14,7 +14,7 @@ class StatsigClient {
   static StatsigClient &Shared();
 
   void Initialize(
-      string sdk_key,
+      const string &sdk_key,
       const optional<StatsigUser> &user = std::nullopt,
       const optional<StatsigOptions> &options = std::nullopt
   );
@@ -23,8 +23,7 @@ class StatsigClient {
 
   void UpdateUser(StatsigUser *user);
 
-  template<typename T>
-  void LogEvent(const StatsigEvent<T> &event);
+  void LogEvent(const StatsigEvent &event);
 
   bool CheckGate(const string &gate_name);
 

@@ -3,7 +3,7 @@
 #include <utility>
 
 #include "network_service.hpp"
-#include "statsig_logger.hpp"
+#include "event_logger.hpp"
 #include "evaluation_store.hpp"
 #include "statsig_user.h"
 
@@ -17,20 +17,21 @@ class StatsigContext {
       string sdk_key,
       const optional<StatsigUser> &user,
       const optional<StatsigOptions> &options
-  ) : sdk_key(sdk_key) {
-    this->user = user.value_or(StatsigUser());
-    this->options = options.value_or(StatsigOptions());
-
-    network = new NetworkService(this->sdk_key, &this->options);
-    store = new EvaluationStore();
+  ) : sdk_key(std::move(sdk_key)),
+      user(user.value_or(StatsigUser())),
+      options(options.value_or(StatsigOptions())),
+      network(NetworkService(this->sdk_key, this->options)),
+      store(EvaluationStore()),
+      logger(EventLogger(this->options, this->network)) {
   }
 
   string sdk_key;
   StatsigUser user;
   StatsigOptions options;
 
-  NetworkService *network;
-  EvaluationStore *store;
+  NetworkService network;
+  EvaluationStore store;
+  EventLogger logger;
 };
 
 }

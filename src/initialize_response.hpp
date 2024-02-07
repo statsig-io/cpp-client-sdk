@@ -29,19 +29,10 @@ template<typename T>
 struct Evaluation {
   string name;
   string rule_id;
-  T value;
+  T value{};
   vector<SecondaryExposure> secondary_exposures;
 };
 
-//template<typename T>
-//void to_json(json &j, const Evaluation<T> &e) {
-//  j = json{
-//      {"name", e.name},
-//      {"rule_id", e.rule_id},
-//      {"secondary_exposures", e.secondary_exposures},
-//  };
-//}
-//
 template<typename T>
 void evaluation_from_json(const json &j, Evaluation<T> &e) {
   j.at("name").get_to(e.name);
@@ -53,7 +44,7 @@ void evaluation_from_json(const json &j, Evaluation<T> &e) {
 // end Evaluation
 
 struct GateEvaluation : Evaluation<bool> {
-  string id_type;
+  optional<string> id_type;
 };
 
 void to_json(json &j, const GateEvaluation &e) {
@@ -66,7 +57,10 @@ void to_json(json &j, const GateEvaluation &e) {
 
 void from_json(const json &j, GateEvaluation &e) {
   evaluation_from_json<bool>(j, e);
-  j.at("id_type").get_to(e.id_type);
+
+  if (j.contains("id_type")) {
+    e.id_type = j["id_type"].get<string>();
+  }
 }
 
 // end GateEvaluation
@@ -93,8 +87,10 @@ void from_json(const json &j, ConfigEvaluation &e) {
 //  j.at("id_type").get_to(e.id_type);
 }
 
+// end ConfigEvaluation
+
 struct LayerEvaluation : ConfigEvaluation {
-  string allocated_experiment_name;
+  optional<string> allocated_experiment_name;
   vector<string> explicit_parameters;
   vector<SecondaryExposure> undelegated_secondary_exposures;
 };
@@ -107,23 +103,50 @@ void to_json(json &j, const LayerEvaluation &e) {
   };
 }
 
-template<typename T>
 void from_json(const json &j, LayerEvaluation &e) {
   evaluation_from_json<Map>(j, e);
-  j.at("allocated_experiment_name").get_to(e.allocated_experiment_name);
   j.at("explicit_parameters").get_to(e.explicit_parameters);
   j.at("undelegated_secondary_exposures").get_to(e.undelegated_secondary_exposures);
+
+  if (j.contains("allocated_experiment_name")) {
+    e.allocated_experiment_name = j["allocated_experiment_name"].get<string>();
+  }
 }
 
+// end LayerEvaluation
+
 struct InitializeResponse {
-  string generator;
+  optional<string> generator;
   long time;
   unordered_map<string, GateEvaluation> feature_gates;
   unordered_map<string, ConfigEvaluation> dynamic_configs;
   unordered_map<string, LayerEvaluation> layer_configs;
-
- public:
-  NLOHMANN_DEFINE_TYPE_INTRUSIVE(InitializeResponse, generator, time, feature_gates, dynamic_configs, layer_configs);
 };
+
+void to_json(json &j, const InitializeResponse &res) {
+  j = json{
+      {"time", res.time},
+      {"feature_gates", res.feature_gates},
+      {"dynamic_configs", res.dynamic_configs},
+      {"layer_configs", res.layer_configs},
+  };
+
+  if (res.generator.has_value()) {
+    j["generator"] = res.generator.value();
+  }
+}
+
+void from_json(const json &j, InitializeResponse &res) {
+  j.at("time").get_to(res.time);
+  j.at("feature_gates").get_to(res.feature_gates);
+  j.at("dynamic_configs").get_to(res.dynamic_configs);
+  j.at("layer_configs").get_to(res.layer_configs);
+
+  if (j.contains("generator")) {
+    res.generator = j["generator"].get<string>();
+  }
+}
+
+// end InitializeResponse
 
 }

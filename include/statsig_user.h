@@ -1,12 +1,12 @@
 #pragma once
 
 #include <string>
-#include <unordered_map>
+using namespace std;
 
 namespace statsig {
 
 struct StatsigUser {
-  std::string user_id;
+  string user_id;
 };
 
 }

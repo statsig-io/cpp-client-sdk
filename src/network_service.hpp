@@ -8,6 +8,9 @@
 #include "statsig_user.h"
 #include "statsig_options.h"
 #include "initialize_response.hpp"
+#include "time.hpp"
+#include "uuid.hpp"
+#include "statsig_event_internal.hpp"
 
 using namespace httplib;
 using namespace std;
@@ -19,44 +22,61 @@ namespace statsig {
 
 class NetworkService {
  public:
-  explicit NetworkService(string sdk_key, StatsigOptions *options) : sdk_key_(sdk_key) {
-    this->options_ = options;
-  }
+  explicit NetworkService(
+      string &sdk_key, StatsigOptions &options
+  ) : sdk_key_(sdk_key), options_(options), session_id_(UUID::v4()) {}
 
   optional<data::InitializeResponse> FetchValues(StatsigUser *user) {
-    auto now = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
-    auto api = options_->api.value_or(kDefaultApi);
+    auto response = Post(
+        kEndpointInitialize,
+        {{"hash", "djb2"}}
+    );
 
-    Client client(api);
-    Headers headers = {
+    return response.is_null()
+           ? nullopt
+           : optional(response.template get<data::InitializeResponse>());
+  }
+
+  void SendEvents(const vector<StatsigEventInternal> &events) {
+    Post(
+        kEndpointLogEvent,
+        {{"events", events}}
+    );
+  }
+
+ private:
+  string &sdk_key_;
+  StatsigOptions &options_;
+  string session_id_;
+
+  Headers GetHeaders() {
+    return {
         {"STATSIG-API-KEY", sdk_key_},
-        {"STATSIG-CLIENT-TIME", std::to_string(now)},
-//      {"STATSIG-SERVER-SESSION-ID", Utils::genUUIDString()},
+        {"STATSIG-CLIENT-TIME", std::to_string(Time::now())},
+        {"STATSIG-SERVER-SESSION-ID", session_id_},
         {"STATSIG-SDK-TYPE", kSdkType},
         {"STATSIG-SDK-VERSION", kSdkVersion},
     };
+  }
 
-    json body;
-    body["hash"] = "djb2";
+  json Post(const string &endpoint, const unordered_map<string, json> &body) {
+    auto api = options_.api.value_or(kDefaultApi);
+
+    Client client(api);
 
     auto res = client.Post(
-        kEndpointInitialize,
-        headers,
-        to_string(body),
+        endpoint,
+        GetHeaders(),
+        json(body).dump(),
         kContentTypeJson
     );
 
     if (!res || res->status != 200) {
-      return std::nullopt;
+      return {};
     }
 
-    return json::parse(res->body)
-        .template get<data::InitializeResponse>();
+    return json::parse(res->body);
   }
-
- private:
-  std::string sdk_key_;
-  StatsigOptions *options_;
 };
 
 }

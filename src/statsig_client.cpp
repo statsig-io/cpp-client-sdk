@@ -1,4 +1,6 @@
 #include "statsig_client.h"
+
+#include <utility>
 #include "statsig_event.h"
 
 namespace statsig {
@@ -9,32 +11,40 @@ StatsigClient &StatsigClient::Shared() {
 }
 
 void StatsigClient::Initialize(
-    string sdk_key,
+    const string &sdk_key,
     const optional<StatsigUser> &user,
     const optional<StatsigOptions> &options
 ) {
-  context_ = StatsigContext(sdk_key, user, options);
+  context_.emplace(sdk_key, user, options);
+
   SetValuesFromNetwork();
 }
 
 void StatsigClient::Shutdown() {
+  if (!EnsureInitialized(__func__)) {
+    return;
+  }
 
+  context_->logger.Shutdown();
 }
 
 void StatsigClient::UpdateUser(StatsigUser *user) {
 //  this->context_.user = user;
 }
 
-template<typename T>
-void StatsigClient::LogEvent(const StatsigEvent<T> &event) {
+void StatsigClient::LogEvent(const StatsigEvent &event) {
+  if (!EnsureInitialized(__func__)) {
+    return;
+  }
 
+  context_->logger.Enqueue(event, context_->user);
 }
 
-template void StatsigClient::LogEvent(const StatsigEvent<double> &event);
-template void StatsigClient::LogEvent(const StatsigEvent<int> &event);
-template void StatsigClient::LogEvent(const StatsigEvent<string> &event);
-
 bool StatsigClient::CheckGate(const std::string &gate_name) {
+  if (!EnsureInitialized(__func__)) {
+    return false;
+  }
+
   auto gate = GetFeatureGate(gate_name);
   return gate.GetValue();
 }
@@ -44,7 +54,7 @@ FeatureGate StatsigClient::GetFeatureGate(const string &gate_name) {
     return {gate_name, "", "Uninitialized", false};
   }
 
-  auto gate = context_->store->GetGate(gate_name);
+  auto gate = context_->store.GetGate(gate_name);
 
   // log
 
@@ -58,7 +68,7 @@ DynamicConfig StatsigClient::GetDynamicConfig(const std::string &config_name) {
 //    return FeatureGate::Empty(gate_name);
   }
 
-  auto gate = context_->store->GetConfig(config_name);
+  auto gate = context_->store.GetConfig(config_name);
 
   // log
 
@@ -70,7 +80,7 @@ Experiment StatsigClient::GetExperiment(const std::string &experiment_name) {
 //    return FeatureGate::Empty(gate_name);
   }
 
-  auto gate = context_->store->GetConfig(experiment_name);
+  auto gate = context_->store.GetConfig(experiment_name);
 
   // log
 
@@ -82,7 +92,7 @@ Layer StatsigClient::GetLayer(const std::string &layer_name) {
 //    return FeatureGate::Empty(gate_name);
   }
 
-  auto gate = context_->store->GetLayer(layer_name);
+  auto gate = context_->store.GetLayer(layer_name);
 
   // log
 
@@ -90,9 +100,9 @@ Layer StatsigClient::GetLayer(const std::string &layer_name) {
 }
 
 void StatsigClient::SetValuesFromNetwork() {
-  auto response = context_->network->FetchValues(&context_->user);
+  auto response = context_->network.FetchValues(&context_->user);
   if (response.has_value()) {
-    context_->store->SetAndCacheValues(response.value());
+    context_->store.SetAndCacheValues(response.value());
   }
 }
 

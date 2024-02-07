@@ -8,6 +8,7 @@ const char *kSdkVersion = "0.0.1";
 
 // HTTP Endpoints
 const char *kEndpointInitialize = "/v1/initialize";
+const char *kEndpointLogEvent = "/v1/rgstr";
 
 // HTTP Misc
 const char *kContentTypeJson = "application/json";
