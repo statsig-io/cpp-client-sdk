@@ -3,7 +3,10 @@
 namespace statsig {
 
 class StatsigLogger {
+ public:
+  void Enqueue() {
 
+  }
 };
 
 }

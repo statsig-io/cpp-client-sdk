@@ -38,6 +38,7 @@ FeatureGate StatsigClient::GetFeatureGate(const string &gate_name) {
 
   // log
 
+
   return {gate_name, "", "", gate.has_value() && gate->evaluation.value};
 //  return FeatureGate::Empty(gate_name);
 }
