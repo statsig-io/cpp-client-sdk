@@ -2,6 +2,7 @@
 
 #include "statsig_user.h"
 #include "statsig_options.h"
+#include "statsig_types.h"
 
 #include "../src/statsig_context.hpp"
 
@@ -23,16 +24,19 @@ class StatsigClient {
 
   bool CheckGate(const string &gate_name);
 
-//        void get_config();
-//
-//        void get_experiment();
-//
-//        void get_layer();
+  FeatureGate GetFeatureGate(const string &gate_name);
+
+  DynamicConfig GetDynamicConfig(const string &config_name);
+
+  Experiment GetExperiment(const string &experiment_name);
+
+  Layer GetLayer(const string &layer_name);
 
  private:
   optional<StatsigContext> context_;
 
-  void set_values_from_network();
+  void SetValuesFromNetwork();
+  bool EnsureInitialized(const char *caller);
 };
 
 }
