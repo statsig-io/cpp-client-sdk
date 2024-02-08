@@ -70,13 +70,28 @@ class Experiment : EvaluatedSpec<JsonObject> {
 };
 
 class Layer : EvaluatedSpec<JsonObject> {
+  friend class StatsigClient;
+
  public:
   json GetValue(const string &parameter_name) {
+    log_param_exposure_(parameter_name);
     return value_[parameter_name];
   }
 
  protected:
+  Layer(
+      string name,
+      string rule_id,
+      string reason,
+      JsonObject value,
+      function<void(const std::string &)> log_param_exposure)
+      : EvaluatedSpec<JsonObject>(name, rule_id, reason, value), log_param_exposure_(log_param_exposure) {}
+
   using EvaluatedSpec<JsonObject>::EvaluatedSpec;
+
+ private:
+  function<void(const std::string &)> log_param_exposure_;
+
 };
 
 }

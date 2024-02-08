@@ -7,23 +7,7 @@ using json = nlohmann::json;
 
 namespace statsig::data {
 
-struct SecondaryExposure {
-  string gate;
-  string gate_value;
-  string rule_id;
-};
-
-void to_json(json &j, const SecondaryExposure &se) {
-  j = json{{"gate", se.gate}, {"gateValue", se.gate_value}, {"ruleID", se.rule_id}};
-}
-
-void from_json(const json &j, SecondaryExposure &se) {
-  j.at("gate").get_to(se.gate);
-  j.at("gateValue").get_to(se.gate_value);
-  j.at("ruleID").get_to(se.rule_id);
-}
-
-// end SecondaryExposure
+using SecondaryExposure = unordered_map<string, string>;
 
 template<typename T>
 struct Evaluation {

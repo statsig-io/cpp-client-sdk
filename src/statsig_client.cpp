@@ -16,7 +16,6 @@ void StatsigClient::Initialize(
     const optional<StatsigOptions> &options
 ) {
   context_.emplace(sdk_key, user, options);
-
   SetValuesFromNetwork();
 }
 
@@ -28,8 +27,13 @@ void StatsigClient::Shutdown() {
   context_->logger.Shutdown();
 }
 
-void StatsigClient::UpdateUser(StatsigUser *user) {
-//  this->context_.user = user;
+void StatsigClient::UpdateUser(const StatsigUser &user) {
+  if (!EnsureInitialized(__func__)) {
+    return;
+  }
+
+  context_->user = user;
+  SetValuesFromNetwork();
 }
 
 void StatsigClient::LogEvent(const StatsigEvent &event) {
@@ -37,7 +41,7 @@ void StatsigClient::LogEvent(const StatsigEvent &event) {
     return;
   }
 
-  context_->logger.Enqueue(event, context_->user);
+  context_->logger.Enqueue(InternalizeEvent(event, context_->user));
 }
 
 bool StatsigClient::CheckGate(const std::string &gate_name) {
@@ -55,52 +59,59 @@ FeatureGate StatsigClient::GetFeatureGate(const string &gate_name) {
   }
 
   auto gate = context_->store.GetGate(gate_name);
+  context_->logger.Enqueue(MakeGateExposure(gate_name, context_->user, gate));
 
-  // log
-
-
-  return {gate_name, "", "", gate.has_value() && gate->evaluation.value};
-//  return FeatureGate::Empty(gate_name);
+  return {gate_name, "", "", UNWRAP(gate.evaluation, value)};
 }
 
 DynamicConfig StatsigClient::GetDynamicConfig(const std::string &config_name) {
   if (!EnsureInitialized(__func__)) {
-//    return FeatureGate::Empty(gate_name);
+    return {config_name, "", "Uninitialized", std::unordered_map<string, json>()};
   }
 
-  auto gate = context_->store.GetConfig(config_name);
+  auto config = context_->store.GetConfig(config_name);
+  context_->logger.Enqueue(MakeConfigExposure(config_name, context_->user, config));
 
-  // log
-
-  return {"", "", "", std::unordered_map<string, json>()};
+  return {config_name, "", "", UNWRAP(config.evaluation, value)};
 }
 
 Experiment StatsigClient::GetExperiment(const std::string &experiment_name) {
   if (!EnsureInitialized(__func__)) {
-//    return FeatureGate::Empty(gate_name);
+    return {experiment_name, "", "Uninitialized", std::unordered_map<string, json>()};
   }
 
-  auto gate = context_->store.GetConfig(experiment_name);
+  auto experiment = context_->store.GetConfig(experiment_name);
+  context_->logger.Enqueue(MakeConfigExposure(experiment_name, context_->user, experiment));
 
-  // log
-
-  return Experiment("", "", "", std::unordered_map<string, json>());
+  return {experiment_name, "", "", UNWRAP(experiment.evaluation, value)};
 }
 
 Layer StatsigClient::GetLayer(const std::string &layer_name) {
   if (!EnsureInitialized(__func__)) {
-//    return FeatureGate::Empty(gate_name);
+    return {layer_name, "", "", std::unordered_map<string, json>()};
   }
 
-  auto gate = context_->store.GetLayer(layer_name);
+  if (layer_name == "test_layer_with_holdout") {
+    auto _ = 1;
+  }
 
-  // log
+  auto logger = &context_->logger;
 
-  return Layer("", "", "", std::unordered_map<string, json>());
+  auto user = context_->user;
+  auto layer = context_->store.GetLayer(layer_name);
+
+  auto log_exposure = [layer_name, layer, user, logger](const std::string &param_name) {
+    auto expo = MakeLayerExposure(layer_name, param_name, user, layer);
+    expo.stop = layer_name == "test_layer";
+    logger->Enqueue(expo);
+  };
+
+  return {layer_name, "", "", UNWRAP(layer.evaluation, value), log_exposure};
+
 }
 
 void StatsigClient::SetValuesFromNetwork() {
-  auto response = context_->network.FetchValues(&context_->user);
+  auto response = context_->network.FetchValues(context_->user);
   if (response.has_value()) {
     context_->store.SetAndCacheValues(response.value());
   }

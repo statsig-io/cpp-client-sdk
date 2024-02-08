@@ -21,7 +21,7 @@ class StatsigClient {
 
   void Shutdown();
 
-  void UpdateUser(StatsigUser *user);
+  void UpdateUser(const StatsigUser &user);
 
   void LogEvent(const StatsigEvent &event);
 

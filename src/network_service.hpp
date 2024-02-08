@@ -26,10 +26,13 @@ class NetworkService {
       string &sdk_key, StatsigOptions &options
   ) : sdk_key_(sdk_key), options_(options), session_id_(UUID::v4()) {}
 
-  optional<data::InitializeResponse> FetchValues(StatsigUser *user) {
+  optional<data::InitializeResponse> FetchValues(StatsigUser &user) {
     auto response = Post(
         kEndpointInitialize,
-        {{"hash", "djb2"}}
+        {
+            {"hash", "djb2"},
+            {"user", user}
+        }
     );
 
     return response.is_null()
@@ -56,6 +59,7 @@ class NetworkService {
         {"STATSIG-SERVER-SESSION-ID", session_id_},
         {"STATSIG-SDK-TYPE", kSdkType},
         {"STATSIG-SDK-VERSION", kSdkVersion},
+        {"Accept-Encoding", "gzip"}
     };
   }
 
@@ -63,6 +67,7 @@ class NetworkService {
     auto api = options_.api.value_or(kDefaultApi);
 
     Client client(api);
+    client.set_compress(true);
 
     auto res = client.Post(
         endpoint,
