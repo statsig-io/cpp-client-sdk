@@ -111,9 +111,10 @@ Layer StatsigClient::GetLayer(const std::string &layer_name) {
 }
 
 void StatsigClient::SetValuesFromNetwork() {
-  auto response = context_->network.FetchValues(context_->user);
-  if (response.has_value()) {
-    context_->store.SetAndCacheValues(response.value());
+  auto result = context_->network.FetchValues(context_->user);
+  if (result.has_value()) {
+    auto cache_key = MakeCacheKey(context_->sdk_key, context_->user);
+    context_->store.SetAndCacheValues(result->response, result->raw, ValueSource::Network, cache_key);
   }
 }
 

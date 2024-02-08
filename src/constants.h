@@ -14,4 +14,7 @@ const char *kEndpointLogEvent = "/v1/rgstr";
 const char *kContentTypeJson = "application/json";
 const char *kDefaultApi = "https://statsigapi.net";
 
+// Caching
+const char *kCacheDirectory = "/tmp/statsig_cpp_client";
+
 }

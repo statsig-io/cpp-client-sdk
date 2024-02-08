@@ -5,6 +5,7 @@
 
 #include "hashing.hpp"
 #include "macros.hpp"
+#include "file.hpp"
 
 using namespace std;
 using namespace statsig::data;
@@ -36,10 +37,17 @@ struct DetailedEvaluation {
 
 class EvaluationStore {
  public:
-  void SetAndCacheValues(InitializeResponse values) {
+  void SetAndCacheValues(
+      InitializeResponse values,
+      const string &raw_values,
+      const ValueSource &source,
+      const string &cache_key
+  ) {
     WRITE_LOCK(rw_lock_);
     source_info_.source = ValueSource::Network;
     values_ = std::move(values);
+
+    File::WriteToCache(cache_key, raw_values);
   }
 
   DetailedEvaluation<GateEvaluation> GetGate(const std::string &gate_name) {
@@ -74,6 +82,7 @@ class EvaluationStore {
 
     return {values_.layer_configs[hash], source_info_};
   }
+
  private:
   std::shared_mutex rw_lock_;
   InitializeResponse values_;

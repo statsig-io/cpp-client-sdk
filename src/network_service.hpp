@@ -11,6 +11,7 @@
 #include "time.hpp"
 #include "uuid.hpp"
 #include "statsig_event_internal.hpp"
+#include "stable_id.hpp"
 
 using namespace httplib;
 using namespace std;
@@ -20,13 +21,22 @@ using namespace nlohmann;
 
 namespace statsig {
 
+template<typename T>
+struct NetworkResult {
+  T response;
+  string raw;
+
+  NetworkResult(T response, string raw)
+      : response(std::move(response)), raw(std::move(raw)) {}
+};
+
 class NetworkService {
  public:
   explicit NetworkService(
       string &sdk_key, StatsigOptions &options
   ) : sdk_key_(sdk_key), options_(options), session_id_(UUID::v4()) {}
 
-  optional<data::InitializeResponse> FetchValues(StatsigUser &user) {
+  optional<NetworkResult<InitializeResponse>> FetchValues(StatsigUser &user) {
     auto response = Post(
         kEndpointInitialize,
         {
@@ -35,9 +45,12 @@ class NetworkService {
         }
     );
 
-    return response.is_null()
-           ? nullopt
-           : optional(response.template get<data::InitializeResponse>());
+    if (!response.has_value()) {
+      return nullopt;
+    }
+
+    auto actual = json::parse(response.value()).template get<data::InitializeResponse>();
+    return NetworkResult(actual, response.value());
   }
 
   void SendEvents(const vector<StatsigEventInternal> &events) {
@@ -51,6 +64,7 @@ class NetworkService {
   string &sdk_key_;
   StatsigOptions &options_;
   string session_id_;
+  StableID stable_id_;
 
   Headers GetHeaders() {
     return {
@@ -67,15 +81,16 @@ class NetworkService {
     return {
         {"sdkType", kSdkType},
         {"sdkVersion", kSdkVersion},
-        {"sessionID", session_id_}
+        {"sessionID", session_id_},
+        {"stableID", stable_id_.Get()}
     };
   }
 
-  json Post(const string &endpoint, unordered_map<string, json> body) {
+  optional<string> Post(const string &endpoint, unordered_map<string, json> body) {
     auto api = options_.api.value_or(kDefaultApi);
 
     Client client(api);
-    client.set_compress(true);
+    client.set_compress(endpoint == kEndpointLogEvent);
 
     body["statsigMetadata"] = GetStatsigMetadata();
 
@@ -87,10 +102,10 @@ class NetworkService {
     );
 
     if (!res || res->status != 200) {
-      return {};
+      return nullopt;
     }
 
-    return json::parse(res->body);
+    return res->body;
   }
 };
 

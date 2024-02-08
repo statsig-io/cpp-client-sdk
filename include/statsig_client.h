@@ -1,6 +1,6 @@
 #pragma once
 
-#include "statsig_user.h"
+#include "statsig.h"
 #include "statsig_options.h"
 #include "statsig_types.h"
 #include "statsig_event.h"
@@ -15,8 +15,8 @@ class StatsigClient {
 
   void Initialize(
       const string &sdk_key,
-      const optional<StatsigUser> &user = std::nullopt,
-      const optional<StatsigOptions> &options = std::nullopt
+      const optional<StatsigUser> &user = nullopt,
+      const optional<StatsigOptions> &options = nullopt
   );
 
   void Shutdown();

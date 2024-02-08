@@ -40,6 +40,7 @@ void to_json(json &j, const StatsigEventInternal &event) {
     j["value"] = event.double_value.value();
   }
 
+  // @nocommit - debug
   if (event.stop) {
     auto a = j.dump();
     auto _ = a;
