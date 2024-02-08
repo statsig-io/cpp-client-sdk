@@ -45,6 +45,20 @@ std::cout << experiment.GetValue()["a_string_param"] << std::endl;
 
 ```
 
+Getting experiment values from a Layer
+
+```c++
+auto layer = client.GetLayer("a_layer");
+
+// or
+
+auto layer = StatsigClient::Shared().GetLayer("a_layer");
+
+// then access the params
+
+std::cout << layer.GetValue("a_string_param") << std::endl;
+```
+
 
 Logging an Event
 
