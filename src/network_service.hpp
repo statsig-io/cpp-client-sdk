@@ -63,11 +63,21 @@ class NetworkService {
     };
   }
 
-  json Post(const string &endpoint, const unordered_map<string, json> &body) {
+  json GetStatsigMetadata() {
+    return {
+        {"sdkType", kSdkType},
+        {"sdkVersion", kSdkVersion},
+        {"sessionID", session_id_}
+    };
+  }
+
+  json Post(const string &endpoint, unordered_map<string, json> body) {
     auto api = options_.api.value_or(kDefaultApi);
 
     Client client(api);
     client.set_compress(true);
+
+    body["statsigMetadata"] = GetStatsigMetadata();
 
     auto res = client.Post(
         endpoint,
