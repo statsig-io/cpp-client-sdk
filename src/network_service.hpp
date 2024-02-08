@@ -33,31 +33,30 @@ struct NetworkResult {
 class NetworkService {
  public:
   explicit NetworkService(
-      string &sdk_key, StatsigOptions &options
-  ) : sdk_key_(sdk_key), options_(options), session_id_(UUID::v4()) {}
+      string &sdk_key, StatsigOptions &options) : sdk_key_(sdk_key), options_(options), session_id_(UUID::v4()) {}
 
   optional<NetworkResult<InitializeResponse>> FetchValues(StatsigUser &user) {
-    auto response = Post(
+    auto response = PostWithRetry(
         kEndpointInitialize,
         {
             {"hash", "djb2"},
             {"user", user}
-        }
+        },
+        3
     );
 
-    if (!response.has_value()) {
+    if (response->status != 200) {
       return nullopt;
     }
 
-    auto actual = json::parse(response.value()).template get<data::InitializeResponse>();
-    return NetworkResult(actual, response.value());
+    auto actual = json::parse(response->body).template get<data::InitializeResponse>();
+    return NetworkResult(actual, response->body);
   }
 
   void SendEvents(const vector<StatsigEventInternal> &events) {
     Post(
         kEndpointLogEvent,
-        {{"events", events}}
-    );
+        {{"events", events}});
   }
 
  private:
@@ -73,8 +72,7 @@ class NetworkService {
         {"STATSIG-SERVER-SESSION-ID", session_id_},
         {"STATSIG-SDK-TYPE", kSdkType},
         {"STATSIG-SDK-VERSION", kSdkVersion},
-        {"Accept-Encoding", "gzip"}
-    };
+        {"Accept-Encoding", "gzip"}};
   }
 
   json GetStatsigMetadata() {
@@ -82,11 +80,30 @@ class NetworkService {
         {"sdkType", kSdkType},
         {"sdkVersion", kSdkVersion},
         {"sessionID", session_id_},
-        {"stableID", stable_id_.Get()}
-    };
+        {"stableID", stable_id_.Get()}};
   }
 
-  optional<string> Post(const string &endpoint, unordered_map<string, json> body) {
+  httplib::Result PostWithRetry(
+      const string &endpoint,
+      const unordered_map<string, json> &body,
+      const int max_attempts
+  ) {
+    httplib::Result result;
+    for (int i = 0; i < max_attempts; i++) {
+      result = Post(endpoint, body);
+
+      if (result->status == 200) {
+        break;
+      }
+    }
+
+    return result;
+  }
+
+  httplib::Result Post(
+      const string &endpoint,
+      unordered_map<string, json> body
+  ) {
     auto api = options_.api.value_or(kDefaultApi);
 
     Client client(api);
@@ -94,18 +111,11 @@ class NetworkService {
 
     body["statsigMetadata"] = GetStatsigMetadata();
 
-    auto res = client.Post(
+    return client.Post(
         endpoint,
         GetHeaders(),
         json(body).dump(),
-        kContentTypeJson
-    );
-
-    if (!res || res->status != 200) {
-      return nullopt;
-    }
-
-    return res->body;
+        kContentTypeJson);
   }
 };
 

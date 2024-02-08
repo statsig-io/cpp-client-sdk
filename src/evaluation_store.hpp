@@ -37,6 +37,20 @@ struct DetailedEvaluation {
 
 class EvaluationStore {
  public:
+  void LoadCacheValues(const string &cache_key) {
+    WRITE_LOCK(rw_lock_);
+
+    values_ = nullopt;
+
+    auto cached = File::ReadFromCache(cache_key);
+    if (!cached.has_value()) {
+      return;
+    }
+
+    values_ = json::parse(cached.value()).template get<InitializeResponse>();
+    source_info_.source = ValueSource::Cache;
+  }
+
   void SetAndCacheValues(
       InitializeResponse values,
       const string &raw_values,
@@ -51,41 +65,41 @@ class EvaluationStore {
   }
 
   DetailedEvaluation<GateEvaluation> GetGate(const std::string &gate_name) {
-    auto hash = DJB2(gate_name);
     READ_LOCK(rw_lock_);
 
-    if (!MapContains(values_.feature_gates, hash)) {
+    auto hash = DJB2(gate_name);
+    if (!values_.has_value() || !MapContains(values_->feature_gates, hash)) {
       return {nullopt, source_info_};
     }
 
-    return {values_.feature_gates[hash], source_info_};
+    return {values_->feature_gates[hash], source_info_};
   }
 
   DetailedEvaluation<ConfigEvaluation> GetConfig(const std::string &config_name) {
-    auto hash = DJB2(config_name);
     READ_LOCK(rw_lock_);
 
-    if (!MapContains(values_.dynamic_configs, hash)) {
+    auto hash = DJB2(config_name);
+    if (!values_.has_value() || !MapContains(values_->dynamic_configs, hash)) {
       return {nullopt, source_info_};
     }
 
-    return {values_.dynamic_configs[hash], source_info_};
+    return {values_->dynamic_configs[hash], source_info_};
   }
 
   DetailedEvaluation<LayerEvaluation> GetLayer(const std::string &layer_name) {
-    auto hash = DJB2(layer_name);
     READ_LOCK(rw_lock_);
 
-    if (!MapContains(values_.layer_configs, hash)) {
+    auto hash = DJB2(layer_name);
+    if (!values_.has_value() || !MapContains(values_->layer_configs, hash)) {
       return {nullopt, source_info_};
     }
 
-    return {values_.layer_configs[hash], source_info_};
+    return {values_->layer_configs[hash], source_info_};
   }
 
  private:
   std::shared_mutex rw_lock_;
-  InitializeResponse values_;
+  optional<InitializeResponse> values_;
   SourceInfo source_info_;
 
   template<typename Key, typename Value>

@@ -16,7 +16,7 @@ void StatsigClient::Initialize(
     const optional<StatsigOptions> &options
 ) {
   context_.emplace(sdk_key, user, options);
-  SetValuesFromNetwork();
+  SwitchUser(context_->user);
 }
 
 void StatsigClient::Shutdown() {
@@ -32,8 +32,7 @@ void StatsigClient::UpdateUser(const StatsigUser &user) {
     return;
   }
 
-  context_->user = user;
-  SetValuesFromNetwork();
+  SwitchUser(user);
 }
 
 void StatsigClient::LogEvent(const StatsigEvent &event) {
@@ -108,6 +107,14 @@ Layer StatsigClient::GetLayer(const std::string &layer_name) {
 
   return {layer_name, "", "", UNWRAP(layer.evaluation, value), log_exposure};
 
+}
+
+void StatsigClient::SwitchUser(const statsig::StatsigUser &user) {
+  context_->user = user;
+  auto cache_key = MakeCacheKey(context_->sdk_key, context_->user);
+
+  context_->store.LoadCacheValues(cache_key);
+  SetValuesFromNetwork();
 }
 
 void StatsigClient::SetValuesFromNetwork() {

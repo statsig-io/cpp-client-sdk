@@ -40,6 +40,7 @@ class StatsigClient {
 
   void SetValuesFromNetwork();
   bool EnsureInitialized(const char *caller);
+  void SwitchUser(const StatsigUser &user);
 };
 
 }

@@ -15,11 +15,10 @@ struct StatsigEventInternal {
   optional<double> double_value;
   optional<unordered_map<string, string>> metadata;
   optional<vector<unordered_map<string, string>>> secondary_exposures;
-  bool stop;
+  bool stop{};
 };
 
 void to_json(json &j, const StatsigEventInternal &event) {
-
   j = json{
       {"eventName", event.event_name},
       {"time", event.time},
