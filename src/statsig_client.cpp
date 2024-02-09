@@ -2,7 +2,7 @@
 
 #include "statsig_event.hpp"
 #include "statsig_context.hpp"
-#include "evaluation_reason.hpp"
+#include "evaluation_details_internal.hpp"
 
 #define INIT_GUARD(result) do { if (!EnsureInitialized(__func__)) { return result; }} while(0)
 #define EB_WITH_TAG(tag, task) context_->err_boundary.Capture((tag), (task))
@@ -29,6 +29,7 @@ void StatsigClient::Shutdown() {
 
   EB(([this]() {
     context_->logger.Shutdown();
+    context_ = nullptr;
   }));
 }
 
@@ -53,19 +54,25 @@ bool StatsigClient::CheckGate(const std::string &gate_name) {
 }
 
 FeatureGate StatsigClient::GetFeatureGate(const string &gate_name) {
-  FeatureGate result(gate_name, "Uninitialized");
+  FeatureGate result(gate_name, evaluation_details::Uninitialized());
   INIT_GUARD(result);
 
   EB(([this, &gate_name, &result]() {
-    auto detailed_evaluation = context_->store.GetGate(gate_name);
-    auto reason = GetEvaluationReasonFromEvaluation(detailed_evaluation);
-    context_->logger.Enqueue(MakeGateExposure(gate_name, context_->user, detailed_evaluation));
+    auto gate = context_->store.GetGate(gate_name);
+
+    context_->logger.Enqueue(
+        MakeGateExposure(
+            gate_name,
+            context_->user,
+            gate
+        )
+    );
 
     result = FeatureGate(
         gate_name,
-        UNWRAP(detailed_evaluation.evaluation, rule_id),
-        reason,
-        UNWRAP(detailed_evaluation.evaluation, value)
+        UNWRAP(gate.evaluation, rule_id),
+        gate.details,
+        UNWRAP(gate.evaluation, value)
     );
   }));
 
@@ -73,18 +80,24 @@ FeatureGate StatsigClient::GetFeatureGate(const string &gate_name) {
 }
 
 DynamicConfig StatsigClient::GetDynamicConfig(const std::string &config_name) {
-  DynamicConfig result(config_name, "Uninitialized");
+  DynamicConfig result(config_name, evaluation_details::Uninitialized());
   INIT_GUARD(result);
 
   EB(([this, &config_name, &result]() {
     auto config = context_->store.GetConfig(config_name);
-    auto reason = GetEvaluationReasonFromEvaluation(config);
-    context_->logger.Enqueue(MakeConfigExposure(config_name, context_->user, config));
+
+    context_->logger.Enqueue(
+        MakeConfigExposure(
+            config_name,
+            context_->user,
+            config
+        )
+    );
 
     result = DynamicConfig(
         config_name,
         UNWRAP(config.evaluation, rule_id),
-        reason,
+        config.details,
         UNWRAP(config.evaluation, value)
     );
   }));
@@ -93,18 +106,23 @@ DynamicConfig StatsigClient::GetDynamicConfig(const std::string &config_name) {
 }
 
 Experiment StatsigClient::GetExperiment(const std::string &experiment_name) {
-  Experiment result(experiment_name, "Uninitialized");
+  Experiment result(experiment_name, evaluation_details::Uninitialized());
   INIT_GUARD(result);
 
   EB(([this, &experiment_name, &result]() {
     auto experiment = context_->store.GetConfig(experiment_name);
-    auto reason = GetEvaluationReasonFromEvaluation(experiment);
-    context_->logger.Enqueue(MakeConfigExposure(experiment_name, context_->user, experiment));
+    context_->logger.Enqueue(
+        MakeConfigExposure(
+            experiment_name,
+            context_->user,
+            experiment
+        )
+    );
 
     result = Experiment(
         experiment_name,
         UNWRAP(experiment.evaluation, rule_id),
-        reason,
+        experiment.details,
         UNWRAP(experiment.evaluation, value)
     );
   }));
@@ -113,24 +131,28 @@ Experiment StatsigClient::GetExperiment(const std::string &experiment_name) {
 }
 
 Layer StatsigClient::GetLayer(const std::string &layer_name) {
-  Layer result(layer_name, "Uninitialized");
+  Layer result(layer_name, evaluation_details::Uninitialized());
   INIT_GUARD(result);
 
   EB(([this, &layer_name, &result]() {
     auto logger = &context_->logger;
     auto user = context_->user;
     auto layer = context_->store.GetLayer(layer_name);
-    auto reason = GetEvaluationReasonFromEvaluation(layer);
 
     auto log_exposure = [layer_name, layer, user, logger](const std::string &param_name) {
-      auto expo = MakeLayerParamExposure(layer_name, param_name, user, layer);
+      auto expo = MakeLayerParamExposure(
+          layer_name,
+          param_name,
+          user,
+          layer
+      );
       logger->Enqueue(expo);
     };
 
     result = Layer(
         layer_name,
         UNWRAP(layer.evaluation, rule_id),
-        reason,
+        layer.details,
         UNWRAP(layer.evaluation, value),
         log_exposure
     );

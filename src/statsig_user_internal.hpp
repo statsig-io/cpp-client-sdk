@@ -11,8 +11,11 @@ using string = std::string;
 void to_json(json &j, const StatsigUser &u) {
   j = json{
       {"userID", u.user_id},
-      {"customIDs", u.custom_ids},
   };
+
+  if (!u.custom_ids.empty()) {
+    j["customIDs"] = u.custom_ids;
+  }
 
   OPT_TO_JSON(j, "email", u.email);
   OPT_TO_JSON(j, "ip", u.ip);

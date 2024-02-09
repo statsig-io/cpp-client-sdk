@@ -1,6 +1,8 @@
+#pragma once
+
 #include <utility>
 
-#pragma once
+#include "evaluation_details.h"
 
 namespace statsig {
 
@@ -19,31 +21,31 @@ class EvaluatedSpec {
     return rule_id_;
   }
 
-  std::string GetEvaluationReason() {
-    return reason_;
+  EvaluationDetails GetEvaluationDetails() {
+    return evaluation_details_;
   }
 
  protected:
   EvaluatedSpec(
       std::string name,
       std::string rule_id,
-      std::string reason,
+      EvaluationDetails evaluation_details,
       T value
   )
       : name_(std::move(name)),
         rule_id_(std::move(rule_id)),
-        reason_(std::move(reason)),
+        evaluation_details_(std::move(evaluation_details)),
         value_(std::move(value)) {}
 
   EvaluatedSpec(
       std::string name,
-      std::string reason
-  ) : name_(std::move(name)), reason_(std::move(reason)) {}
+      EvaluationDetails evaluation_details
+  ) : name_(std::move(name)), evaluation_details_(std::move(evaluation_details)) {}
 
   T value_;
   std::string name_;
   std::string rule_id_;
-  std::string reason_;
+  EvaluationDetails evaluation_details_;
 };
 
 class FeatureGate : public EvaluatedSpec<bool> {
@@ -89,10 +91,10 @@ class Layer : public EvaluatedSpec<JsonObj> {
   Layer(
       const std::string &name,
       const std::string &rule_id,
-      const std::string &reason,
+      const EvaluationDetails &evaluation_details,
       const JsonObj &value,
       const std::function<void(const std::string &)> &log_param_exposure)
-      : EvaluatedSpec<JsonObj>(name, rule_id, reason, value),
+      : EvaluatedSpec<JsonObj>(name, rule_id, evaluation_details, value),
         log_param_exposure_(log_param_exposure) {}
 
   using EvaluatedSpec<JsonObj>::EvaluatedSpec;
