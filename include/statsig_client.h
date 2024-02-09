@@ -35,7 +35,6 @@ class StatsigClient {
  private:
   std::unique_ptr<StatsigContext> context_;
 
-  void SetValuesFromNetwork();
   bool EnsureInitialized(const char *caller);
   void SwitchUser(const StatsigUser &user);
 };

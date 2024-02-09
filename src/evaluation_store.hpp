@@ -6,20 +6,12 @@
 #include "hashing.hpp"
 #include "macros.hpp"
 #include "file.hpp"
+#include "evaluations_data_provider.h"
 
 namespace statsig {
 
 using namespace statsig::data;
 using namespace statsig::hashing;
-
-enum class ValueSource {
-  Uninitialized,
-  Loading,
-  NoValues,
-  Cache,
-  Network,
-  Bootstrap
-};
 
 struct SourceInfo {
   ValueSource source;
@@ -35,34 +27,60 @@ struct DetailedEvaluation {
 
 class EvaluationStore {
  public:
-  void LoadCacheValues(const string &cache_key) {
+  void Reset() {
     WRITE_LOCK(rw_lock_);
 
     values_ = std::nullopt;
     source_info_.source = ValueSource::Loading;
+  }
 
-    auto cached = File::ReadFromCache(cache_key);
-    if (!cached.has_value()) {
+  void Finalize() {
+    WRITE_LOCK(rw_lock_);
+    if (values_.has_value()) {
       return;
     }
 
-    values_ = json::parse(cached.value()).template get<InitializeResponse>();
-    source_info_.source = ValueSource::Cache;
+    source_info_.source = ValueSource::NoValues;
   }
 
-  void SetAndCacheValues(
-      const InitializeResponse &values,
-      const string &raw_values,
-      const ValueSource &source,
-      const string &cache_key
+  void SetValuesFromData(
+      const string &data,
+      const ValueSource &source
   ) {
     WRITE_LOCK(rw_lock_);
-    source_info_.source = source;
-    values_ = values;
 
-    File::WriteToCache(cache_key, raw_values);
-    File::RunCacheEviction();
+    values_ = json::parse(data).template get<InitializeResponse>();
+    source_info_.source = source;
   }
+
+//  void LoadCacheValues(const string &cache_key) {
+//    WRITE_LOCK(rw_lock_);
+//
+//    values_ = std::nullopt;
+//    source_info_.source = ValueSource::Loading;
+//
+//    auto cached = File::ReadFromCache(cache_key);
+//    if (!cached.has_value()) {
+//      return;
+//    }
+//
+//    values_ = json::parse(cached.value()).template get<InitializeResponse>();
+//    source_info_.source = ValueSource::Cache;
+//  }
+
+//  void SetAndCacheValues(
+//      const InitializeResponse &values,
+//      const string &raw_values,
+//      const ValueSource &source,
+//      const string &cache_key
+//  ) {
+//    WRITE_LOCK(rw_lock_);
+//    source_info_.source = source;
+//    values_ = values;
+//
+//    File::WriteToCache(cache_key, raw_values);
+//    File::RunCacheEviction();
+//  }
 
   DetailedEvaluation<GateEvaluation> GetGate(const std::string &gate_name) {
     READ_LOCK(rw_lock_);

@@ -8,16 +8,8 @@ namespace statsig {
 
 template<typename T>
 std::string GetEvaluationReasonFromEvaluation(DetailedEvaluation<T> detailed_evaluation) {
-  static const std::unordered_map<ValueSource, std::string> source_map{
-      {ValueSource::Uninitialized, "Uninitialized"},
-      {ValueSource::Loading, "Loading"},
-      {ValueSource::Cache, "Cache"},
-      {ValueSource::Network, "Network"},
-      {ValueSource::Bootstrap, "Bootstrap"}
-  };
-
   auto source = detailed_evaluation.source_info.source;
-  auto result = source_map.at(source);
+  auto result = GetValueSourceString(source);
 
   if (source == ValueSource::Uninitialized || source == ValueSource::NoValues) {
     return result;

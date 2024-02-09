@@ -7,8 +7,19 @@
 #include "evaluation_store.hpp"
 #include "statsig_user.h"
 #include "error_boundary.hpp"
+#include "data_providers/local_file_cache_evaluations_data_provider.hpp"
+#include "data_providers/network_evaluations_data_provider.hpp"
 
 namespace statsig {
+
+using namespace statsig::evaluations_data_providers;
+
+std::vector<EvaluationsDataProvider *> GetDefaultDataProviders(NetworkService &network) {
+  return {
+      new LocalFileCacheEvaluationsDataProvider(),
+      new NetworkEvaluationsDataProvider(network)
+  };
+}
 
 class StatsigContext {
  public:
@@ -22,6 +33,10 @@ class StatsigContext {
       err_boundary(this->sdk_key),
       network(NetworkService(this->sdk_key, this->options, this->err_boundary)),
       store(EvaluationStore()),
+      data_providers(
+          this->options.providers
+              .value_or(GetDefaultDataProviders(this->network))
+      ),
       logger(EventLogger(this->options, this->network)) {}
 
   string sdk_key;
@@ -32,6 +47,7 @@ class StatsigContext {
   NetworkService network;
   EvaluationStore store;
   EventLogger logger;
+  std::vector<EvaluationsDataProvider *> data_providers;
 };
 
 }

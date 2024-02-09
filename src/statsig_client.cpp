@@ -5,7 +5,8 @@
 #include "evaluation_reason.hpp"
 
 #define INIT_GUARD(result) do { if (!EnsureInitialized(__func__)) { return result; }} while(0)
-#define EB(task) context_->err_boundary.Capture(__func__, (task))
+#define EB_WITH_TAG(tag, task) context_->err_boundary.Capture((tag), (task))
+#define EB(task) EB_WITH_TAG(__func__, task)
 
 namespace statsig {
 
@@ -141,19 +142,36 @@ Layer StatsigClient::GetLayer(const std::string &layer_name) {
 void StatsigClient::SwitchUser(const statsig::StatsigUser &user) {
   EB(([this, &user]() {
     context_->user = user;
-    auto cache_key = MakeCacheKey(context_->sdk_key, context_->user);
+    context_->store.Reset();
 
-    context_->store.LoadCacheValues(cache_key);
-    SetValuesFromNetwork();
+    std::optional<std::string> result;
+
+    for (auto provider : context_->data_providers) {
+      EB_WITH_TAG("data_provider_get", ([this, &user, &provider, &result]() {
+        result = provider->GetEvaluationsData(context_->sdk_key, user);
+      }));
+      if (!result) {
+        continue;
+      }
+
+      context_->store.SetValuesFromData(result.value(), provider->GetSource());
+      if (provider->IsTerminal()) {
+        break;
+      }
+    }
+
+    context_->store.Finalize();
+
+    if (!result) {
+      return;
+    }
+
+    for (auto provider : context_->data_providers) {
+      EB_WITH_TAG("data_provider_set", ([this, &user, &provider, &result]() {
+        provider->SetEvaluationsData(context_->sdk_key, user, result.value());
+      }));
+    }
   }));
-}
-
-void StatsigClient::SetValuesFromNetwork() {
-  auto result = context_->network.FetchValues(context_->user);
-  if (result.has_value()) {
-    auto cache_key = MakeCacheKey(context_->sdk_key, context_->user);
-    context_->store.SetAndCacheValues(result->response, result->raw, ValueSource::Network, cache_key);
-  }
 }
 
 bool StatsigClient::EnsureInitialized(const char *caller) {

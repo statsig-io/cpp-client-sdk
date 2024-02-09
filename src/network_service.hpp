@@ -25,7 +25,7 @@ class NetworkService {
       ErrorBoundary &err_boundary
   ) : sdk_key_(sdk_key), options_(options), err_boundary_(err_boundary), session_id_(UUID::v4()) {}
 
-  FetchValuesResult FetchValues(StatsigUser &user) {
+  FetchValuesResult FetchValues(const StatsigUser &user) {
     FetchValuesResult result;
 
     err_boundary_.Capture(__func__, [this, &result, &user]() {
@@ -36,9 +36,12 @@ class NetworkService {
   }
 
   void SendEvents(const std::vector<StatsigEventInternal> &events) {
-    Post(
+    PostWithRetry(
         kEndpointLogEvent,
-        {{"events", events}});
+        {{"events", events}},
+        kLogEventRetryCount
+    );
+
   }
 
  private:
@@ -66,7 +69,7 @@ class NetworkService {
         {"stableID", stable_id_.Get()}};
   }
 
-  FetchValuesResult FetchValuesImpl(StatsigUser &user) {
+  FetchValuesResult FetchValuesImpl(const StatsigUser &user) {
     auto response = PostWithRetry(
         kEndpointInitialize,
         {

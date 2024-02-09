@@ -14,6 +14,7 @@ const char *kEndpointLogEvent = "/v1/rgstr";
 const char *kContentTypeJson = "application/json";
 const char *kDefaultApi = "https://statsigapi.net";
 const int kInitializeRetryCount = 3;
+const int kLogEventRetryCount = 3;
 
 // Caching
 const char *kCacheDirectory = "/tmp/statsig_cpp_client";
