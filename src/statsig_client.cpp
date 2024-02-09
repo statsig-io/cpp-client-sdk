@@ -3,9 +3,22 @@
 #include "statsig_event.hpp"
 #include "statsig_context.hpp"
 
-#define EB_CAPTURE(task) context_->err_boundary.Capture(__func__, (task))
+#define INIT_GUARD(result) do { if (!EnsureInitialized(__func__)) { return result; }} while(0)
+#define EB(task) context_->err_boundary.Capture(__func__, (task))
 
 namespace statsig {
+
+string GetEvaluationReason(ValueSource source) {
+  static const std::unordered_map<ValueSource, std::string> source_map{
+      {ValueSource::Uninitialized, "Uninitialized"},
+      {ValueSource::Loading, "Loading"},
+      {ValueSource::Cache, "Cache"},
+      {ValueSource::Network, "Network"},
+      {ValueSource::Bootstrap, "Bootstrap"}
+  };
+
+  return source_map.at(source);
+}
 
 StatsigClient &StatsigClient::Shared() {
   static StatsigClient inst;
@@ -22,100 +35,95 @@ void StatsigClient::Initialize(
 }
 
 void StatsigClient::Shutdown() {
-  if (!EnsureInitialized(__func__)) {
-    return;
-  }
+  INIT_GUARD();
 
-  EB_CAPTURE(([this]() {
+  EB(([this]() {
     context_->logger.Shutdown();
   }));
 }
 
 void StatsigClient::UpdateUser(const StatsigUser &user) {
-  if (!EnsureInitialized(__func__)) {
-    return;
-  }
-
+  INIT_GUARD();
   SwitchUser(user);
 }
 
 void StatsigClient::LogEvent(const StatsigEvent &event) {
-  if (!EnsureInitialized(__func__)) {
-    return;
-  }
+  INIT_GUARD();
 
-  EB_CAPTURE(([this, &event]() {
+  EB(([this, &event]() {
     context_->logger.Enqueue(InternalizeEvent(event, context_->user));
   }));
 }
 
 bool StatsigClient::CheckGate(const std::string &gate_name) {
-  if (!EnsureInitialized(__func__)) {
-    return false;
-  }
+  INIT_GUARD(false);
 
   auto gate = GetFeatureGate(gate_name);
   return gate.GetValue();
 }
 
 FeatureGate StatsigClient::GetFeatureGate(const string &gate_name) {
-  FeatureGate result(gate_name, "", "Uninitialized", false);
+  FeatureGate result(gate_name, "Uninitialized");
+  INIT_GUARD(result);
 
-  if (!EnsureInitialized(__func__)) {
-    return result;
-  }
-
-  EB_CAPTURE(([this, &gate_name, &result]() {
+  EB(([this, &gate_name, &result]() {
     auto gate = context_->store.GetGate(gate_name);
     context_->logger.Enqueue(MakeGateExposure(gate_name, context_->user, gate));
 
-    result = {gate_name, "", "", UNWRAP(gate.evaluation, value)};
+    result = FeatureGate(
+        gate_name,
+        UNWRAP(gate.evaluation, rule_id),
+        GetEvaluationReason(gate.source_info.source),
+        UNWRAP(gate.evaluation, value)
+    );
   }));
 
   return result;
 }
 
 DynamicConfig StatsigClient::GetDynamicConfig(const std::string &config_name) {
-  DynamicConfig result = {config_name, "", "Uninitialized", std::unordered_map<string, json>()};
+  DynamicConfig result(config_name, "Uninitialized");
+  INIT_GUARD(result);
 
-  if (!EnsureInitialized(__func__)) {
-    return result;
-  }
-
-  EB_CAPTURE(([this, &config_name, &result]() {
+  EB(([this, &config_name, &result]() {
     auto config = context_->store.GetConfig(config_name);
     context_->logger.Enqueue(MakeConfigExposure(config_name, context_->user, config));
-    result = {config_name, "", "", UNWRAP(config.evaluation, value)};
+
+    result = DynamicConfig(
+        config_name,
+        UNWRAP(config.evaluation, rule_id),
+        GetEvaluationReason(config.source_info.source),
+        UNWRAP(config.evaluation, value)
+    );
   }));
 
   return result;
 }
 
 Experiment StatsigClient::GetExperiment(const std::string &experiment_name) {
-  Experiment result(experiment_name, "", "Uninitialized", std::unordered_map<string, json>());
+  Experiment result(experiment_name, "Uninitialized");
+  INIT_GUARD(result);
 
-  if (!EnsureInitialized(__func__)) {
-    return result;
-  }
-
-  EB_CAPTURE(([this, &experiment_name, &result]() {
+  EB(([this, &experiment_name, &result]() {
     auto experiment = context_->store.GetConfig(experiment_name);
     context_->logger.Enqueue(MakeConfigExposure(experiment_name, context_->user, experiment));
 
-    result = {experiment_name, "", "", UNWRAP(experiment.evaluation, value)};
+    result = Experiment(
+        experiment_name,
+        UNWRAP(experiment.evaluation, rule_id),
+        GetEvaluationReason(experiment.source_info.source),
+        UNWRAP(experiment.evaluation, value)
+    );
   }));
 
   return result;
 }
 
 Layer StatsigClient::GetLayer(const std::string &layer_name) {
-  Layer result(layer_name, "", "", std::unordered_map<string, json>());
+  Layer result(layer_name, "Uninitialized");
+  INIT_GUARD(result);
 
-  if (!EnsureInitialized(__func__)) {
-    return result;
-  }
-
-  EB_CAPTURE(([this, &layer_name, &result]() {
+  EB(([this, &layer_name, &result]() {
     auto logger = &context_->logger;
     auto user = context_->user;
     auto layer = context_->store.GetLayer(layer_name);
@@ -125,14 +133,20 @@ Layer StatsigClient::GetLayer(const std::string &layer_name) {
       logger->Enqueue(expo);
     };
 
-    result = Layer{layer_name, "", "", UNWRAP(layer.evaluation, value), log_exposure};
+    result = Layer(
+        layer_name,
+        UNWRAP(layer.evaluation, rule_id),
+        GetEvaluationReason(layer.source_info.source),
+        UNWRAP(layer.evaluation, value),
+        log_exposure
+    );
   }));
 
   return result;
 }
 
 void StatsigClient::SwitchUser(const statsig::StatsigUser &user) {
-  EB_CAPTURE(([this, &user]() {
+  EB(([this, &user]() {
     context_->user = user;
     auto cache_key = MakeCacheKey(context_->sdk_key, context_->user);
 

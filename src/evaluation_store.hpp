@@ -30,11 +30,6 @@ template<typename T>
 struct DetailedEvaluation {
   std::optional<T> evaluation;
   SourceInfo source_info;
-
-  DetailedEvaluation(
-      const std::optional<T> &e,
-      SourceInfo si
-  ) : evaluation(e), source_info(si) {}
 };
 
 class EvaluationStore {

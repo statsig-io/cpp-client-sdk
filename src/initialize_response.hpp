@@ -7,6 +7,7 @@ namespace statsig::data {
 
 using json = nlohmann::json;
 typedef std::unordered_map<std::string, std::string> SecondaryExposure;
+typedef std::unordered_map<std::string, json> JsonObj;
 
 template<typename T>
 struct Evaluation {
@@ -48,8 +49,7 @@ void from_json(const json &j, GateEvaluation &e) {
 
 // end GateEvaluation
 
-typedef std::unordered_map<std::string, json> Map;
-struct ConfigEvaluation : Evaluation<Map> {
+struct ConfigEvaluation : Evaluation<JsonObj> {
   std::string id_type;
   std::optional<std::string> group_name;
   bool is_device_based = false;
@@ -66,7 +66,7 @@ void to_json(json &j, const ConfigEvaluation &e) {
 }
 
 void from_json(const json &j, ConfigEvaluation &e) {
-  evaluation_from_json<Map>(j, e);
+  evaluation_from_json<JsonObj>(j, e);
 //  j.at("id_type").get_to(e.id_type);
 }
 
@@ -87,7 +87,7 @@ void to_json(json &j, const LayerEvaluation &e) {
 }
 
 void from_json(const json &j, LayerEvaluation &e) {
-  evaluation_from_json<Map>(j, e);
+  evaluation_from_json<JsonObj>(j, e);
   j.at("explicit_parameters").get_to(e.explicit_parameters);
   j.at("undelegated_secondary_exposures").get_to(e.undelegated_secondary_exposures);
 

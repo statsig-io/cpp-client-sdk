@@ -1,8 +1,10 @@
+#include <utility>
+
 #pragma once
 
 namespace statsig {
 
-typedef std::unordered_map<std::string, nlohmann::json> json_obj;
+typedef std::unordered_map<std::string, nlohmann::json> JsonObj;
 
 template<typename T>
 class EvaluatedSpec {
@@ -23,15 +25,20 @@ class EvaluatedSpec {
 
  protected:
   EvaluatedSpec(
-      const std::string &name,
-      const std::string &rule_id,
-      const std::string &reason,
-      const T &value
+      std::string name,
+      std::string rule_id,
+      std::string reason,
+      T value
   )
-      : name_(name),
-        rule_id_(rule_id),
-        reason_(reason),
-        value_(value) {}
+      : name_(std::move(name)),
+        rule_id_(std::move(rule_id)),
+        reason_(std::move(reason)),
+        value_(std::move(value)) {}
+
+  EvaluatedSpec(
+      std::string name,
+      std::string reason
+  ) : name_(std::move(name)), reason_(std::move(reason)) {}
 
   T value_;
   std::string name_;
@@ -49,27 +56,27 @@ class FeatureGate : public EvaluatedSpec<bool> {
   using EvaluatedSpec<bool>::EvaluatedSpec;
 };
 
-class DynamicConfig : EvaluatedSpec<json_obj> {
+class DynamicConfig : public EvaluatedSpec<JsonObj> {
  public:
-  json_obj GetValue() {
+  JsonObj GetValue() {
     return value_;
   }
 
  protected:
-  using EvaluatedSpec<json_obj>::EvaluatedSpec;
+  using EvaluatedSpec<JsonObj>::EvaluatedSpec;
 };
 
-class Experiment : EvaluatedSpec<json_obj> {
+class Experiment : public EvaluatedSpec<JsonObj> {
  public:
-  json_obj GetValue() {
+  JsonObj GetValue() {
     return value_;
   }
 
  protected:
-  using EvaluatedSpec<json_obj>::EvaluatedSpec;
+  using EvaluatedSpec<JsonObj>::EvaluatedSpec;
 };
 
-class Layer : EvaluatedSpec<json_obj> {
+class Layer : public EvaluatedSpec<JsonObj> {
   friend class StatsigClient;
 
  public:
@@ -83,12 +90,12 @@ class Layer : EvaluatedSpec<json_obj> {
       const std::string &name,
       const std::string &rule_id,
       const std::string &reason,
-      const json_obj &value,
+      const JsonObj &value,
       const std::function<void(const std::string &)> &log_param_exposure)
-      : EvaluatedSpec<json_obj>(name, rule_id, reason, value),
+      : EvaluatedSpec<JsonObj>(name, rule_id, reason, value),
         log_param_exposure_(log_param_exposure) {}
 
-  using EvaluatedSpec<json_obj>::EvaluatedSpec;
+  using EvaluatedSpec<JsonObj>::EvaluatedSpec;
 
  private:
   std::function<void(const std::string &)> log_param_exposure_;

@@ -5,21 +5,21 @@
 
 namespace statsig {
 
-typedef std::optional<std::string> opt_string;
-typedef std::unordered_map<std::string, std::string> str_map;
+typedef std::optional<std::string> OptString;
+typedef std::unordered_map<std::string, std::string> StrMap;
 
 struct StatsigUser {
   std::string user_id;
-  str_map custom_ids;
+  StrMap custom_ids;
 
-  opt_string email;
-  opt_string ip;
-  opt_string user_agent;
-  opt_string country;
-  opt_string locale;
-  opt_string app_version;
-  std::optional<str_map> custom;
-  std::optional<str_map> private_attributes;
+  OptString email;
+  OptString ip;
+  OptString user_agent;
+  OptString country;
+  OptString locale;
+  OptString app_version;
+  std::optional<StrMap> custom;
+  std::optional<StrMap> private_attributes;
 };
 
 }

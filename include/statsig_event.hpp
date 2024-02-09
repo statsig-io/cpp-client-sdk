@@ -4,23 +4,23 @@
 
 namespace statsig {
 
-typedef std::unordered_map<std::string, std::string> str_map;
+typedef std::unordered_map<std::string, std::string> StrMap;
 
 struct StatsigEvent {
   std::string event_name;
   std::optional<long> time;
   std::optional<std::string> string_value;
   std::optional<double> double_value;
-  std::optional<str_map> metadata;
+  std::optional<StrMap> metadata;
 
-  StatsigEvent(const std::string &event_name) {
+  explicit StatsigEvent(const std::string &event_name) {
     this->event_name = event_name;
   }
 
   StatsigEvent(
       const std::string &event_name,
       const std::optional<double> &value,
-      const std::optional<str_map> &metadata = std::nullopt
+      const std::optional<StrMap> &metadata = std::nullopt
   ) {
     this->event_name = event_name;
     this->double_value = value;
@@ -30,7 +30,7 @@ struct StatsigEvent {
   StatsigEvent(
       const std::string &event_name,
       const std::optional<std::string> &value,
-      const std::optional<str_map> &metadata = std::nullopt
+      const std::optional<StrMap> &metadata = std::nullopt
   ) {
     this->event_name = event_name;
     this->string_value = value;
