@@ -2,23 +2,12 @@
 
 #include "statsig_event.hpp"
 #include "statsig_context.hpp"
+#include "evaluation_reason.hpp"
 
 #define INIT_GUARD(result) do { if (!EnsureInitialized(__func__)) { return result; }} while(0)
 #define EB(task) context_->err_boundary.Capture(__func__, (task))
 
 namespace statsig {
-
-string GetEvaluationReason(ValueSource source) {
-  static const std::unordered_map<ValueSource, std::string> source_map{
-      {ValueSource::Uninitialized, "Uninitialized"},
-      {ValueSource::Loading, "Loading"},
-      {ValueSource::Cache, "Cache"},
-      {ValueSource::Network, "Network"},
-      {ValueSource::Bootstrap, "Bootstrap"}
-  };
-
-  return source_map.at(source);
-}
 
 StatsigClient &StatsigClient::Shared() {
   static StatsigClient inst;
@@ -67,14 +56,15 @@ FeatureGate StatsigClient::GetFeatureGate(const string &gate_name) {
   INIT_GUARD(result);
 
   EB(([this, &gate_name, &result]() {
-    auto gate = context_->store.GetGate(gate_name);
-    context_->logger.Enqueue(MakeGateExposure(gate_name, context_->user, gate));
+    auto detailed_evaluation = context_->store.GetGate(gate_name);
+    auto reason = GetEvaluationReasonFromEvaluation(detailed_evaluation);
+    context_->logger.Enqueue(MakeGateExposure(gate_name, context_->user, detailed_evaluation));
 
     result = FeatureGate(
         gate_name,
-        UNWRAP(gate.evaluation, rule_id),
-        GetEvaluationReason(gate.source_info.source),
-        UNWRAP(gate.evaluation, value)
+        UNWRAP(detailed_evaluation.evaluation, rule_id),
+        reason,
+        UNWRAP(detailed_evaluation.evaluation, value)
     );
   }));
 
@@ -87,12 +77,13 @@ DynamicConfig StatsigClient::GetDynamicConfig(const std::string &config_name) {
 
   EB(([this, &config_name, &result]() {
     auto config = context_->store.GetConfig(config_name);
+    auto reason = GetEvaluationReasonFromEvaluation(config);
     context_->logger.Enqueue(MakeConfigExposure(config_name, context_->user, config));
 
     result = DynamicConfig(
         config_name,
         UNWRAP(config.evaluation, rule_id),
-        GetEvaluationReason(config.source_info.source),
+        reason,
         UNWRAP(config.evaluation, value)
     );
   }));
@@ -106,12 +97,13 @@ Experiment StatsigClient::GetExperiment(const std::string &experiment_name) {
 
   EB(([this, &experiment_name, &result]() {
     auto experiment = context_->store.GetConfig(experiment_name);
+    auto reason = GetEvaluationReasonFromEvaluation(experiment);
     context_->logger.Enqueue(MakeConfigExposure(experiment_name, context_->user, experiment));
 
     result = Experiment(
         experiment_name,
         UNWRAP(experiment.evaluation, rule_id),
-        GetEvaluationReason(experiment.source_info.source),
+        reason,
         UNWRAP(experiment.evaluation, value)
     );
   }));
@@ -127,16 +119,17 @@ Layer StatsigClient::GetLayer(const std::string &layer_name) {
     auto logger = &context_->logger;
     auto user = context_->user;
     auto layer = context_->store.GetLayer(layer_name);
+    auto reason = GetEvaluationReasonFromEvaluation(layer);
 
     auto log_exposure = [layer_name, layer, user, logger](const std::string &param_name) {
-      auto expo = MakeLayerExposure(layer_name, param_name, user, layer);
+      auto expo = MakeLayerParamExposure(layer_name, param_name, user, layer);
       logger->Enqueue(expo);
     };
 
     result = Layer(
         layer_name,
         UNWRAP(layer.evaluation, rule_id),
-        GetEvaluationReason(layer.source_info.source),
+        reason,
         UNWRAP(layer.evaluation, value),
         log_exposure
     );

@@ -15,6 +15,7 @@ using namespace statsig::hashing;
 enum class ValueSource {
   Uninitialized,
   Loading,
+  NoValues,
   Cache,
   Network,
   Bootstrap

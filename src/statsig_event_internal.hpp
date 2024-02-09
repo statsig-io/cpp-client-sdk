@@ -122,7 +122,7 @@ StatsigEventInternal MakeConfigExposure(
   );
 }
 
-StatsigEventInternal MakeLayerExposure(
+StatsigEventInternal MakeLayerParamExposure(
     const string &layer_name,
     const string &param_name,
     const StatsigUser &user,
