@@ -24,8 +24,7 @@ class StatsigContext {
       err_boundary(this->sdk_key),
       network(NetworkService(this->sdk_key, this->options, this->err_boundary)),
       store(EvaluationStore()),
-      logger(EventLogger(this->options, this->network)) {
-  }
+      logger(EventLogger(this->options, this->network)) {}
 
   string sdk_key;
   StatsigUser user;

@@ -1,7 +1,7 @@
 #include "statsig_client.h"
 
 #include <utility>
-#include "statsig_event.h"
+#include "statsig_event.hpp"
 
 #define EB_CAPTURE(task) context_->err_boundary.Capture(__func__, (task))
 
