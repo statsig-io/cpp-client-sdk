@@ -2,7 +2,7 @@
 
 #include "statsig.h"
 #include "statsig_options.h"
-#include "statsig_types.h"
+#include "statsig_types.hpp"
 #include "statsig_event.h"
 
 #include "../src/statsig_context.hpp"
