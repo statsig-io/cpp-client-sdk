@@ -12,7 +12,7 @@ std::string DJB2(const std::string &value) {
   }
 
   hash &= 0xffffffff;
-  return to_string(hash);
+  return std::to_string(hash);
 }
 
 }

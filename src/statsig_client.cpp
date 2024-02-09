@@ -1,6 +1,5 @@
 #include "statsig_client.h"
 
-#include <utility>
 #include "statsig_event.hpp"
 #include "statsig_context.hpp"
 
@@ -15,8 +14,8 @@ StatsigClient &StatsigClient::Shared() {
 
 void StatsigClient::Initialize(
     const string &sdk_key,
-    const optional<StatsigUser> &user,
-    const optional<StatsigOptions> &options
+    const std::optional<StatsigUser> &user,
+    const std::optional<StatsigOptions> &options
 ) {
   context_ = std::make_unique<StatsigContext>(sdk_key, user, options);
   SwitchUser(context_->user);
@@ -78,6 +77,7 @@ FeatureGate StatsigClient::GetFeatureGate(const string &gate_name) {
 
 DynamicConfig StatsigClient::GetDynamicConfig(const std::string &config_name) {
   DynamicConfig result = {config_name, "", "Uninitialized", std::unordered_map<string, json>()};
+
   if (!EnsureInitialized(__func__)) {
     return result;
   }

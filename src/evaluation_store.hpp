@@ -7,11 +7,10 @@
 #include "macros.hpp"
 #include "file.hpp"
 
-using namespace std;
+namespace statsig {
+
 using namespace statsig::data;
 using namespace statsig::hashing;
-
-namespace statsig {
 
 enum class ValueSource {
   Uninitialized,
@@ -29,11 +28,13 @@ struct SourceInfo {
 
 template<typename T>
 struct DetailedEvaluation {
-  optional<T> evaluation;
+  std::optional<T> evaluation;
   SourceInfo source_info;
 
-  DetailedEvaluation(optional<T> e, SourceInfo si)
-      : evaluation(e), source_info(si) {}
+  DetailedEvaluation(
+      const std::optional<T> &e,
+      SourceInfo si
+  ) : evaluation(e), source_info(si) {}
 };
 
 class EvaluationStore {
@@ -41,7 +42,7 @@ class EvaluationStore {
   void LoadCacheValues(const string &cache_key) {
     WRITE_LOCK(rw_lock_);
 
-    values_ = nullopt;
+    values_ = std::nullopt;
     source_info_.source = ValueSource::Loading;
 
     auto cached = File::ReadFromCache(cache_key);
@@ -54,14 +55,14 @@ class EvaluationStore {
   }
 
   void SetAndCacheValues(
-      InitializeResponse values,
+      const InitializeResponse &values,
       const string &raw_values,
       const ValueSource &source,
       const string &cache_key
   ) {
     WRITE_LOCK(rw_lock_);
     source_info_.source = source;
-    values_ = std::move(values);
+    values_ = values;
 
     File::WriteToCache(cache_key, raw_values);
     File::RunCacheEviction();
@@ -72,7 +73,7 @@ class EvaluationStore {
 
     auto hash = DJB2(gate_name);
     if (!values_.has_value() || !MapContains(values_->feature_gates, hash)) {
-      return {nullopt, source_info_};
+      return {std::nullopt, source_info_};
     }
 
     return {values_->feature_gates[hash], source_info_};
@@ -83,7 +84,7 @@ class EvaluationStore {
 
     auto hash = DJB2(config_name);
     if (!values_.has_value() || !MapContains(values_->dynamic_configs, hash)) {
-      return {nullopt, source_info_};
+      return {std::nullopt, source_info_};
     }
 
     return {values_->dynamic_configs[hash], source_info_};
@@ -94,7 +95,7 @@ class EvaluationStore {
 
     auto hash = DJB2(layer_name);
     if (!values_.has_value() || !MapContains(values_->layer_configs, hash)) {
-      return {nullopt, source_info_};
+      return {std::nullopt, source_info_};
     }
 
     return {values_->layer_configs[hash], source_info_};
@@ -102,7 +103,7 @@ class EvaluationStore {
 
  private:
   std::shared_mutex rw_lock_;
-  optional<InitializeResponse> values_;
+  std::optional<InitializeResponse> values_;
   SourceInfo source_info_;
 
   template<typename Key, typename Value>

@@ -5,6 +5,9 @@
 
 namespace statsig {
 
+using json = nlohmann::json;
+using string = std::string;
+
 void to_json(json &j, const StatsigUser &u) {
   j = json{
       {"userID", u.user_id},
@@ -23,7 +26,7 @@ void to_json(json &j, const StatsigUser &u) {
 
 void from_json(const json &j, StatsigUser &u) {
   u.user_id = j.value("userID", "");
-  u.custom_ids = j.value("customIDs", unordered_map<string, string>());
+  u.custom_ids = j.value("customIDs", std::unordered_map<string, string>());
 
   OPT_STR_FROM_JSON(j, "email", u.email);
   OPT_STR_FROM_JSON(j, "ip", u.ip);
@@ -35,8 +38,11 @@ void from_json(const json &j, StatsigUser &u) {
   OPT_STR_MAP_FROM_JSON(j, "privateAttributes", u.private_attributes);
 }
 
-string MakeCacheKey(const string &sdk_key, const StatsigUser &user) {
-  vector<pair<string, string>> pairs(user.custom_ids.begin(), user.custom_ids.end());
+string MakeCacheKey(
+    const string &sdk_key,
+    const StatsigUser &user
+) {
+  std::vector<std::pair<string, string>> pairs(user.custom_ids.begin(), user.custom_ids.end());
 
   string custom_ids;
 
@@ -50,13 +56,13 @@ string MakeCacheKey(const string &sdk_key, const StatsigUser &user) {
     auto const [k1, v1] = pairs[0];
     custom_ids = accumulate(
         next(pairs.begin()), pairs.end(), k1 + "-" + v1,
-        [](const string &acc, const pair<string, string> &p) {
+        [](const string &acc, const std::pair<string, string> &p) {
           return acc + "," + p.first + "-" + p.second;
         }
     );
   }
 
-  vector<string> parts{
+  std::vector<string> parts{
       "uid:" + user.user_id,
       "cids:" + custom_ids,
       "k:" + sdk_key

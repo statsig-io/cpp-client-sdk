@@ -1,29 +1,12 @@
 #pragma once
 
-#include <httplib.h>
-#include <nlohmann/json.hpp>
 #include <utility>
 
-#include "constants.h"
-#include "statsig_user.h"
-#include "statsig_options.h"
-#include "initialize_response.hpp"
-#include "time.hpp"
-#include "uuid.hpp"
-#include "statsig_event_internal.hpp"
-#include "stable_id.hpp"
-#include "error_boundary.hpp"
-
-using namespace httplib;
-using namespace std;
-using namespace std::chrono;
-using namespace statsig::constants;
-using namespace nlohmann;
+#include "statsig_internal.h"
 
 namespace statsig {
 
 template<typename T>
-
 struct NetworkResult {
   T response;
   string raw;
@@ -32,7 +15,7 @@ struct NetworkResult {
       : response(std::move(response)), raw(std::move(raw)) {}
 };
 
-using FetchValuesResult = optional<NetworkResult<InitializeResponse>>;
+typedef std::optional<NetworkResult<InitializeResponse>> FetchValuesResult;
 
 class NetworkService {
  public:
@@ -52,7 +35,7 @@ class NetworkService {
     return result;
   }
 
-  void SendEvents(const vector<StatsigEventInternal> &events) {
+  void SendEvents(const std::vector<StatsigEventInternal> &events) {
     Post(
         kEndpointLogEvent,
         {{"events", events}});
@@ -65,7 +48,7 @@ class NetworkService {
   string session_id_;
   StableID stable_id_;
 
-  Headers GetHeaders() {
+  httplib::Headers GetHeaders() {
     return {
         {"STATSIG-API-KEY", sdk_key_},
         {"STATSIG-CLIENT-TIME", std::to_string(Time::now())},
@@ -94,7 +77,7 @@ class NetworkService {
     );
 
     if (response->status != 200) {
-      return nullopt;
+      return std::nullopt;
     }
 
     auto initialize_res = json::parse(response->body)
@@ -105,7 +88,7 @@ class NetworkService {
 
   httplib::Result PostWithRetry(
       const string &endpoint,
-      const unordered_map<string, json> &body,
+      const std::unordered_map<string, json> &body,
       const int max_attempts
   ) {
     httplib::Result result;
@@ -122,11 +105,11 @@ class NetworkService {
 
   httplib::Result Post(
       const string &endpoint,
-      unordered_map<string, json> body
+      std::unordered_map<string, json> body
   ) {
     auto api = options_.api.value_or(kDefaultApi);
 
-    Client client(api);
+    httplib::Client client(api);
     client.set_compress(endpoint == kEndpointLogEvent);
 
     body["statsigMetadata"] = GetStatsigMetadata();

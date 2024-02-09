@@ -2,14 +2,15 @@
 
 #include <chrono>
 
-using namespace std;
+namespace statsig {
+
 using namespace std::chrono;
 
-namespace statsig {
 class Time {
  public:
   static long now() {
     return duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
   }
 };
+
 }

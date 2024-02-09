@@ -21,7 +21,7 @@ class StableID {
   }
 
  private:
-  optional<string> stable_id_;
+  std::optional<std::string> stable_id_;
 };
 
 }

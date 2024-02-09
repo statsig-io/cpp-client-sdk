@@ -11,10 +11,10 @@ struct StatsigEventInternal {
   string event_name;
   long time{};
   StatsigUser user;
-  optional<string> string_value;
-  optional<double> double_value;
-  optional<unordered_map<string, string>> metadata;
-  optional<vector<unordered_map<string, string>>> secondary_exposures;
+  std::optional<string> string_value;
+  std::optional<double> double_value;
+  std::optional<std::unordered_map<string, string>> metadata;
+  std::optional<std::vector<std::unordered_map<string, string>>> secondary_exposures;
   bool stop{};
 };
 
@@ -61,9 +61,9 @@ template<typename T>
 StatsigEventInternal MakeExposureEvent(
     string event_name,
     const StatsigUser &user,
-    optional<T> evaluation,
-    const unordered_map<string, string> &metadata,
-    const optional<vector<SecondaryExposure>> &secondary_exposures = nullopt
+    std::optional<T> evaluation,
+    const std::unordered_map<string, string> &metadata,
+    const std::optional<std::vector<SecondaryExposure>> &secondary_exposures = std::nullopt
 ) {
   StatsigEventInternal result;
 
@@ -135,7 +135,7 @@ StatsigEventInternal MakeLayerExposure(
 
   auto exposures = UNWRAP(evaluation, undelegated_secondary_exposures);
 
-  optional<string> allocated;
+  std::optional<string> allocated;
   if (is_explicit) {
     allocated = UNWRAP(evaluation, allocated_experiment_name);
     exposures = UNWRAP(evaluation, secondary_exposures);

@@ -2,26 +2,25 @@
 
 #include <utility>
 
-using namespace std;
-using OptStringMap = optional<unordered_map<string, string>>;
-
 namespace statsig {
 
-struct StatsigEvent {
-  string event_name;
-  optional<long> time;
-  optional<string> string_value;
-  optional<double> double_value;
-  OptStringMap metadata;
+typedef std::unordered_map<std::string, std::string> str_map;
 
-  StatsigEvent(const string &event_name) {
+struct StatsigEvent {
+  std::string event_name;
+  std::optional<long> time;
+  std::optional<std::string> string_value;
+  std::optional<double> double_value;
+  std::optional<str_map> metadata;
+
+  StatsigEvent(const std::string &event_name) {
     this->event_name = event_name;
   }
 
   StatsigEvent(
-      const string &event_name,
-      const optional<double> &value,
-      const OptStringMap &metadata = nullopt
+      const std::string &event_name,
+      const std::optional<double> &value,
+      const std::optional<str_map> &metadata = std::nullopt
   ) {
     this->event_name = event_name;
     this->double_value = value;
@@ -29,9 +28,9 @@ struct StatsigEvent {
   }
 
   StatsigEvent(
-      const string &event_name,
-      const optional<string> &value,
-      const OptStringMap &metadata = nullopt
+      const std::string &event_name,
+      const std::optional<std::string> &value,
+      const std::optional<str_map> &metadata = std::nullopt
   ) {
     this->event_name = event_name;
     this->string_value = value;
@@ -39,8 +38,8 @@ struct StatsigEvent {
   }
 
   StatsigEvent(
-      const string &event_name,
-      const unordered_map<string, string> &metadata
+      const std::string &event_name,
+      const std::unordered_map<std::string, std::string> &metadata
   ) {
     this->event_name = event_name;
     this->metadata = metadata;

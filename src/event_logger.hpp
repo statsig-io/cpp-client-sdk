@@ -1,7 +1,5 @@
 #pragma once
 
-#include <shared_mutex>
-
 #include "statsig_event_internal.hpp"
 #include "macros.hpp"
 
@@ -10,7 +8,8 @@ namespace statsig {
 class EventLogger {
  public:
   explicit EventLogger(
-      StatsigOptions &options, NetworkService &network
+      StatsigOptions &options,
+      NetworkService &network
   ) : options_(options), network_(network) {}
 
   void Enqueue(const StatsigEventInternal &event) {
@@ -37,7 +36,7 @@ class EventLogger {
   StatsigOptions &options_;
   NetworkService &network_;
   std::shared_mutex rw_lock_;
-  vector<StatsigEventInternal> events_;
+  std::vector<StatsigEventInternal> events_;
 };
 
 }

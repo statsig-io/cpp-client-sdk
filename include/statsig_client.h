@@ -11,9 +11,9 @@ class StatsigClient {
   static StatsigClient &Shared();
 
   void Initialize(
-      const string &sdk_key,
-      const optional<StatsigUser> &user = nullopt,
-      const optional<StatsigOptions> &options = nullopt
+      const std::string &sdk_key,
+      const std::optional<StatsigUser> &user = std::nullopt,
+      const std::optional<StatsigOptions> &options = std::nullopt
   );
 
   void Shutdown();
@@ -22,18 +22,18 @@ class StatsigClient {
 
   void LogEvent(const StatsigEvent &event);
 
-  bool CheckGate(const string &gate_name);
+  bool CheckGate(const std::string &gate_name);
 
-  FeatureGate GetFeatureGate(const string &gate_name);
+  FeatureGate GetFeatureGate(const std::string &gate_name);
 
-  DynamicConfig GetDynamicConfig(const string &config_name);
+  DynamicConfig GetDynamicConfig(const std::string &config_name);
 
-  Experiment GetExperiment(const string &experiment_name);
+  Experiment GetExperiment(const std::string &experiment_name);
 
-  Layer GetLayer(const string &layer_name);
+  Layer GetLayer(const std::string &layer_name);
 
  private:
-  unique_ptr<StatsigContext> context_;
+  std::unique_ptr<StatsigContext> context_;
 
   void SetValuesFromNetwork();
   bool EnsureInitialized(const char *caller);

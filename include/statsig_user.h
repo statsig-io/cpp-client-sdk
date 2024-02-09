@@ -3,22 +3,23 @@
 #include <string>
 #include <unordered_map>
 
-using namespace std;
-
 namespace statsig {
 
-struct StatsigUser {
-  string user_id;
-  unordered_map<string, string> custom_ids;
+typedef std::optional<std::string> opt_string;
+typedef std::unordered_map<std::string, std::string> str_map;
 
-  optional<string> email;
-  optional<string> ip;
-  optional<string> user_agent;
-  optional<string> country;
-  optional<string> locale;
-  optional<string> app_version;
-  optional<unordered_map<string, string>> custom;
-  optional<unordered_map<string, string>> private_attributes;
+struct StatsigUser {
+  std::string user_id;
+  str_map custom_ids;
+
+  opt_string email;
+  opt_string ip;
+  opt_string user_agent;
+  opt_string country;
+  opt_string locale;
+  opt_string app_version;
+  std::optional<str_map> custom;
+  std::optional<str_map> private_attributes;
 };
 
 }

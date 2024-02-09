@@ -8,16 +8,14 @@
 #include "statsig_user.h"
 #include "error_boundary.hpp"
 
-using namespace std;
-
 namespace statsig {
 
 class StatsigContext {
  public:
   explicit StatsigContext(
       string sdk_key,
-      const optional<StatsigUser> &user,
-      const optional<StatsigOptions> &options
+      const std::optional<StatsigUser> &user,
+      const std::optional<StatsigOptions> &options
   ) : sdk_key(std::move(sdk_key)),
       user(user.value_or(StatsigUser())),
       options(options.value_or(StatsigOptions())),

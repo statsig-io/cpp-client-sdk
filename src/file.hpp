@@ -3,11 +3,12 @@
 #include <iostream>
 #include <filesystem>
 
-namespace fs = std::filesystem;
+namespace statsig {
 
+namespace fs = std::filesystem;
 using namespace statsig::constants;
 
-namespace statsig {
+using string = std::string;
 
 class File {
  public:
@@ -16,21 +17,21 @@ class File {
 
     auto path = fs::path(kCacheDirectory) / fs::path(key);
 
-    ofstream file(path);
+    std::ofstream file(path);
     file << content;
     file.close();
   }
 
-  static optional<string> ReadFromCache(const string &key) {
+  static std::optional<string> ReadFromCache(const string &key) {
     EnsureCacheDirectoryExists();
 
     auto path = fs::path(kCacheDirectory) / fs::path(key);
 
     if (!fs::exists(path)) {
-      return nullopt;
+      return std::nullopt;
     }
 
-    ifstream file(path);
+    std::ifstream file(path);
     string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
     file.close();
 
@@ -38,7 +39,7 @@ class File {
   }
 
   static void RunCacheEviction() {
-    vector<fs::path> paths;
+    std::vector<fs::path> paths;
 
     for (const auto &entry : fs::directory_iterator(kCacheDirectory)) {
       if (!entry.is_regular_file()) {

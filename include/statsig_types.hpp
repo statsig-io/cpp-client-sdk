@@ -1,36 +1,36 @@
 #pragma once
 
-#include <nlohmann/json.hpp>
-#include <utility>
-
-using namespace nlohmann;
-using namespace std;
-using JsonObject = unordered_map<string, json>;
-
 namespace statsig {
+
+typedef std::unordered_map<std::string, nlohmann::json> json_obj;
 
 template<typename T>
 class EvaluatedSpec {
   friend class StatsigClient;
 
  public:
-  string GetName() {
+  std::string GetName() {
     return name_;
   }
 
-  string GetRuleId() {
+  std::string GetRuleId() {
     return rule_id_;
   }
 
-  string GetEvaluationReason() {
+  std::string GetEvaluationReason() {
     return reason_;
   }
 
  protected:
-  EvaluatedSpec(std::string name, std::string rule_id, std::string reason, T value)
-      : name_(std::move(name)),
-        rule_id_(std::move(rule_id)),
-        reason_(std::move(reason)),
+  EvaluatedSpec(
+      const std::string &name,
+      const std::string &rule_id,
+      const std::string &reason,
+      const T &value
+  )
+      : name_(name),
+        rule_id_(rule_id),
+        reason_(reason),
         value_(value) {}
 
   T value_;
@@ -49,48 +49,49 @@ class FeatureGate : public EvaluatedSpec<bool> {
   using EvaluatedSpec<bool>::EvaluatedSpec;
 };
 
-class DynamicConfig : EvaluatedSpec<JsonObject> {
+class DynamicConfig : EvaluatedSpec<json_obj> {
  public:
-  JsonObject GetValue() {
+  json_obj GetValue() {
     return value_;
   }
 
  protected:
-  using EvaluatedSpec<JsonObject>::EvaluatedSpec;
+  using EvaluatedSpec<json_obj>::EvaluatedSpec;
 };
 
-class Experiment : EvaluatedSpec<JsonObject> {
+class Experiment : EvaluatedSpec<json_obj> {
  public:
-  JsonObject GetValue() {
+  json_obj GetValue() {
     return value_;
   }
 
  protected:
-  using EvaluatedSpec<JsonObject>::EvaluatedSpec;
+  using EvaluatedSpec<json_obj>::EvaluatedSpec;
 };
 
-class Layer : EvaluatedSpec<JsonObject> {
+class Layer : EvaluatedSpec<json_obj> {
   friend class StatsigClient;
 
  public:
-  json GetValue(const string &parameter_name) {
+  nlohmann::json GetValue(const std::string &parameter_name) {
     log_param_exposure_(parameter_name);
     return value_[parameter_name];
   }
 
  protected:
   Layer(
-      string name,
-      string rule_id,
-      string reason,
-      JsonObject value,
-      function<void(const std::string &)> log_param_exposure)
-      : EvaluatedSpec<JsonObject>(name, rule_id, reason, value), log_param_exposure_(log_param_exposure) {}
+      const std::string &name,
+      const std::string &rule_id,
+      const std::string &reason,
+      const json_obj &value,
+      const std::function<void(const std::string &)> &log_param_exposure)
+      : EvaluatedSpec<json_obj>(name, rule_id, reason, value),
+        log_param_exposure_(log_param_exposure) {}
 
-  using EvaluatedSpec<JsonObject>::EvaluatedSpec;
+  using EvaluatedSpec<json_obj>::EvaluatedSpec;
 
  private:
-  function<void(const std::string &)> log_param_exposure_;
+  std::function<void(const std::string &)> log_param_exposure_;
 
 };
 

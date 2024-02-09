@@ -3,18 +3,17 @@
 #include <string>
 #include <nlohmann/json.hpp>
 
-using json = nlohmann::json;
-
 namespace statsig::data {
 
-using SecondaryExposure = unordered_map<string, string>;
+using json = nlohmann::json;
+typedef std::unordered_map<std::string, std::string> SecondaryExposure;
 
 template<typename T>
 struct Evaluation {
-  string name;
-  string rule_id;
+  std::string name;
+  std::string rule_id;
   T value{};
-  vector<SecondaryExposure> secondary_exposures;
+  std::vector<SecondaryExposure> secondary_exposures;
 };
 
 template<typename T>
@@ -28,7 +27,7 @@ void evaluation_from_json(const json &j, Evaluation<T> &e) {
 // end Evaluation
 
 struct GateEvaluation : Evaluation<bool> {
-  optional<string> id_type;
+  std::optional<std::string> id_type;
 };
 
 void to_json(json &j, const GateEvaluation &e) {
@@ -43,16 +42,16 @@ void from_json(const json &j, GateEvaluation &e) {
   evaluation_from_json<bool>(j, e);
 
   if (j.contains("id_type")) {
-    e.id_type = j["id_type"].get<string>();
+    e.id_type = j["id_type"].get<std::string>();
   }
 }
 
 // end GateEvaluation
 
-using Map = unordered_map<string, json>;
+typedef std::unordered_map<std::string, json> Map;
 struct ConfigEvaluation : Evaluation<Map> {
-  string id_type;
-  optional<string> group_name;
+  std::string id_type;
+  std::optional<std::string> group_name;
   bool is_device_based = false;
   bool is_user_in_experiment = false;
   bool is_experiment_active = false;
@@ -74,9 +73,9 @@ void from_json(const json &j, ConfigEvaluation &e) {
 // end ConfigEvaluation
 
 struct LayerEvaluation : ConfigEvaluation {
-  optional<string> allocated_experiment_name;
-  vector<string> explicit_parameters;
-  vector<SecondaryExposure> undelegated_secondary_exposures;
+  std::optional<std::string> allocated_experiment_name;
+  std::vector<std::string> explicit_parameters;
+  std::vector<SecondaryExposure> undelegated_secondary_exposures;
 };
 
 void to_json(json &j, const LayerEvaluation &e) {
@@ -93,18 +92,18 @@ void from_json(const json &j, LayerEvaluation &e) {
   j.at("undelegated_secondary_exposures").get_to(e.undelegated_secondary_exposures);
 
   if (j.contains("allocated_experiment_name")) {
-    e.allocated_experiment_name = j["allocated_experiment_name"].get<string>();
+    e.allocated_experiment_name = j["allocated_experiment_name"].get<std::string>();
   }
 }
 
 // end LayerEvaluation
 
 struct InitializeResponse {
-  optional<string> generator;
+  std::optional<std::string> generator;
   long time;
-  unordered_map<string, GateEvaluation> feature_gates;
-  unordered_map<string, ConfigEvaluation> dynamic_configs;
-  unordered_map<string, LayerEvaluation> layer_configs;
+  std::unordered_map<std::string, GateEvaluation> feature_gates;
+  std::unordered_map<std::string, ConfigEvaluation> dynamic_configs;
+  std::unordered_map<std::string, LayerEvaluation> layer_configs;
 };
 
 void to_json(json &j, const InitializeResponse &res) {
@@ -127,7 +126,7 @@ void from_json(const json &j, InitializeResponse &res) {
   j.at("layer_configs").get_to(res.layer_configs);
 
   if (j.contains("generator")) {
-    res.generator = j["generator"].get<string>();
+    res.generator = j["generator"].get<std::string>();
   }
 }
 
