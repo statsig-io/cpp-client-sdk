@@ -12,6 +12,7 @@
 #include "uuid.hpp"
 #include "statsig_event_internal.hpp"
 #include "stable_id.hpp"
+#include "error_boundary.hpp"
 
 using namespace httplib;
 using namespace std;
@@ -22,6 +23,7 @@ using namespace nlohmann;
 namespace statsig {
 
 template<typename T>
+
 struct NetworkResult {
   T response;
   string raw;
@@ -30,27 +32,24 @@ struct NetworkResult {
       : response(std::move(response)), raw(std::move(raw)) {}
 };
 
+using FetchValuesResult = optional<NetworkResult<InitializeResponse>>;
+
 class NetworkService {
  public:
   explicit NetworkService(
-      string &sdk_key, StatsigOptions &options) : sdk_key_(sdk_key), options_(options), session_id_(UUID::v4()) {}
+      string &sdk_key,
+      StatsigOptions &options,
+      ErrorBoundary &err_boundary
+  ) : sdk_key_(sdk_key), options_(options), err_boundary_(err_boundary), session_id_(UUID::v4()) {}
 
-  optional<NetworkResult<InitializeResponse>> FetchValues(StatsigUser &user) {
-    auto response = PostWithRetry(
-        kEndpointInitialize,
-        {
-            {"hash", "djb2"},
-            {"user", user}
-        },
-        3
-    );
+  FetchValuesResult FetchValues(StatsigUser &user) {
+    FetchValuesResult result;
 
-    if (response->status != 200) {
-      return nullopt;
-    }
+    err_boundary_.Capture(__func__, [this, &result, &user]() {
+      result = FetchValuesImpl(user);
+    });
 
-    auto actual = json::parse(response->body).template get<data::InitializeResponse>();
-    return NetworkResult(actual, response->body);
+    return result;
   }
 
   void SendEvents(const vector<StatsigEventInternal> &events) {
@@ -62,6 +61,7 @@ class NetworkService {
  private:
   string &sdk_key_;
   StatsigOptions &options_;
+  ErrorBoundary &err_boundary_;
   string session_id_;
   StableID stable_id_;
 
@@ -81,6 +81,26 @@ class NetworkService {
         {"sdkVersion", kSdkVersion},
         {"sessionID", session_id_},
         {"stableID", stable_id_.Get()}};
+  }
+
+  FetchValuesResult FetchValuesImpl(StatsigUser &user) {
+    auto response = PostWithRetry(
+        kEndpointInitialize,
+        {
+            {"hash", "djb2"},
+            {"user", user}
+        },
+        kInitializeRetryCount
+    );
+
+    if (response->status != 200) {
+      return nullopt;
+    }
+
+    auto initialize_res = json::parse(response->body)
+        .template get<data::InitializeResponse>();
+
+    return NetworkResult(initialize_res, response->body);
   }
 
   httplib::Result PostWithRetry(

@@ -3,6 +3,8 @@
 #include <utility>
 #include "statsig_event.h"
 
+#define EB_CAPTURE(task) context_->err_boundary.Capture(__func__, (task))
+
 namespace statsig {
 
 StatsigClient &StatsigClient::Shared() {
@@ -24,7 +26,9 @@ void StatsigClient::Shutdown() {
     return;
   }
 
-  context_->logger.Shutdown();
+  EB_CAPTURE(([this]() {
+    context_->logger.Shutdown();
+  }));
 }
 
 void StatsigClient::UpdateUser(const StatsigUser &user) {
@@ -40,7 +44,9 @@ void StatsigClient::LogEvent(const StatsigEvent &event) {
     return;
   }
 
-  context_->logger.Enqueue(InternalizeEvent(event, context_->user));
+  EB_CAPTURE(([this, &event]() {
+    context_->logger.Enqueue(InternalizeEvent(event, context_->user));
+  }));
 }
 
 bool StatsigClient::CheckGate(const std::string &gate_name) {
@@ -53,68 +59,85 @@ bool StatsigClient::CheckGate(const std::string &gate_name) {
 }
 
 FeatureGate StatsigClient::GetFeatureGate(const string &gate_name) {
+  FeatureGate result(gate_name, "", "Uninitialized", false);
+
   if (!EnsureInitialized(__func__)) {
-    return {gate_name, "", "Uninitialized", false};
+    return result;
   }
 
-  auto gate = context_->store.GetGate(gate_name);
-  context_->logger.Enqueue(MakeGateExposure(gate_name, context_->user, gate));
+  EB_CAPTURE(([this, &gate_name, &result]() {
+    auto gate = context_->store.GetGate(gate_name);
+    context_->logger.Enqueue(MakeGateExposure(gate_name, context_->user, gate));
 
-  return {gate_name, "", "", UNWRAP(gate.evaluation, value)};
+    result = {gate_name, "", "", UNWRAP(gate.evaluation, value)};
+  }));
+
+  return result;
 }
 
 DynamicConfig StatsigClient::GetDynamicConfig(const std::string &config_name) {
+  DynamicConfig result = {config_name, "", "Uninitialized", std::unordered_map<string, json>()};
   if (!EnsureInitialized(__func__)) {
-    return {config_name, "", "Uninitialized", std::unordered_map<string, json>()};
+    return result;
   }
 
-  auto config = context_->store.GetConfig(config_name);
-  context_->logger.Enqueue(MakeConfigExposure(config_name, context_->user, config));
+  EB_CAPTURE(([this, &config_name, &result]() {
+    auto config = context_->store.GetConfig(config_name);
+    context_->logger.Enqueue(MakeConfigExposure(config_name, context_->user, config));
+    result = {config_name, "", "", UNWRAP(config.evaluation, value)};
+  }));
 
-  return {config_name, "", "", UNWRAP(config.evaluation, value)};
+  return result;
 }
 
 Experiment StatsigClient::GetExperiment(const std::string &experiment_name) {
+  Experiment result(experiment_name, "", "Uninitialized", std::unordered_map<string, json>());
+
   if (!EnsureInitialized(__func__)) {
-    return {experiment_name, "", "Uninitialized", std::unordered_map<string, json>()};
+    return result;
   }
 
-  auto experiment = context_->store.GetConfig(experiment_name);
-  context_->logger.Enqueue(MakeConfigExposure(experiment_name, context_->user, experiment));
+  EB_CAPTURE(([this, &experiment_name, &result]() {
+    auto experiment = context_->store.GetConfig(experiment_name);
+    context_->logger.Enqueue(MakeConfigExposure(experiment_name, context_->user, experiment));
 
-  return {experiment_name, "", "", UNWRAP(experiment.evaluation, value)};
+    result = {experiment_name, "", "", UNWRAP(experiment.evaluation, value)};
+  }));
+
+  return result;
 }
 
 Layer StatsigClient::GetLayer(const std::string &layer_name) {
+  Layer result(layer_name, "", "", std::unordered_map<string, json>());
+
   if (!EnsureInitialized(__func__)) {
-    return {layer_name, "", "", std::unordered_map<string, json>()};
+    return result;
   }
 
-  if (layer_name == "test_layer_with_holdout") {
-    auto _ = 1;
-  }
+  EB_CAPTURE(([this, &layer_name, &result]() {
+    auto logger = &context_->logger;
+    auto user = context_->user;
+    auto layer = context_->store.GetLayer(layer_name);
 
-  auto logger = &context_->logger;
+    auto log_exposure = [layer_name, layer, user, logger](const std::string &param_name) {
+      auto expo = MakeLayerExposure(layer_name, param_name, user, layer);
+      logger->Enqueue(expo);
+    };
 
-  auto user = context_->user;
-  auto layer = context_->store.GetLayer(layer_name);
+    result = Layer{layer_name, "", "", UNWRAP(layer.evaluation, value), log_exposure};
+  }));
 
-  auto log_exposure = [layer_name, layer, user, logger](const std::string &param_name) {
-    auto expo = MakeLayerExposure(layer_name, param_name, user, layer);
-    expo.stop = layer_name == "test_layer";
-    logger->Enqueue(expo);
-  };
-
-  return {layer_name, "", "", UNWRAP(layer.evaluation, value), log_exposure};
-
+  return result;
 }
 
 void StatsigClient::SwitchUser(const statsig::StatsigUser &user) {
-  context_->user = user;
-  auto cache_key = MakeCacheKey(context_->sdk_key, context_->user);
+  EB_CAPTURE(([this, &user]() {
+    context_->user = user;
+    auto cache_key = MakeCacheKey(context_->sdk_key, context_->user);
 
-  context_->store.LoadCacheValues(cache_key);
-  SetValuesFromNetwork();
+    context_->store.LoadCacheValues(cache_key);
+    SetValuesFromNetwork();
+  }));
 }
 
 void StatsigClient::SetValuesFromNetwork() {

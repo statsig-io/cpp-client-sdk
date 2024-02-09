@@ -38,12 +38,6 @@ void to_json(json &j, const StatsigEventInternal &event) {
   } else if (event.double_value.has_value()) {
     j["value"] = event.double_value.value();
   }
-
-  // @nocommit - debug
-  if (event.stop) {
-    auto a = j.dump();
-    auto _ = a;
-  }
 }
 
 void from_json(const json &j, StatsigEventInternal &event) {
