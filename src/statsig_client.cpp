@@ -2,6 +2,7 @@
 
 #include <utility>
 #include "statsig_event.hpp"
+#include "statsig_context.hpp"
 
 #define EB_CAPTURE(task) context_->err_boundary.Capture(__func__, (task))
 
@@ -17,7 +18,7 @@ void StatsigClient::Initialize(
     const optional<StatsigUser> &user,
     const optional<StatsigOptions> &options
 ) {
-  context_.emplace(sdk_key, user, options);
+  context_ = std::make_unique<StatsigContext>(sdk_key, user, options);
   SwitchUser(context_->user);
 }
 
@@ -149,7 +150,7 @@ void StatsigClient::SetValuesFromNetwork() {
 }
 
 bool StatsigClient::EnsureInitialized(const char *caller) {
-  if (context_.has_value()) {
+  if (context_) {
     return true;
   }
 

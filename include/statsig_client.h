@@ -1,13 +1,10 @@
 #pragma once
 
 #include "statsig.h"
-#include "statsig_options.h"
-#include "statsig_types.hpp"
-#include "statsig_event.hpp"
-
-#include "../src/statsig_context.hpp"
 
 namespace statsig {
+
+class StatsigContext;
 
 class StatsigClient {
  public:
@@ -36,7 +33,7 @@ class StatsigClient {
   Layer GetLayer(const string &layer_name);
 
  private:
-  optional<StatsigContext> context_;
+  unique_ptr<StatsigContext> context_;
 
   void SetValuesFromNetwork();
   bool EnsureInitialized(const char *caller);
