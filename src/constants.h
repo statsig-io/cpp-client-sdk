@@ -16,5 +16,7 @@ const char *kDefaultApi = "https://statsigapi.net";
 
 // Caching
 const char *kCacheDirectory = "/tmp/statsig_cpp_client";
+const char *kStableIdKey = "stable_id";
+const uint kMaxCacheEntriesCount = 10;
 
 }

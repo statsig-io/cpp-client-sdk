@@ -15,6 +15,7 @@ namespace statsig {
 
 enum class ValueSource {
   Uninitialized,
+  Loading,
   Cache,
   Network,
   Bootstrap
@@ -41,6 +42,7 @@ class EvaluationStore {
     WRITE_LOCK(rw_lock_);
 
     values_ = nullopt;
+    source_info_.source = ValueSource::Loading;
 
     auto cached = File::ReadFromCache(cache_key);
     if (!cached.has_value()) {
@@ -58,10 +60,11 @@ class EvaluationStore {
       const string &cache_key
   ) {
     WRITE_LOCK(rw_lock_);
-    source_info_.source = ValueSource::Network;
+    source_info_.source = source;
     values_ = std::move(values);
 
     File::WriteToCache(cache_key, raw_values);
+    File::RunCacheEviction();
   }
 
   DetailedEvaluation<GateEvaluation> GetGate(const std::string &gate_name) {
