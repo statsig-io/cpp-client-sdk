@@ -9,6 +9,8 @@ class StatsigContext;
 class StatsigClient {
  public:
   static StatsigClient &Shared();
+  StatsigClient();
+  ~StatsigClient();
 
   void Initialize(
       const std::string &sdk_key,
@@ -33,7 +35,7 @@ class StatsigClient {
   Layer GetLayer(const std::string &layer_name);
 
  private:
-  std::unique_ptr<StatsigContext> context_;
+  StatsigContext *context_;
 
   bool EnsureInitialized(const char *caller);
   void SwitchUser(const StatsigUser &user);

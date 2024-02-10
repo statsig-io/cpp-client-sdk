@@ -1,7 +1,8 @@
+#include "statsig_context.hpp"
+
 #include "statsig_client.h"
 
 #include "statsig_event.hpp"
-#include "statsig_context.hpp"
 #include "evaluation_details_internal.hpp"
 
 #define INIT_GUARD(result) do { if (!EnsureInitialized(__func__)) { return result; }} while(0)
@@ -15,12 +16,21 @@ StatsigClient &StatsigClient::Shared() {
   return inst;
 }
 
+StatsigClient::StatsigClient() {
+  context_ = nullptr;
+}
+
+StatsigClient::~StatsigClient() {
+  delete context_;
+  context_ = nullptr;
+}
+
 void StatsigClient::Initialize(
     const string &sdk_key,
     const std::optional<StatsigUser> &user,
     const std::optional<StatsigOptions> &options
 ) {
-  context_ = std::make_unique<StatsigContext>(sdk_key, user, options);
+  context_ = new StatsigContext(sdk_key, user, options);
   SwitchUser(context_->user);
 }
 
@@ -29,6 +39,7 @@ void StatsigClient::Shutdown() {
 
   EB(([this]() {
     context_->logger.Shutdown();
+    delete context_;
     context_ = nullptr;
   }));
 }
