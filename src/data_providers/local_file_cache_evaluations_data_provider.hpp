@@ -6,8 +6,6 @@ namespace statsig::evaluations_data_providers {
 
 class LocalFileCacheEvaluationsDataProvider : public EvaluationsDataProvider {
  public:
-  explicit LocalFileCacheEvaluationsDataProvider(bool is_terminal = false) : is_terminal_(is_terminal) {}
-
   std::optional<std::string> GetEvaluationsData(
       const std::string &sdk_key,
       const StatsigUser &user
@@ -29,13 +27,6 @@ class LocalFileCacheEvaluationsDataProvider : public EvaluationsDataProvider {
   ValueSource GetSource() override {
     return ValueSource::Cache;
   }
-
-  bool IsTerminal() override {
-    return is_terminal_;
-  }
-
- private:
-  bool is_terminal_;
 };
 
 }

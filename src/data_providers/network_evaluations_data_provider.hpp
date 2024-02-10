@@ -20,6 +20,10 @@ class NetworkEvaluationsDataProvider : public EvaluationsDataProvider {
     return ValueSource::Network;
   }
 
+  bool IsTerminal() override {
+    return true;
+  }
+
  private:
   NetworkService &network_;
 };
