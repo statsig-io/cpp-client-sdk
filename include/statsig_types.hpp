@@ -1,6 +1,7 @@
 #pragma once
 
-#include <utility>
+#include <unordered_map>
+#include <nlohmann/json.hpp>
 
 #include "evaluation_details.h"
 
@@ -10,8 +11,6 @@ typedef std::unordered_map<std::string, nlohmann::json> JsonObj;
 
 template<typename T>
 class EvaluatedSpec {
-  friend class StatsigClient;
-
  public:
   std::string GetName() {
     return name_;
@@ -25,7 +24,6 @@ class EvaluatedSpec {
     return evaluation_details_;
   }
 
- protected:
   EvaluatedSpec(
       std::string name,
       std::string rule_id,
@@ -54,7 +52,6 @@ class FeatureGate : public EvaluatedSpec<bool> {
     return value_;
   }
 
- protected:
   using EvaluatedSpec<bool>::EvaluatedSpec;
 };
 
@@ -64,7 +61,6 @@ class DynamicConfig : public EvaluatedSpec<JsonObj> {
     return value_;
   }
 
- protected:
   using EvaluatedSpec<JsonObj>::EvaluatedSpec;
 };
 
@@ -74,7 +70,6 @@ class Experiment : public EvaluatedSpec<JsonObj> {
     return value_;
   }
 
- protected:
   using EvaluatedSpec<JsonObj>::EvaluatedSpec;
 };
 
@@ -87,7 +82,6 @@ class Layer : public EvaluatedSpec<JsonObj> {
     return value_[parameter_name];
   }
 
- protected:
   Layer(
       const std::string &name,
       const std::string &rule_id,
