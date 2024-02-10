@@ -1,5 +1,7 @@
 #pragma once
 
+#include <future>
+
 #include "statsig.h"
 
 namespace statsig {
@@ -12,15 +14,15 @@ class StatsigClient {
   StatsigClient();
   ~StatsigClient();
 
-  void Initialize(
+  std::future<void> Initialize(
       const std::string &sdk_key,
       const std::optional<StatsigUser> &user = std::nullopt,
       const std::optional<StatsigOptions> &options = std::nullopt
   );
 
-  void Shutdown();
+  std::future<void> UpdateUser(const StatsigUser &user);
 
-  void UpdateUser(const StatsigUser &user);
+  void Shutdown();
 
   void LogEvent(const StatsigEvent &event);
 

@@ -25,13 +25,27 @@ StatsigClient::~StatsigClient() {
   context_ = nullptr;
 }
 
-void StatsigClient::Initialize(
+std::future<void> StatsigClient::Initialize(
     const string &sdk_key,
     const std::optional<StatsigUser> &user,
     const std::optional<StatsigOptions> &options
 ) {
   context_ = new StatsigContext(sdk_key, user, options);
-  SwitchUser(context_->user);
+  return UpdateUser(context_->user);
+}
+
+std::future<void> StatsigClient::UpdateUser(const StatsigUser &user) {
+  if (!EnsureInitialized(__func__)) {
+    // Todo: Promise.resolve();
+    std::promise<void> promise;
+    std::future<void> future = promise.get_future();
+    promise.set_value();
+    return future;
+  }
+
+  return std::async(std::launch::async, [this, &user]() {
+    SwitchUser(user);
+  });
 }
 
 void StatsigClient::Shutdown() {
@@ -42,11 +56,6 @@ void StatsigClient::Shutdown() {
     delete context_;
     context_ = nullptr;
   }));
-}
-
-void StatsigClient::UpdateUser(const StatsigUser &user) {
-  INIT_GUARD();
-  SwitchUser(user);
 }
 
 void StatsigClient::LogEvent(const StatsigEvent &event) {
@@ -183,6 +192,7 @@ void StatsigClient::SwitchUser(const statsig::StatsigUser &user) {
       EB_WITH_TAG("data_provider_get", ([this, &user, &provider, &result]() {
         result = provider->GetEvaluationsData(context_->sdk_key, user);
       }));
+
       if (!result) {
         continue;
       }
