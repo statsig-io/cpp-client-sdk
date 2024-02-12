@@ -22,7 +22,7 @@ void SessionDelayedNetworkInit() {
 
   StatsigOptions opts;
   opts.providers = {
-      new LocalFileCacheEvaluationsDataProvider()
+      new statsig::evaluations_data_providers::LocalFileCacheEvaluationsDataProvider()
   };
 
   client.Initialize("client-rfLvYGag3eyU0jYW5zcIJTQip7GXxSrhOFN69IGMjvq", user, opts);
