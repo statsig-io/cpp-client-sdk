@@ -7,7 +7,7 @@
 
 #include "statsig_user.h"
 #include "statsig_types.h"
-#include "statsig_event.hpp"
+#include "statsig_event.h"
 #include "evaluations_data_provider.h"
 #include "statsig_options.h"
 #include "evaluation_details.h"

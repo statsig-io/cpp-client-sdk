@@ -2,7 +2,7 @@
 
 #include "statsig_client.h"
 
-#include "statsig_event.hpp"
+#include "statsig_event.h"
 #include "evaluation_details_internal.hpp"
 
 #define INIT_GUARD(result) do { if (!EnsureInitialized(__func__)) { return result; }} while(0)
