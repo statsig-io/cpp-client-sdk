@@ -6,7 +6,7 @@
 #include "data_providers/network_evaluations_data_provider.h"
 
 #include "statsig_user.h"
-#include "statsig_types.hpp"
+#include "statsig_types.h"
 #include "statsig_event.hpp"
 #include "evaluations_data_provider.h"
 #include "statsig_options.h"

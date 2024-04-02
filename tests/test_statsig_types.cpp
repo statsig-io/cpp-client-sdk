@@ -1,6 +1,6 @@
 #include "gtest/gtest.h"
 #include "evaluation_details.h"
-#include "statsig_types.hpp"
+#include "statsig_types.h"
 #include "nlohmann/json.hpp"
 
 using namespace statsig;
