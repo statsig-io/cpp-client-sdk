@@ -81,4 +81,12 @@ string MakeCacheKey(
   return hashing::DJB2(result);
 }
 
+bool AreUsersEqual(const StatsigUser &left, const StatsigUser &right) {
+  if (left.user_id != right.user_id) {
+    return false;
+  }
+
+  return true;
+}
+
 }

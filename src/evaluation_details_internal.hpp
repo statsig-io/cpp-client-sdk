@@ -1,6 +1,6 @@
 #pragma once
 
-#include "evaluation_details.h"
+#include "statsig/evaluation_details.h"
 
 namespace statsig::evaluation_details {
 

@@ -4,64 +4,61 @@
 #include <chrono>
 
 #include "gtest/gtest.h"
-#include "statsig.h"
+#include "statsig/statsig.h"
 
 using namespace statsig;
 
-class MockEvaluationsDataProvider : public EvaluationsDataProvider {
+class MockEvaluationsDataAdapter : public EvaluationsDataAdapter {
  public:
-  MockEvaluationsDataProvider() : is_blocked(true), is_terminal(false) {}
+ public:
+  void Attach(
+      const std::string &sdk_key
+  ) override {
+  }
 
-  std::optional<std::string> GetEvaluationsData(
-      const std::string &sdk_key,
+  std::optional<DataAdapterResult> GetDataSync(
       const StatsigUser &user
   ) override {
-    while (is_blocked) {
-      sleep(10);
-    }
     return std::nullopt;
   }
 
-  void SetEvaluationsData(
-      const std::string &sdk_key,
+  void GetDataAsync(
+      const StatsigUser &user,
+      const std::optional<DataAdapterResult> &current,
+      const std::function<void(std::optional<DataAdapterResult>)> &callback
+  ) override {
+    sleep(5);
+  }
+
+  void SetData(
       const StatsigUser &user,
       const std::string &data
   ) override {
-
+    // TODO: Support Bootstrap
   }
 
-  ValueSource GetSource() override {
-    return ValueSource::Cache;
+  void PrefetchData(
+      const StatsigUser &user,
+      const std::function<void(void)> &callback
+  ) override {
+    // TODO: Support Prefetch
   }
-
-  bool IsTerminal() override {
-    return is_terminal;
-  }
-
-  void Unblock() {
-    is_blocked = false;
-  }
-
-  bool is_terminal{};
-  bool is_blocked{};
 };
 
 TEST(StatsigClientThreadedTest, DoesNotBlock) {
   StatsigClient client;
 
   StatsigOptions opts;
-  opts.providers = {
-      new MockEvaluationsDataProvider()
-  };
+  opts.data_adapter = new MockEvaluationsDataAdapter();
 
   std::promise<void> promise;
   auto future = promise.get_future();
 
   std::thread([&promise, &client, &opts]() {
-    auto _ = client.Initialize("client-test", std::nullopt, opts);
+    client.InitializeAsync("client-test", []() {}, std::nullopt, opts);
     promise.set_value();
   }).detach();
 
-  auto status = future.wait_for(std::chrono::seconds(2));
-  EXPECT_EQ(status, std::future_status::ready) << "Asynchronous task did not complete within the timeout";
+  auto status = future.wait_for(std::chrono::seconds(1));
+  EXPECT_TRUE(status == std::future_status::ready) << "Asynchronous task did not complete within the timeout";
 }

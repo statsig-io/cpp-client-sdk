@@ -1,5 +1,5 @@
 #include "gtest/gtest.h"
-#include "statsig_event.hpp"
+#include "statsig/statsig_event.h"
 
 using namespace statsig;
 

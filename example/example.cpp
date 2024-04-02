@@ -1,4 +1,4 @@
-#include <statsig.h>
+#include <statsig/statsig.h>
 #include <iostream>
 
 using namespace statsig;

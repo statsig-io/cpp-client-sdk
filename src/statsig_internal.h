@@ -3,7 +3,7 @@
 #include <httplib.h>
 #include <nlohmann/json.hpp>
 
-#include "statsig.h"
+#include "statsig/statsig.h"
 
 #include "constants.h"
 #include "time.hpp"

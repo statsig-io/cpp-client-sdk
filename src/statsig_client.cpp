@@ -1,8 +1,10 @@
+#include <utility>
+
 #include "statsig_context.hpp"
 
-#include "statsig_client.h"
+#include "statsig/statsig_client.h"
 
-#include "statsig_event.hpp"
+#include "statsig/statsig_event.h"
 #include "evaluation_details_internal.hpp"
 
 #define INIT_GUARD(result) do { if (!EnsureInitialized(__func__)) { return result; }} while(0)
@@ -25,27 +27,77 @@ StatsigClient::~StatsigClient() {
   context_ = nullptr;
 }
 
-std::future<void> StatsigClient::Initialize(
-    const string &sdk_key,
+void StatsigClient::InitializeSync(
+    const std::string &sdk_key,
     const std::optional<StatsigUser> &user,
-    const std::optional<StatsigOptions> &options
-) {
-  context_ = new StatsigContext(sdk_key, user, options);
-  return UpdateUser(context_->user);
+    const std::optional<StatsigOptions> &options) {
+  EB(([this, &sdk_key, &user, &options]() {
+    context_ = new StatsigContext(sdk_key, user, options);
+    UpdateUserSync(context_->user);
+  }));
 }
 
-std::future<void> StatsigClient::UpdateUser(const StatsigUser &user) {
-  if (!EnsureInitialized(__func__)) {
-    // Todo: Promise.resolve();
-    std::promise<void> promise;
-    std::future<void> future = promise.get_future();
-    promise.set_value();
-    return future;
-  }
+void StatsigClient::InitializeAsync(
+    const std::string &sdk_key,
+    const std::function<void()> &callback,
+    const std::optional<StatsigUser> &user,
+    const std::optional<StatsigOptions> &options) {
+  EB(([this, &sdk_key, &user, &options, &callback]() {
+    context_ = new StatsigContext(sdk_key, user, options);
+    UpdateUserAsync(context_->user, callback);
+  }));
+}
 
-  return std::async(std::launch::async, [this, &user]() {
-    SwitchUser(user);
-  });
+void StatsigClient::UpdateUserSync(const statsig::StatsigUser &user) {
+  EB(([this, &user]() {
+    context_->user = user;
+    context_->store.Reset();
+
+    auto result = context_->data_adapter->GetDataSync(context_->user);
+    context_->store.SetValuesFromDataAdapterResult(result);
+
+    context_->store.Finalize();
+
+    std::thread([this, result]() {
+      context_->data_adapter->GetDataAsync(
+          context_->user,
+          result,
+          [](const std::optional<DataAdapterResult> &result) {
+            // noop
+          }
+      );
+    }).detach();
+  }));
+}
+
+void StatsigClient::UpdateUserAsync(
+    const statsig::StatsigUser &user,
+    const std::function<void()> &callback
+) {
+  EB(([this, &user, &callback]() {
+    context_->user = user;
+    context_->store.Reset();
+
+    auto result = context_->data_adapter->GetDataSync(context_->user);
+    context_->store.SetValuesFromDataAdapterResult(result);
+
+    const auto initiator = context_->user;
+
+    std::thread([this, result, initiator, callback]() {
+      context_->data_adapter->GetDataAsync(
+          context_->user,
+          result,
+          [this, initiator, callback](std::optional<DataAdapterResult> result) {
+            if (AreUsersEqual(initiator, context_->user)) {
+              context_->store.SetValuesFromDataAdapterResult(std::move(result));
+            }
+
+            context_->store.Finalize();
+            callback();
+          }
+      );
+    }).detach();
+  }));
 }
 
 void StatsigClient::Shutdown() {
@@ -179,42 +231,6 @@ Layer StatsigClient::GetLayer(const std::string &layer_name) {
   }));
 
   return result;
-}
-
-void StatsigClient::SwitchUser(const statsig::StatsigUser &user) {
-  EB(([this, &user]() {
-    context_->user = user;
-    context_->store.Reset();
-
-    std::optional<std::string> result;
-
-    for (auto provider : context_->data_providers) {
-      EB_WITH_TAG("data_provider_get", ([this, &user, &provider, &result]() {
-        result = provider->GetEvaluationsData(context_->sdk_key, user);
-      }));
-
-      if (!result) {
-        continue;
-      }
-
-      context_->store.SetValuesFromData(result.value(), provider->GetSource());
-      if (provider->IsTerminal()) {
-        break;
-      }
-    }
-
-    context_->store.Finalize();
-
-    if (!result) {
-      return;
-    }
-
-    for (auto provider : context_->data_providers) {
-      EB_WITH_TAG("data_provider_set", ([this, &user, &provider, &result]() {
-        provider->SetEvaluationsData(context_->sdk_key, user, result.value());
-      }));
-    }
-  }));
 }
 
 bool StatsigClient::EnsureInitialized(const char *caller) {
