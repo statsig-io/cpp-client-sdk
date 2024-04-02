@@ -8,7 +8,7 @@
 
 using namespace statsig;
 
-class MockEvaluationsDataProvider : public EvaluationsDataProvider {
+class MockEvaluationsDataAdapter : public EvaluationsDataAdapter {
  public:
   MockEvaluationsDataProvider() : is_blocked(true), is_terminal(false) {}
 

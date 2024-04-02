@@ -6,13 +6,15 @@
 #include "hashing.hpp"
 #include "macros.hpp"
 #include "file.hpp"
-#include "statsig/evaluations_data_provider.h"
+#include "statsig/evaluations_data_adapter.h"
 #include "evaluation_details_internal.hpp"
+#include "unordered_map_util.hpp"
 
 namespace statsig {
 
 using namespace statsig::data;
 using namespace statsig::hashing;
+using namespace statsig::internal;
 
 template<typename T>
 struct DetailedEvaluation {
@@ -36,6 +38,19 @@ class EvaluationStore {
     }
 
     source_info_ = {ValueSource::NoValues};
+  }
+
+  void SetValuesFromDataAdapterResult(std::optional<DataAdapterResult> result) {
+    if (!result.has_value()) {
+      return;
+    }
+
+    WRITE_LOCK(rw_lock_);
+
+    values_ = json::parse(result->data).template get<InitializeResponse>();
+    source_info_.source = result->source;
+    source_info_.received_at = result->receivedAt;
+    source_info_.lcut = values_->time;
   }
 
   void SetValuesFromData(
@@ -103,11 +118,6 @@ class EvaluationStore {
   std::shared_mutex rw_lock_;
   std::optional<InitializeResponse> values_;
   evaluation_details::SourceInfo source_info_;
-
-  template<typename Key, typename Value>
-  bool MapContains(const std::unordered_map<Key, Value> &map, const Key &key) {
-    return map.find(key) != map.end();
-  }
 };
 
 }

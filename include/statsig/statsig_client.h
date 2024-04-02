@@ -14,13 +14,22 @@ class StatsigClient {
   StatsigClient();
   ~StatsigClient();
 
-  std::future<void> Initialize(
+  void InitializeSync(
       const std::string &sdk_key,
       const std::optional<StatsigUser> &user = std::nullopt,
       const std::optional<StatsigOptions> &options = std::nullopt
   );
 
-  std::future<void> UpdateUser(const StatsigUser &user);
+  void InitializeAsync(
+      const std::string &sdk_key,
+      const std::function<void(void)> &callback,
+      const std::optional<StatsigUser> &user = std::nullopt,
+      const std::optional<StatsigOptions> &options = std::nullopt
+  );
+
+  void UpdateUserSync(const StatsigUser &user);
+
+  void UpdateUserAsync(const StatsigUser &user, const std::function<void(void)> &callback);
 
   void Shutdown();
 
@@ -40,7 +49,6 @@ class StatsigClient {
   StatsigContext *context_;
 
   bool EnsureInitialized(const char *caller);
-  void SwitchUser(const StatsigUser &user);
 };
 
 }
