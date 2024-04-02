@@ -6,7 +6,7 @@
 #include "hashing.hpp"
 #include "macros.hpp"
 #include "file.hpp"
-#include "evaluations_data_provider.h"
+#include "statsig/evaluations_data_provider.h"
 #include "evaluation_details_internal.hpp"
 
 namespace statsig {

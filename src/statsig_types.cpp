@@ -1,9 +1,9 @@
-#include "statsig_types.h"
+#include "statsig/statsig_types.h"
 
 #include <unordered_map>
 #include <nlohmann/json.hpp>
 
-#include "evaluation_details.h"
+#include "statsig/evaluation_details.h"
 
 namespace statsig {
 

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "evaluations_data_provider.h"
+#include "statsig/evaluations_data_provider.h"
 #include "../network_service.hpp"
-#include "statsig_options.h"
+#include "statsig/statsig_options.h"
 
 namespace statsig::evaluations_data_providers {
 

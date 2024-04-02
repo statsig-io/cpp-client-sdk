@@ -1,6 +1,6 @@
 #pragma once
 
-#include "evaluations_data_provider.h"
+#include "statsig/evaluations_data_provider.h"
 
 namespace statsig {
 class NetworkService;

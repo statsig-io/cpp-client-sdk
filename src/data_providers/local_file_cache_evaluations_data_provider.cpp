@@ -1,7 +1,7 @@
 #pragma once
 
-#include "evaluations_data_provider.h"
-#include "data_providers/local_file_cache_evaluations_data_provider.h"
+#include "statsig/evaluations_data_provider.h"
+#include "statsig/data_providers/local_file_cache_evaluations_data_provider.h"
 
 namespace statsig::evaluations_data_providers {
 

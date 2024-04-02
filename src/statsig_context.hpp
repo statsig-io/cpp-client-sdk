@@ -5,7 +5,7 @@
 #include "network_service.hpp"
 #include "event_logger.hpp"
 #include "evaluation_store.hpp"
-#include "statsig_user.h"
+#include "statsig/statsig_user.h"
 #include "error_boundary.hpp"
 #include "data_providers/local_file_cache_evaluations_data_provider.cpp"
 #include "data_providers/network_evaluations_data_provider.cpp"

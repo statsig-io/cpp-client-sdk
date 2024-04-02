@@ -4,7 +4,7 @@
 #include <chrono>
 
 #include "gtest/gtest.h"
-#include "statsig.h"
+#include "statsig/statsig.h"
 
 using namespace statsig;
 
