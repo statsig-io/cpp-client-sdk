@@ -23,7 +23,6 @@ void WriteToCacheFile(const std::string &cache_key, const DataAdapterResult &res
   File::RunCacheEviction();
 }
 
-
 class StatsigEvaluationsDataAdapter : public statsig::EvaluationsDataAdapter {
  public:
   void Attach(
@@ -57,24 +56,22 @@ class StatsigEvaluationsDataAdapter : public statsig::EvaluationsDataAdapter {
       const std::optional<DataAdapterResult> &current,
       const std::function<void(std::optional<DataAdapterResult>)> &callback
   ) override {
-    auto _ = std::async(std::launch::async, [this, &user, &current, &callback]() {
-      const auto cache = current ? current : GetDataSync(user);
-      const auto latest = FetchLatest(user, cache);
-      const auto cache_key = GetCacheKey(user);
+    const auto cache = current ? current : GetDataSync(user);
+    const auto latest = FetchLatest(user, cache);
+    const auto cache_key = GetCacheKey(user);
 
-      if (!latest.has_value()) {
-        callback(std::nullopt);
-        return;
-      }
+    if (!latest.has_value()) {
+      callback(std::nullopt);
+      return;
+    }
 
-      AddToInMemoryCache(cache_key, latest.value());
+    AddToInMemoryCache(cache_key, latest.value());
 
-      if (latest->source == ValueSource::Network) {
-        WriteToCacheFile(cache_key, latest.value());
-      }
+    if (latest->source == ValueSource::Network) {
+      WriteToCacheFile(cache_key, latest.value());
+    }
 
-      callback(latest);
-    });
+    callback(latest);
   }
 
   void SetData(

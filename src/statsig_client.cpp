@@ -49,46 +49,55 @@ void StatsigClient::InitializeAsync(
 }
 
 void StatsigClient::UpdateUserSync(const statsig::StatsigUser &user) {
-  context_->user = user;
-  context_->store.Reset();
+  EB(([this, &user]() {
+    context_->user = user;
+    context_->store.Reset();
 
-  auto result = context_->data_adapter->GetDataSync(context_->user);
-  context_->store.SetValuesFromDataAdapterResult(result);
+    auto result = context_->data_adapter->GetDataSync(context_->user);
+    context_->store.SetValuesFromDataAdapterResult(result);
 
-  context_->store.Finalize();
+    context_->store.Finalize();
 
-  context_->data_adapter->GetDataAsync(
-      context_->user,
-      result,
-      [](const std::optional<DataAdapterResult> &result) {
-        // noop
-      }
-  );
+    std::thread([this, result]() {
+      context_->data_adapter->GetDataAsync(
+          context_->user,
+          result,
+          [](const std::optional<DataAdapterResult> &result) {
+            // noop
+          }
+      );
+    }).detach();
+  }));
 }
 
 void StatsigClient::UpdateUserAsync(
     const statsig::StatsigUser &user,
     const std::function<void()> &callback
 ) {
-  context_->user = user;
-  context_->store.Reset();
+  EB(([this, &user, &callback]() {
+    context_->user = user;
+    context_->store.Reset();
 
-  auto result = context_->data_adapter->GetDataSync(context_->user);
-  context_->store.SetValuesFromDataAdapterResult(result);
+    auto result = context_->data_adapter->GetDataSync(context_->user);
+    context_->store.SetValuesFromDataAdapterResult(result);
 
-  const auto initiator = context_->user;
-  context_->data_adapter->GetDataAsync(
-      context_->user,
-      result,
-      [this, &initiator, &callback](std::optional<DataAdapterResult> result) {
-        if (AreUsersEqual(initiator, context_->user)) {
-          context_->store.SetValuesFromDataAdapterResult(std::move(result));
-        }
+    const auto initiator = context_->user;
 
-        context_->store.Finalize();
-        callback();
-      }
-  );
+    std::thread([this, result, initiator, callback]() {
+      context_->data_adapter->GetDataAsync(
+          context_->user,
+          result,
+          [this, initiator, callback](std::optional<DataAdapterResult> result) {
+            if (AreUsersEqual(initiator, context_->user)) {
+              context_->store.SetValuesFromDataAdapterResult(std::move(result));
+            }
+
+            context_->store.Finalize();
+            callback();
+          }
+      );
+    }).detach();
+  }));
 }
 
 void StatsigClient::Shutdown() {
