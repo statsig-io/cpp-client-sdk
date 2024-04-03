@@ -7,11 +7,11 @@
 #include "statsig/statsig_event.h"
 #include "evaluation_details_internal.hpp"
 
+namespace statsig {
+
 #define INIT_GUARD(result) do { if (!EnsureInitialized(__func__)) { return result; }} while(0)
 #define EB_WITH_TAG(tag, task) context_->err_boundary.Capture((tag), (task))
 #define EB(task) EB_WITH_TAG(__func__, task)
-
-namespace statsig {
 
 StatsigClient &StatsigClient::Shared() {
   static StatsigClient inst;
