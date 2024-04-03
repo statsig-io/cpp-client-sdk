@@ -7,6 +7,8 @@
 
 namespace statsig {
 
+class EvaluationsDataAdapter;
+
 struct StatsigOptions {
   std::optional<std::string> api{};
   std::optional<EvaluationsDataAdapter *> data_adapter;

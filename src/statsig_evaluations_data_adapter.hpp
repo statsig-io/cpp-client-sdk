@@ -20,16 +20,17 @@ std::optional<DataAdapterResult> ReadFromCacheFile(const std::string &cache_key)
 
 void WriteToCacheFile(const std::string &cache_key, const DataAdapterResult &result) {
   File::WriteToCache(cache_key, json(result).dump());
-  File::RunCacheEviction();
+  File::RunCacheEviction(kCachedEvaluationsPrefix);
 }
 
 class StatsigEvaluationsDataAdapter : public statsig::EvaluationsDataAdapter {
  public:
   void Attach(
-      const std::string &sdk_key
+      std::string &sdk_key,
+      StatsigOptions &options
   ) override {
     sdk_key_ = sdk_key;
-    network_ = new statsig::NetworkService((string &) sdk_key);
+    network_ = new NetworkService(sdk_key, options);
   }
 
   std::optional<DataAdapterResult> GetDataSync(
@@ -91,11 +92,11 @@ class StatsigEvaluationsDataAdapter : public statsig::EvaluationsDataAdapter {
  private:
   std::optional<std::string> sdk_key_;
   std::unordered_map<std::string, DataAdapterResult> in_memory_cache_ = {};
-  statsig::NetworkService *network_;
+  NetworkService *network_;
 
   std::string GetCacheKey(const StatsigUser &user) {
     const auto key = MakeCacheKey(GetSdkKey(), user);
-    return "statsig.cached.evaluations." + key;
+    return kCachedEvaluationsPrefix + key;
   }
 
   std::string GetSdkKey() {

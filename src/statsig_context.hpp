@@ -23,14 +23,14 @@ class StatsigContext {
       user(user.value_or(StatsigUser())),
       options(options.value_or(StatsigOptions())),
       err_boundary(this->sdk_key),
-      network(NetworkService(this->sdk_key)),
+      network(NetworkService(this->sdk_key, this->options)),
       store(EvaluationStore()),
       data_adapter(
           this->options.data_adapter
               .value_or(new statsig::internal::StatsigEvaluationsDataAdapter())
       ),
       logger(EventLogger(this->options, this->network)) {
-    data_adapter->Attach(this->sdk_key);
+    data_adapter->Attach(this->sdk_key, this->options);
   }
 
   string sdk_key;

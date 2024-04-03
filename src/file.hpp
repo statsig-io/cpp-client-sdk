@@ -38,7 +38,7 @@ class File {
     return content;
   }
 
-  static void RunCacheEviction() {
+  static void RunCacheEviction(std::string prefix) {
     std::vector<fs::path> paths;
 
     for (const auto &entry : fs::directory_iterator(kCacheDirectory)) {
@@ -46,7 +46,8 @@ class File {
         continue;
       }
 
-      if (entry.path().filename() == kStableIdKey) {
+      const auto filename = entry.path().filename().string();
+      if (filename.find_first_of(prefix) == std::string::npos) {
         continue;
       }
 

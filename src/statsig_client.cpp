@@ -49,6 +49,8 @@ void StatsigClient::InitializeAsync(
 }
 
 void StatsigClient::UpdateUserSync(const statsig::StatsigUser &user) {
+  INIT_GUARD();
+
   EB(([this, &user]() {
     context_->user = user;
     context_->store.Reset();
@@ -74,6 +76,8 @@ void StatsigClient::UpdateUserAsync(
     const statsig::StatsigUser &user,
     const std::function<void()> &callback
 ) {
+  INIT_GUARD();
+
   EB(([this, &user, &callback]() {
     context_->user = user;
     context_->store.Reset();
