@@ -1,6 +1,7 @@
 #pragma once
 
 #include <nlohmann/json.hpp>
+#include <optional>
 
 #include "statsig_user.h"
 #include "statsig_types.h"

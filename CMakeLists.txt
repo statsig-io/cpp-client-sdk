@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.24)
 project(StatsigClientSDK)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Add source files to the Library
 file(GLOB STATSIG_SOURCES "src/*.cpp")
