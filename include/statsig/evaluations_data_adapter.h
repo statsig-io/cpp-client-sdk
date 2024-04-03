@@ -3,6 +3,7 @@
 #include <string>
 
 #include "statsig_user.h"
+#include "statsig_options.h"
 
 namespace statsig {
 
@@ -24,6 +25,8 @@ std::string GetValueSourceString(const ValueSource &source) {
     case ValueSource::Network:return "Network";
     case ValueSource::Bootstrap:return "Bootstrap";
   }
+
+  return "";
 }
 
 struct DataAdapterResult {
@@ -49,7 +52,8 @@ void from_json(const nlohmann::json &j, DataAdapterResult &res) {
 class EvaluationsDataAdapter {
  public:
   virtual void Attach(
-      const std::string &sdk_key
+      std::string &sdk_key,
+      StatsigOptions &options
   ) = 0;
 
   virtual std::optional<DataAdapterResult> GetDataSync(

@@ -20,11 +20,12 @@ typedef std::optional<NetworkResult<InitializeResponse>> FetchValuesResult;
 class NetworkService {
  public:
   explicit NetworkService(
-      string &sdk_key
+      string &sdk_key,
+      StatsigOptions &options
   ) : sdk_key_(sdk_key),
+      options_(options),
       err_boundary_(ErrorBoundary(sdk_key)),
-      session_id_(UUID::v4()
-      ) {}
+      session_id_(UUID::v4()) {}
 
   FetchValuesResult FetchValues(const StatsigUser &user) {
     FetchValuesResult result;
@@ -42,11 +43,11 @@ class NetworkService {
         {{"events", events}},
         kLogEventRetryCount
     );
-
   }
 
  private:
   string &sdk_key_;
+  StatsigOptions &options_;
   ErrorBoundary err_boundary_;
   string session_id_;
   StableID stable_id_;
@@ -110,7 +111,7 @@ class NetworkService {
       const string &endpoint,
       std::unordered_map<string, json> body
   ) {
-    auto api = kDefaultApi;
+    auto api = options_.api.value_or(kDefaultApi);
 
     httplib::Client client(api);
     client.set_compress(endpoint == kEndpointLogEvent);

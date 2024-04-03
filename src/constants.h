@@ -18,6 +18,7 @@ const int kLogEventRetryCount = 3;
 
 // Caching
 const char *kCacheDirectory = "/tmp/statsig_cpp_client";
+const char *kCachedEvaluationsPrefix = "statsig.cached.evaluations.";
 const char *kStableIdKey = "stable_id";
 const uint kMaxCacheEntriesCount = 10;
 
