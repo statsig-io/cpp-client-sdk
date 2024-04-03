@@ -1,3 +1,16 @@
+_deps
+CMakeFiles
+CMakeCache.txt
+Makefile
+cmake_install.cmake
+.cmake
+.ninja_deps
+.ninja_log
+build.ninja
+Testing
+tests/CTestTestfile.cmake
+StatsigClientSDKTests
+
 .DS_Store
 .idea
 example/.idea

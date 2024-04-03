@@ -1,5 +1,6 @@
 #pragma once
 
+#include <nlohmann/json.hpp>
 #include "hashing.hpp"
 #include "macros.hpp"
 

@@ -9,7 +9,7 @@ file(GLOB STATSIG_SOURCES "src/*.cpp")
 add_library(${PROJECT_NAME} SHARED ${STATSIG_SOURCES})
 
 # Include the header files in the Library
-target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+target_include_directories(${PROJECT_NAME} PUBLIC include>)
 
 # === Third Party Deps ===
 

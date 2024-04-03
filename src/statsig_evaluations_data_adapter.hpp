@@ -2,6 +2,8 @@
 
 #include "statsig/evaluations_data_adapter.h"
 #include "network_service.hpp"
+#include "error_boundary.hpp"
+#include "statsig_user_internal.hpp"
 
 namespace statsig::internal {
 
@@ -25,31 +27,40 @@ void WriteToCacheFile(const std::string &cache_key, const DataAdapterResult &res
 
 class StatsigEvaluationsDataAdapter : public statsig::EvaluationsDataAdapter {
  public:
+  explicit StatsigEvaluationsDataAdapter() : error_boundary_(ErrorBoundary()) {}
+
   void Attach(
       std::string &sdk_key,
       StatsigOptions &options
   ) override {
     sdk_key_ = sdk_key;
     network_ = new NetworkService(sdk_key, options);
+    error_boundary_.SetSdkKey(sdk_key);
   }
 
   std::optional<DataAdapterResult> GetDataSync(
       const StatsigUser &user
   ) override {
-    const auto cache_key = GetCacheKey(user);
-    auto result = MapGetOrNull(in_memory_cache_, cache_key);
+    std::optional<DataAdapterResult> result;
 
-    if (result.has_value()) {
-      return result;
-    }
+    error_boundary_.Capture(__func__, [this, &user, &result]() {
+      const auto cache_key = GetCacheKey(user);
+      auto in_mem = MapGetOrNull(in_memory_cache_, cache_key);
 
-    auto cache = ReadFromCacheFile(cache_key);
-    if (cache.has_value()) {
-      AddToInMemoryCache(cache_key, cache.value());
-      return cache;
-    }
+      if (in_mem.has_value()) {
+        result = in_mem;
+        return;
+      }
 
-    return std::nullopt;
+      auto cache = ReadFromCacheFile(cache_key);
+      if (cache.has_value()) {
+        result = cache;
+        AddToInMemoryCache(cache_key, cache.value());
+        return;
+      }
+    });
+
+    return result;
   }
 
   void GetDataAsync(
@@ -57,22 +68,24 @@ class StatsigEvaluationsDataAdapter : public statsig::EvaluationsDataAdapter {
       const std::optional<DataAdapterResult> &current,
       const std::function<void(std::optional<DataAdapterResult>)> &callback
   ) override {
-    const auto cache = current ? current : GetDataSync(user);
-    const auto latest = FetchLatest(user, cache);
-    const auto cache_key = GetCacheKey(user);
+    error_boundary_.Capture(__func__, [this, &user, &current, &callback]() {
+      const auto cache = current ? current : GetDataSync(user);
+      const auto latest = FetchLatest(user, cache);
+      const auto cache_key = GetCacheKey(user);
 
-    if (!latest.has_value()) {
-      callback(std::nullopt);
-      return;
-    }
+      if (!latest.has_value()) {
+        callback(std::nullopt);
+        return;
+      }
 
-    AddToInMemoryCache(cache_key, latest.value());
+      AddToInMemoryCache(cache_key, latest.value());
 
-    if (latest->source == ValueSource::Network) {
-      WriteToCacheFile(cache_key, latest.value());
-    }
+      if (latest->source == ValueSource::Network) {
+        WriteToCacheFile(cache_key, latest.value());
+      }
 
-    callback(latest);
+      callback(latest);
+    });
   }
 
   void SetData(
@@ -93,6 +106,7 @@ class StatsigEvaluationsDataAdapter : public statsig::EvaluationsDataAdapter {
   std::optional<std::string> sdk_key_;
   std::unordered_map<std::string, DataAdapterResult> in_memory_cache_ = {};
   NetworkService *network_;
+  ErrorBoundary error_boundary_;
 
   std::string GetCacheKey(const StatsigUser &user) {
     const auto key = MakeCacheKey(GetSdkKey(), user);

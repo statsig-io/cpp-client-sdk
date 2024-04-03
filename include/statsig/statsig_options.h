@@ -8,10 +8,14 @@
 namespace statsig {
 
 class EvaluationsDataAdapter;
+class NetworkProvider;
+class JsonProvider;
 
 struct StatsigOptions {
   std::optional<std::string> api{};
-  std::optional<EvaluationsDataAdapter *> data_adapter;
+  EvaluationsDataAdapter *data_adapter;
+  NetworkProvider *network_provider;
+  JsonProvider *json_provider;
 };
 
 }

@@ -12,6 +12,7 @@ class ErrorBoundary {
   using string = std::string;
 
   explicit ErrorBoundary(string &sdk_key) : sdk_key_(sdk_key) {}
+  explicit ErrorBoundary() : sdk_key_("") {}
 
   inline static string eb_api = constants::kDefaultApi;
 
@@ -27,8 +28,12 @@ class ErrorBoundary {
     }
   }
 
+  void SetSdkKey(string &sdk_key) {
+    sdk_key_ = sdk_key;
+  }
+
  private:
-  string &sdk_key_;
+  string sdk_key_;
   std::set<string> seen_;
 
   void LogError(
@@ -36,6 +41,10 @@ class ErrorBoundary {
       const string &error
   ) {
     try {
+      if (sdk_key_.empty()) {
+        return;
+      }
+
       if (seen_.find(error) != seen_.end()) {
         return;
       }
