@@ -9,7 +9,6 @@
 #include "statsig/evaluations_data_adapter.h"
 #include "evaluation_details_internal.hpp"
 #include "unordered_map_util.hpp"
-#include <nlohmann/json.hpp>
 
 namespace statsig::internal {
 
@@ -51,14 +50,12 @@ class EvaluationStore {
     if (!values_.has_value() || !internal::MapContains(values_->feature_gates, hash)) {
       return {
           std::nullopt,
-          evaluation_details::UnrecognizedFromSourceInfo(source_info_)
-      };
+          evaluation_details::UnrecognizedFromSourceInfo(source_info_)};
     }
 
     return {
         values_->feature_gates[hash],
-        evaluation_details::RecognizedFromSourceInfo(source_info_)
-    };
+        evaluation_details::RecognizedFromSourceInfo(source_info_)};
   }
 
   DetailedEvaluation<data::ConfigEvaluation> GetConfig(const std::string &config_name) {
@@ -68,14 +65,12 @@ class EvaluationStore {
     if (!values_.has_value() || !internal::MapContains(values_->dynamic_configs, hash)) {
       return {
           std::nullopt,
-          evaluation_details::UnrecognizedFromSourceInfo(source_info_)
-      };
+          evaluation_details::UnrecognizedFromSourceInfo(source_info_)};
     }
 
     return {
         values_->dynamic_configs[hash],
-        evaluation_details::RecognizedFromSourceInfo(source_info_)
-    };
+        evaluation_details::RecognizedFromSourceInfo(source_info_)};
   }
 
   DetailedEvaluation<data::LayerEvaluation> GetLayer(const std::string &layer_name) {
@@ -85,14 +80,12 @@ class EvaluationStore {
     if (!values_.has_value() || !internal::MapContains(values_->layer_configs, hash)) {
       return {
           std::nullopt,
-          evaluation_details::UnrecognizedFromSourceInfo(source_info_)
-      };
+          evaluation_details::UnrecognizedFromSourceInfo(source_info_)};
     }
 
     return {
         values_->layer_configs[hash],
-        RecognizedFromSourceInfo(source_info_)
-    };
+        RecognizedFromSourceInfo(source_info_)};
   }
 
  private:

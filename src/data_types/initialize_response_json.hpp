@@ -5,14 +5,6 @@
 
 namespace statsig::data_types {
 
-template<typename T>
-void EvaluationFromJson(const nlohmann::json &j, statsig::data::Evaluation<T> &e) {
-  j.at("name").get_to(e.name);
-  j.at("rule_id").get_to(e.rule_id);
-  j.at("secondary_exposures").get_to(e.secondary_exposures);
-  j.at("value").get_to(e.value);
-}
-
 namespace gate_evaluation {
 
 nlohmann::json ToJson(const statsig::data::GateEvaluation &e) {
@@ -26,7 +18,10 @@ nlohmann::json ToJson(const statsig::data::GateEvaluation &e) {
 statsig::data::GateEvaluation FromJson(const nlohmann::json &j) {
   statsig::data::GateEvaluation e;
 
-  EvaluationFromJson<bool>(j, e);
+  j.at("name").get_to(e.name);
+  j.at("rule_id").get_to(e.rule_id);
+  j.at("secondary_exposures").get_to(e.secondary_exposures);
+  j.at("value").get_to(e.value);
 
   if (j.contains("id_type")) {
     e.id_type = j["id_type"].get<std::string>();
@@ -49,7 +44,10 @@ nlohmann::json ToJson(const statsig::data::ConfigEvaluation &e) {
 
 statsig::data::ConfigEvaluation FromJson(const nlohmann::json &j) {
   statsig::data::ConfigEvaluation e;
-  EvaluationFromJson<JsonObj>(j, e);
+  j.at("name").get_to(e.name);
+  j.at("rule_id").get_to(e.rule_id);
+  j.at("secondary_exposures").get_to(e.secondary_exposures);
+  e.value = ValueMap(j["value"]);
   return e;
 }
 
@@ -68,7 +66,10 @@ nlohmann::json ToJson(const statsig::data::LayerEvaluation &e) {
 statsig::data::LayerEvaluation FromJson(const nlohmann::json &j) {
   statsig::data::LayerEvaluation e;
 
-  EvaluationFromJson<JsonObj>(j, e);
+  j.at("name").get_to(e.name);
+  j.at("rule_id").get_to(e.rule_id);
+  j.at("secondary_exposures").get_to(e.secondary_exposures);
+  e.value = ValueMap(j["value"]);
   j.at("explicit_parameters").get_to(e.explicit_parameters);
   j.at("undelegated_secondary_exposures").get_to(e.undelegated_secondary_exposures);
 
@@ -123,7 +124,7 @@ statsig::data::InitializeResponse FromJson(const nlohmann::json &j) {
 
   j.at("time").get_to(response.time);
 
-  auto gates =  j["feature_gates"].get<JMap>();
+  auto gates = j["feature_gates"].get<JMap>();
   response.feature_gates.reserve(gates.size());
   for (const auto &entry : gates) {
     response.feature_gates[entry.first] = gate_evaluation::FromJson(entry.second);

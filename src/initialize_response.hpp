@@ -6,7 +6,6 @@
 namespace statsig::data {
 
 typedef std::unordered_map<std::string, std::string> SecondaryExposure;
-typedef std::unordered_map<std::string, nlohmann::json> JsonObj;
 
 template<typename T>
 struct Evaluation {
@@ -20,7 +19,7 @@ struct GateEvaluation : Evaluation<bool> {
   std::optional<std::string> id_type;
 };
 
-struct ConfigEvaluation : Evaluation<JsonObj> {
+struct ConfigEvaluation : Evaluation<ValueMap> {
   std::string id_type;
   std::optional<std::string> group_name;
   bool is_device_based = false;

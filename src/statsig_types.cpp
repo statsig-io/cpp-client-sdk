@@ -1,9 +1,7 @@
 #include "statsig/statsig_types.h"
+#include "statsig/evaluation_details.h"
 
 #include <unordered_map>
-#include <nlohmann/json.hpp>
-
-#include "statsig/evaluation_details.h"
 
 namespace statsig {
 
@@ -23,19 +21,17 @@ bool FeatureGate::GetValue() {
   return value_;
 }
 
-JsonObj DynamicConfig::GetValue() {
+ValueMap DynamicConfig::GetValues() {
   return value_;
 }
 
-JsonObj Experiment::GetValue() {
+ValueMap Experiment::GetValues() {
   return value_;
 }
 
-nlohmann::json Layer::GetValue(const std::string &parameter_name) {
+std::optional<nlohmann::json> Layer::GetValue(const std::string &parameter_name) {
   log_param_exposure_(parameter_name);
-  return value_[parameter_name];
+  return value_.GetValue(parameter_name);
 }
 
 }
-
-

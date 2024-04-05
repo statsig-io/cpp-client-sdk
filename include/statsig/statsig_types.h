@@ -2,12 +2,15 @@
 
 #include <unordered_map>
 #include <nlohmann/json.hpp>
+#include <optional>
 
 #include "evaluation_details.h"
+#include "value_map.h"
 
 namespace statsig {
 
-typedef std::unordered_map<std::string, nlohmann::json> JsonObj;
+typedef std::any JsonVal;
+typedef std::unordered_map<std::string, JsonVal> JsonObj;
 
 class BaseSpec {
  public:
@@ -65,36 +68,37 @@ class FeatureGate : public EvaluatedSpec<bool> {
   using EvaluatedSpec<bool>::EvaluatedSpec;
 };
 
-class DynamicConfig : public EvaluatedSpec<JsonObj> {
+class DynamicConfig : public EvaluatedSpec<ValueMap> {
  public:
-  JsonObj GetValue();
+  ValueMap GetValues();
 
-  using EvaluatedSpec<JsonObj>::EvaluatedSpec;
+  using EvaluatedSpec<ValueMap>::EvaluatedSpec;
 };
 
-class Experiment : public EvaluatedSpec<JsonObj> {
+class Experiment : public EvaluatedSpec<ValueMap> {
  public:
-  JsonObj GetValue();
+  ValueMap GetValues();
 
-  using EvaluatedSpec<JsonObj>::EvaluatedSpec;
+  using EvaluatedSpec<ValueMap>::EvaluatedSpec;
 };
 
-class Layer : public EvaluatedSpec<JsonObj> {
+class Layer : public EvaluatedSpec<ValueMap> {
   friend class StatsigClient;
 
  public:
-  nlohmann::json GetValue(const std::string &parameter_name);
+  std::optional<JsonValue> GetValue(const std::string &parameter_name);
 
   Layer(
       const std::string &name,
       const std::string &rule_id,
       const EvaluationDetails &evaluation_details,
-      const JsonObj &value,
+      const ValueMap &value,
       const std::function<void(const std::string &)> &log_param_exposure)
-      : EvaluatedSpec<JsonObj>(name, rule_id, evaluation_details, value),
-        log_param_exposure_(log_param_exposure) {}
+      : EvaluatedSpec<ValueMap>(name, rule_id, evaluation_details, value),
+        log_param_exposure_(log_param_exposure) {
+  }
 
-  using EvaluatedSpec<JsonObj>::EvaluatedSpec;
+  using EvaluatedSpec<ValueMap>::EvaluatedSpec;
 
  private:
   std::function<void(const std::string &)> log_param_exposure_;

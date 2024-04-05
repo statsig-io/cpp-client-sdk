@@ -12,7 +12,8 @@ class MockEvaluationsDataAdapter : public EvaluationsDataAdapter {
  public:
  public:
   void Attach(
-      const std::string &sdk_key
+      std::string &sdk_key,
+      StatsigOptions &options
   ) override {
   }
 
