@@ -93,10 +93,12 @@ class NetworkService {
       return std::nullopt;
     }
 
-    auto initialize_res = nlohmann::json::parse(response->body)
-        .template get<data::InitializeResponse>();
+    auto init_response = Json::Deserialize<data::InitializeResponse>(response->body);
+    if (!init_response.has_value()) {
+      return std::nullopt;
+    }
 
-    return NetworkResult(initialize_res, response->body);
+    return NetworkResult(init_response.value(), response->body);
   }
 
   httplib::Result PostWithRetry(

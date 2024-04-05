@@ -6,6 +6,11 @@
 
 namespace statsig::data_types::statsig_user {
 
+// Opt + Json
+#define OPT_TO_JSON(jsonObj, fieldName, fieldValue) do { if (fieldValue) { jsonObj[#fieldName] = fieldValue.value(); } } while(0)
+#define OPT_STR_FROM_JSON(jsonObj, fieldName, target) do { if (jsonObj.contains(fieldName)) { target = jsonObj[fieldName].get<std::string>(); } } while(0)
+#define OPT_STR_MAP_FROM_JSON(jsonObj, fieldName, target) do { if (jsonObj.contains(fieldName)) { target = jsonObj[fieldName].get<std::unordered_map<std::string, std::string>>(); } } while(0)
+
 nlohmann::json ToJson(const StatsigUser &u) {
   auto j = nlohmann::json{
       {"userID", u.user_id},

@@ -7,6 +7,7 @@
 #include "data_adapter_result_json.hpp"
 #include "statsig_user_json.hpp"
 #include "initialize_request_args_json.hpp"
+#include "initialize_response_json.hpp"
 #include "statsig_event_json.hpp"
 
 namespace statsig::internal {
@@ -18,7 +19,8 @@ class Json {
     static_assert(
         std::disjunction<
             std::is_same<T, StatsigUser>,
-            std::is_same<T, DataAdapterResult>
+            std::is_same<T, DataAdapterResult>,
+            std::is_same<T, data::InitializeResponse>
         >::value,
         "type T is invalid"
     );
@@ -29,6 +31,10 @@ class Json {
 
     if constexpr (std::is_same_v<T, StatsigUser>) {
       return data_types::statsig_user::Deserialize(input);
+    }
+
+    if constexpr (std::is_same_v<T, data::InitializeResponse>) {
+      return data_types::initialize_response::Deserialize(input);
     }
 
     return std::nullopt;

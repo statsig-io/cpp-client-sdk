@@ -38,7 +38,7 @@ class EvaluationStore {
 
     WRITE_LOCK(rw_lock_);
 
-    values_ = nlohmann::json::parse(result->data).template get<data::InitializeResponse>();
+    values_ = Json::Deserialize<data::InitializeResponse>(result->data);
     source_info_.source = result->source;
     source_info_.received_at = result->receivedAt;
     source_info_.lcut = values_->time;
