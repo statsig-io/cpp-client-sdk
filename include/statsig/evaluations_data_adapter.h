@@ -35,20 +35,6 @@ struct DataAdapterResult {
   long long receivedAt;
 };
 
-void to_json(nlohmann::json &j, const DataAdapterResult &res) {
-  j = nlohmann::json{
-      {"source", res.source},
-      {"data", res.data},
-      {"receivedAt", res.receivedAt},
-  };
-}
-
-void from_json(const nlohmann::json &j, DataAdapterResult &res) {
-  j.at("source").get_to(res.source);
-  j.at("data").get_to(res.data);
-  j.at("receivedAt").get_to(res.receivedAt);
-}
-
 class EvaluationsDataAdapter {
  public:
   virtual void Attach(

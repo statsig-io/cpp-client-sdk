@@ -2,6 +2,7 @@
 
 #include "statsig/evaluations_data_adapter.h"
 #include "network_service.hpp"
+#include "data_types/json_parser.hpp"
 
 namespace statsig::internal {
 
@@ -11,15 +12,17 @@ std::optional<DataAdapterResult> ReadFromCacheFile(const std::string &cache_key)
     return std::nullopt;
   }
 
-  auto result = json::parse(data.value())
-      .template get<DataAdapterResult>();
+  auto result = Json::Deserialize(data.value());
 
-  result.source = ValueSource::Cache;
+  if (result.has_value()) {
+    result->source = ValueSource::Cache;
+  }
+
   return result;
 }
 
 void WriteToCacheFile(const std::string &cache_key, const DataAdapterResult &result) {
-  File::WriteToCache(cache_key, json(result).dump());
+  File::WriteToCache(cache_key, Json::Stringify(result));
   File::RunCacheEviction(kCachedEvaluationsPrefix);
 }
 
