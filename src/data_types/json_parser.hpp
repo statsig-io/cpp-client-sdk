@@ -9,6 +9,7 @@
 #include "initialize_request_args_json.hpp"
 #include "initialize_response_json.hpp"
 #include "statsig_event_json.hpp"
+#include "error_boundary_request_args_json.hpp"
 
 namespace statsig::internal {
 
@@ -47,7 +48,8 @@ class Json {
             std::is_same<T, InitializeRequestArgs>,
             std::is_same<T, StatsigUser>,
             std::is_same<T, DataAdapterResult>,
-            std::is_same<T, LogEventRequestArgs>
+            std::is_same<T, LogEventRequestArgs>,
+            std::is_same<T, ErrorBoundaryRequestArgs>
         >::value,
         "type T is invalid"
     );

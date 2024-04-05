@@ -5,6 +5,7 @@
 #include "initialize_response.hpp"
 #include "macros.hpp"
 #include "detailed_evaluation.h"
+#include "time.hpp"
 
 namespace statsig::internal {
 

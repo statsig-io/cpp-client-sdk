@@ -29,7 +29,7 @@ ValueMap Experiment::GetValues() {
   return value_;
 }
 
-std::optional<nlohmann::json> Layer::GetValue(const std::string &parameter_name) {
+std::optional<JsonValue> Layer::GetValue(const std::string &parameter_name) {
   log_param_exposure_(parameter_name);
   return value_.GetValue(parameter_name);
 }

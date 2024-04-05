@@ -4,6 +4,7 @@
 
 namespace statsig {
 
+#ifdef USING_NLOHMANN_JSON
 std::optional<std::string> ValueMap::GetStringValue(const std::string &key) {
   auto str = GetValue(key);
   if (str.is_string()) {
@@ -25,5 +26,13 @@ JsonValue ValueMap::GetValue(const std::string &key) {
 
   return nullptr;
 }
+#else
+std::optional<std::string> ValueMap::GetStringValue(const std::string &key) {
+  throw "";
+}
 
+JsonValue ValueMap::GetValue(const std::string &key) {
+  return nullptr;
+}
+#endif
 }

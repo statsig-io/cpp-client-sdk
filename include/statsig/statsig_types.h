@@ -1,8 +1,8 @@
 #pragma once
 
 #include <unordered_map>
-#include <nlohmann/json.hpp>
 #include <optional>
+#include <functional>
 
 #include "evaluation_details.h"
 #include "value_map.h"

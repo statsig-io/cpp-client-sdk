@@ -3,6 +3,17 @@
 #include <utility>
 #include <execinfo.h>
 
+namespace statsig::internal {
+
+struct ErrorBoundaryRequestArgs {
+  std::string tag;
+  std::string exception;
+  std::vector<std::string> info;
+};
+
+}
+
+#include "data_types/json_parser.hpp"
 #include "constants.h"
 
 namespace statsig::internal {
@@ -42,11 +53,7 @@ class ErrorBoundary {
 
       seen_.insert(error);
 
-      nlohmann::json body = {
-          {"exception", error},
-          {"info", GetStackTrace()},
-          {"tag", tag}
-      };
+      ErrorBoundaryRequestArgs body{error, tag, GetStackTrace()};
 
       httplib::Headers headers = {
           {"STATSIG-API-KEY", sdk_key_},
@@ -58,7 +65,7 @@ class ErrorBoundary {
           .Post(
               "/v1/sdk_exception",
               headers,
-              nlohmann::json(body).dump(),
+              Json::Serialize(body),
               constants::kContentTypeJson
           );
     } catch (std::exception &_) {

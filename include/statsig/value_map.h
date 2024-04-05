@@ -1,11 +1,17 @@
 #pragma once
 
 #include <optional>
+#include <string>
+
+#ifdef USING_NLOHMANN_JSON
 #include <nlohmann/json.hpp>
+typedef nlohmann::json JsonValue;
+#else
+#include <any>
+typedef std::any JsonValue;
+#endif
 
 namespace statsig {
-
-typedef nlohmann::json JsonValue;
 
 class ValueMap {
  public:
