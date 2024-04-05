@@ -21,7 +21,7 @@ void to_json(json &j, const StatsigEventInternal &event) {
   j = json{
       {"eventName", event.event_name},
       {"time", event.time},
-      {"user", event.user},
+//      {"user", event.user},
   };
 
   if (event.metadata.has_value()) {

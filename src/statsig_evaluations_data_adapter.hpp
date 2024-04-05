@@ -12,7 +12,7 @@ std::optional<DataAdapterResult> ReadFromCacheFile(const std::string &cache_key)
     return std::nullopt;
   }
 
-  auto result = Json::Deserialize(data.value());
+  auto result = Json::Deserialize<DataAdapterResult>(data.value());
 
   if (result.has_value()) {
     result->source = ValueSource::Cache;
@@ -22,7 +22,7 @@ std::optional<DataAdapterResult> ReadFromCacheFile(const std::string &cache_key)
 }
 
 void WriteToCacheFile(const std::string &cache_key, const DataAdapterResult &result) {
-  File::WriteToCache(cache_key, Json::Stringify(result));
+  File::WriteToCache(cache_key, Json::Serialize(result));
   File::RunCacheEviction(kCachedEvaluationsPrefix);
 }
 

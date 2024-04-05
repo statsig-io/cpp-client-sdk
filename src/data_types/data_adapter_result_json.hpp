@@ -1,9 +1,6 @@
 #pragma once
 
-#include <unordered_map>
-#include <any>
-#include <string>
-#include <iostream>
+#include <nlohmann/json.hpp>
 
 #include "statsig/evaluations_data_adapter.h"
 
@@ -20,27 +17,12 @@ std::string Serialize( const DataAdapterResult &res) {
 }
 
 DataAdapterResult Deserialize(const std::string &input) {
-  auto j = json::parse(input);
+  auto j = nlohmann::json::parse(input);
   DataAdapterResult res;
   j.at("source").get_to(res.source);
   j.at("data").get_to(res.data);
   j.at("receivedAt").get_to(res.receivedAt);
   return res;
 }
-
-//std::optional<DataAdapterResult> FromJson(const std::unordered_map<std::string, std::any> &json) {
-//  try {
-//    DataAdapterResult result;
-//
-//    result.source = std::any_cast<ValueSource>(json.at("source"));
-//    result.data = std::any_cast<std::string>(json.at("data"));
-//    result.receivedAt = std::any_cast<long long>(json.at("receivedAt"));
-//
-//    return result;
-//  } catch (const std::exception &error) {
-//    std::cerr << "[Statsig]: An unexpected exception occurred. " << error.what() << std::endl;
-//    return std::nullopt;
-//  }
-//}
 
 }

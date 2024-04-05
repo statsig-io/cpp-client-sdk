@@ -3,6 +3,8 @@
 #include <utility>
 
 #include "statsig_internal.h"
+#include "initialize_request_args.h"
+#include "data_types/json_parser.hpp"
 
 namespace statsig {
 
@@ -40,7 +42,7 @@ class NetworkService {
   void SendEvents(const std::vector<StatsigEventInternal> &events) {
     PostWithRetry(
         kEndpointLogEvent,
-        {{"events", events}},
+        "{{\"events\", events}}",
         kLogEventRetryCount
     );
   }
@@ -71,12 +73,14 @@ class NetworkService {
   }
 
   FetchValuesResult FetchValuesImpl(const StatsigUser &user) {
+    auto args = InitializeRequestArgs{
+      "djb2",
+      user
+    };
+
     auto response = PostWithRetry(
         kEndpointInitialize,
-        {
-            {"hash", "djb2"},
-            {"user", user}
-        },
+        Json::Serialize(args),
         kInitializeRetryCount
     );
 
@@ -92,7 +96,7 @@ class NetworkService {
 
   httplib::Result PostWithRetry(
       const string &endpoint,
-      const std::unordered_map<string, json> &body,
+      const std::string &body,
       const int max_attempts
   ) {
     httplib::Result result;
@@ -109,19 +113,19 @@ class NetworkService {
 
   httplib::Result Post(
       const string &endpoint,
-      std::unordered_map<string, json> body
+      std::string body
   ) {
     auto api = options_.api.value_or(kDefaultApi);
 
     httplib::Client client(api);
     client.set_compress(endpoint == kEndpointLogEvent);
 
-    body["statsigMetadata"] = GetStatsigMetadata();
+//    body["statsigMetadata"] = GetStatsigMetadata();
 
     return client.Post(
         endpoint,
         GetHeaders(),
-        json(body).dump(),
+        body,
         kContentTypeJson);
   }
 };
