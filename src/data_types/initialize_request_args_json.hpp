@@ -15,13 +15,4 @@ std::string Serialize(const internal::InitializeRequestArgs &args) {
   return j.dump();
 }
 
-internal::InitializeRequestArgs Deserialize(const std::string &input) {
-  auto j = nlohmann::json::parse(input);
-  internal::InitializeRequestArgs res;
-//  j.at("source").get_to(res.source);
-//  j.at("data").get_to(res.data);
-//  j.at("receivedAt").get_to(res.receivedAt);
-  return res;
-}
-
 }

@@ -4,7 +4,7 @@
 
 #include "statsig/evaluations_data_adapter.h"
 
-namespace statsig::data_types {
+namespace statsig::data_types::data_adapter_result {
 
 std::string Serialize( const DataAdapterResult &res) {
   auto j = nlohmann::json{

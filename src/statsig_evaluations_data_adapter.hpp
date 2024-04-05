@@ -13,7 +13,6 @@ std::optional<DataAdapterResult> ReadFromCacheFile(const std::string &cache_key)
   }
 
   auto result = Json::Deserialize<DataAdapterResult>(data.value());
-
   if (result.has_value()) {
     result->source = ValueSource::Cache;
   }

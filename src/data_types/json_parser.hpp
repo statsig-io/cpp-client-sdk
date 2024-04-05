@@ -7,6 +7,7 @@
 #include "data_adapter_result_json.hpp"
 #include "statsig_user_json.hpp"
 #include "initialize_request_args_json.hpp"
+#include "statsig_event_json.hpp"
 
 namespace statsig::internal {
 
@@ -14,8 +15,16 @@ class Json {
  public:
   template<class T>
   static std::optional<T> Deserialize(const std::string &input) {
+    static_assert(
+        std::disjunction<
+            std::is_same<T, StatsigUser>,
+            std::is_same<T, DataAdapterResult>
+        >::value,
+        "type T is invalid"
+    );
+
     if constexpr (std::is_same_v<T, DataAdapterResult>) {
-      return data_types::Deserialize(input);
+      return data_types::data_adapter_result::Deserialize(input);
     }
 
     if constexpr (std::is_same_v<T, StatsigUser>) {
@@ -27,8 +36,22 @@ class Json {
 
   template<class T>
   static std::string Serialize(const T &input) {
+    static_assert(
+        std::disjunction<
+            std::is_same<T, InitializeRequestArgs>,
+            std::is_same<T, StatsigUser>,
+            std::is_same<T, DataAdapterResult>,
+            std::is_same<T, LogEventRequestArgs>
+        >::value,
+        "type T is invalid"
+    );
+
     if constexpr (std::is_same_v<T, InitializeRequestArgs>) {
       return data_types::initialize_request_args::Serialize(input);
+    }
+
+    if constexpr (std::is_same_v<T, LogEventRequestArgs>) {
+      return data_types::log_event_request_args::Serialize(input);
     }
 
     if constexpr (std::is_same_v<T, StatsigUser>) {
@@ -36,7 +59,7 @@ class Json {
     }
 
     if constexpr (std::is_same_v<T, DataAdapterResult>) {
-      return data_types::Serialize(input);
+      return data_types::data_adapter_result::Serialize(input);
     }
 
     return "";

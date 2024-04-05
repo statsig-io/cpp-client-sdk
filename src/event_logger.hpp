@@ -2,6 +2,7 @@
 
 #include "statsig_event_internal.hpp"
 #include "macros.hpp"
+#include <shared_mutex>
 
 namespace statsig {
 

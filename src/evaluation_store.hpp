@@ -9,6 +9,7 @@
 #include "statsig/evaluations_data_adapter.h"
 #include "evaluation_details_internal.hpp"
 #include "unordered_map_util.hpp"
+#include <nlohmann/json.hpp>
 
 namespace statsig {
 
@@ -16,11 +17,7 @@ using namespace statsig::data;
 using namespace statsig::hashing;
 using namespace statsig::internal;
 
-template<typename T>
-struct DetailedEvaluation {
-  std::optional<T> evaluation;
-  EvaluationDetails details;
-};
+
 
 class EvaluationStore {
  public:
@@ -47,20 +44,10 @@ class EvaluationStore {
 
     WRITE_LOCK(rw_lock_);
 
-    values_ = json::parse(result->data).template get<InitializeResponse>();
+    values_ = nlohmann::json::parse(result->data).template get<InitializeResponse>();
     source_info_.source = result->source;
     source_info_.received_at = result->receivedAt;
     source_info_.lcut = values_->time;
-  }
-
-  void SetValuesFromData(
-      const string &data,
-      const ValueSource &source
-  ) {
-    WRITE_LOCK(rw_lock_);
-
-    values_ = json::parse(data).template get<InitializeResponse>();
-    source_info_ = {source, values_->time, Time::now()};
   }
 
   DetailedEvaluation<GateEvaluation> GetGate(const std::string &gate_name) {

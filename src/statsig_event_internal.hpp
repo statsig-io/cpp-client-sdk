@@ -2,8 +2,9 @@
 
 #include <string>
 #include "statsig_user_internal.hpp"
-#include "evaluation_store.hpp"
+#include "initialize_response.hpp"
 #include "macros.hpp"
+#include "detailed_evaluation.h"
 
 namespace statsig {
 
@@ -17,33 +18,9 @@ struct StatsigEventInternal {
   std::optional<std::vector<std::unordered_map<string, string>>> secondary_exposures;
 };
 
-void to_json(json &j, const StatsigEventInternal &event) {
-  j = json{
-      {"eventName", event.event_name},
-      {"time", event.time},
-//      {"user", event.user},
-  };
-
-  if (event.metadata.has_value()) {
-    j["metadata"] = event.metadata.value();
-  }
-
-  if (event.secondary_exposures.has_value()) {
-    j["secondaryExposures"] = event.secondary_exposures.value();
-  }
-
-  if (event.string_value.has_value()) {
-    j["value"] = event.string_value.value();
-  } else if (event.double_value.has_value()) {
-    j["value"] = event.double_value.value();
-  }
-}
-
-void from_json(const json &j, StatsigEventInternal &event) {
-  j.at("eventName").get_to(event.event_name);
-//  j.at("gateValue").get_to(event.gate_value);
-//  j.at("ruleID").get_to(event.rule_id);
-}
+struct LogEventRequestArgs {
+  const std::vector<StatsigEventInternal> &events;
+};
 
 StatsigEventInternal InternalizeEvent(StatsigEvent event, StatsigUser &user) {
   StatsigEventInternal result;
@@ -63,7 +40,7 @@ StatsigEventInternal MakeExposureEvent(
     const std::optional<T> &evaluation,
     const EvaluationDetails &evaluation_details,
     const std::unordered_map<string, string> &metadata,
-    const std::optional<std::vector<SecondaryExposure>> &secondary_exposures = std::nullopt
+    const std::optional<std::vector<statsig::data::SecondaryExposure>> &secondary_exposures = std::nullopt
 ) {
   StatsigEventInternal result;
 
@@ -89,7 +66,7 @@ StatsigEventInternal MakeExposureEvent(
 StatsigEventInternal MakeGateExposure(
     const string &gate_name,
     const StatsigUser &user,
-    const DetailedEvaluation<GateEvaluation> &detailed_evaluation
+    const DetailedEvaluation<statsig::data::GateEvaluation> &detailed_evaluation
 ) {
   auto evaluation = detailed_evaluation.evaluation;
   auto value = UNWRAP(evaluation, value);
@@ -111,7 +88,7 @@ StatsigEventInternal MakeGateExposure(
 StatsigEventInternal MakeConfigExposure(
     const std::string &config_name,
     const StatsigUser &user,
-    const DetailedEvaluation<ConfigEvaluation> &detailed_evaluation
+    const DetailedEvaluation<statsig::data::ConfigEvaluation> &detailed_evaluation
 ) {
   auto evaluation = detailed_evaluation.evaluation;
   auto rule_id = UNWRAP(evaluation, rule_id);
@@ -132,7 +109,7 @@ StatsigEventInternal MakeLayerParamExposure(
     const string &layer_name,
     const string &param_name,
     const StatsigUser &user,
-    const DetailedEvaluation<LayerEvaluation> &detailed_evaluation
+    const DetailedEvaluation<statsig::data::LayerEvaluation> &detailed_evaluation
 ) {
   auto evaluation = detailed_evaluation.evaluation;
   auto rule_id = UNWRAP(evaluation, rule_id);

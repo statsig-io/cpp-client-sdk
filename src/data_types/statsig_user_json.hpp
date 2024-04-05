@@ -7,7 +7,7 @@
 namespace statsig::data_types::statsig_user {
 
 nlohmann::json ToJson(const StatsigUser &u) {
-  auto j = json{
+  auto j = nlohmann::json{
       {"userID", u.user_id},
   };
 

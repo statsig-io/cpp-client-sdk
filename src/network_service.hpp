@@ -4,9 +4,12 @@
 
 #include "statsig_internal.h"
 #include "initialize_request_args.h"
+#include "initialize_response.hpp"
 #include "data_types/json_parser.hpp"
 
 namespace statsig {
+using namespace statsig::internal;
+using namespace statsig::data;
 
 template<typename T>
 struct NetworkResult {
@@ -17,9 +20,10 @@ struct NetworkResult {
       : response(std::move(response)), raw(std::move(raw)) {}
 };
 
-typedef std::optional<NetworkResult<InitializeResponse>> FetchValuesResult;
+typedef std::optional<NetworkResult<statsig::data::InitializeResponse>> FetchValuesResult;
 
 class NetworkService {
+
  public:
   explicit NetworkService(
       string &sdk_key,
@@ -40,9 +44,12 @@ class NetworkService {
   }
 
   void SendEvents(const std::vector<StatsigEventInternal> &events) {
+    using namespace statsig::internal;
+    auto args = LogEventRequestArgs{events};
+
     PostWithRetry(
         kEndpointLogEvent,
-        "{{\"events\", events}}",
+        Json::Serialize(args),
         kLogEventRetryCount
     );
   }
@@ -74,8 +81,8 @@ class NetworkService {
 
   FetchValuesResult FetchValuesImpl(const StatsigUser &user) {
     auto args = InitializeRequestArgs{
-      "djb2",
-      user
+        "djb2",
+        user
     };
 
     auto response = PostWithRetry(
@@ -113,7 +120,7 @@ class NetworkService {
 
   httplib::Result Post(
       const string &endpoint,
-      std::string body
+      const std::string &body
   ) {
     auto api = options_.api.value_or(kDefaultApi);
 
