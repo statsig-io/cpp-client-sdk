@@ -16,7 +16,7 @@ namespace statsig {
 class StatsigContext {
  public:
   explicit StatsigContext(
-      string sdk_key,
+      std::string sdk_key,
       const std::optional<StatsigUser> &user,
       const std::optional<StatsigOptions> &options
   ) : sdk_key(std::move(sdk_key)),
@@ -33,7 +33,7 @@ class StatsigContext {
     data_adapter->Attach(this->sdk_key, this->options);
   }
 
-  string sdk_key;
+  std::string sdk_key;
   StatsigUser user;
   StatsigOptions options;
 

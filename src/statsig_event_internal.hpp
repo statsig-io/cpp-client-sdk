@@ -9,6 +9,8 @@
 namespace statsig {
 
 struct StatsigEventInternal {
+  using string = std::string;
+
   std::string event_name;
   long time{};
   StatsigUser user;
@@ -35,11 +37,11 @@ StatsigEventInternal InternalizeEvent(StatsigEvent event, StatsigUser &user) {
 
 template<typename T>
 StatsigEventInternal MakeExposureEvent(
-    const string &event_name,
+    const std::string &event_name,
     const StatsigUser &user,
     const std::optional<T> &evaluation,
     const EvaluationDetails &evaluation_details,
-    const std::unordered_map<string, string> &metadata,
+    const std::unordered_map<std::string, std::string> &metadata,
     const std::optional<std::vector<statsig::data::SecondaryExposure>> &secondary_exposures = std::nullopt
 ) {
   StatsigEventInternal result;
@@ -54,7 +56,7 @@ StatsigEventInternal MakeExposureEvent(
     result.secondary_exposures = UNWRAP(evaluation, secondary_exposures);
   }
 
-  std::unordered_map<string, string> final_metadata(metadata);
+  std::unordered_map<std::string, std::string> final_metadata(metadata);
   final_metadata["reason"] = evaluation_details.reason;
   final_metadata["lcut"] = std::to_string(evaluation_details.lcut);
   final_metadata["receivedAt"] = std::to_string(evaluation_details.received_at);
@@ -64,7 +66,7 @@ StatsigEventInternal MakeExposureEvent(
 }
 
 StatsigEventInternal MakeGateExposure(
-    const string &gate_name,
+    const std::string &gate_name,
     const StatsigUser &user,
     const DetailedEvaluation<statsig::data::GateEvaluation> &detailed_evaluation
 ) {
@@ -106,8 +108,8 @@ StatsigEventInternal MakeConfigExposure(
 }
 
 StatsigEventInternal MakeLayerParamExposure(
-    const string &layer_name,
-    const string &param_name,
+    const std::string &layer_name,
+    const std::string &param_name,
     const StatsigUser &user,
     const DetailedEvaluation<statsig::data::LayerEvaluation> &detailed_evaluation
 ) {
@@ -118,7 +120,7 @@ StatsigEventInternal MakeLayerParamExposure(
 
   auto exposures = UNWRAP(evaluation, undelegated_secondary_exposures);
 
-  std::optional<string> allocated;
+  std::optional<std::string> allocated;
   if (is_explicit) {
     allocated = UNWRAP(evaluation, allocated_experiment_name);
     exposures = UNWRAP(evaluation, secondary_exposures);

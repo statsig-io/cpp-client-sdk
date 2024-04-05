@@ -129,7 +129,7 @@ bool StatsigClient::CheckGate(const std::string &gate_name) {
   return gate.GetValue();
 }
 
-FeatureGate StatsigClient::GetFeatureGate(const string &gate_name) {
+FeatureGate StatsigClient::GetFeatureGate(const std::string &gate_name) {
   FeatureGate result(gate_name, evaluation_details::Uninitialized());
   INIT_GUARD(result);
 

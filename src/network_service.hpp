@@ -8,21 +8,20 @@
 #include "data_types/json_parser.hpp"
 
 namespace statsig {
-using namespace statsig::internal;
-using namespace statsig::data;
 
 template<typename T>
 struct NetworkResult {
   T response;
-  string raw;
+  std::string raw;
 
-  NetworkResult(T response, string raw)
+  NetworkResult(T response, std::string raw)
       : response(std::move(response)), raw(std::move(raw)) {}
 };
 
-typedef std::optional<NetworkResult<statsig::data::InitializeResponse>> FetchValuesResult;
+typedef std::optional<NetworkResult<data::InitializeResponse>> FetchValuesResult;
 
 class NetworkService {
+  using string = std::string;
 
  public:
   explicit NetworkService(
@@ -44,13 +43,12 @@ class NetworkService {
   }
 
   void SendEvents(const std::vector<StatsigEventInternal> &events) {
-    using namespace statsig::internal;
     auto args = LogEventRequestArgs{events};
 
     PostWithRetry(
-        kEndpointLogEvent,
-        Json::Serialize(args),
-        kLogEventRetryCount
+        constants::kEndpointLogEvent,
+        internal::Json::Serialize(args),
+        constants::kLogEventRetryCount
     );
   }
 
@@ -66,36 +64,36 @@ class NetworkService {
         {"STATSIG-API-KEY", sdk_key_},
         {"STATSIG-CLIENT-TIME", std::to_string(Time::now())},
         {"STATSIG-SERVER-SESSION-ID", session_id_},
-        {"STATSIG-SDK-TYPE", kSdkType},
-        {"STATSIG-SDK-VERSION", kSdkVersion},
+        {"STATSIG-SDK-TYPE", constants::kSdkType},
+        {"STATSIG-SDK-VERSION", constants::kSdkVersion},
         {"Accept-Encoding", "gzip"}};
   }
 
-  json GetStatsigMetadata() {
+  nlohmann::json GetStatsigMetadata() {
     return {
-        {"sdkType", kSdkType},
-        {"sdkVersion", kSdkVersion},
+        {"sdkType", constants::kSdkType},
+        {"sdkVersion", constants::kSdkVersion},
         {"sessionID", session_id_},
         {"stableID", stable_id_.Get()}};
   }
 
   FetchValuesResult FetchValuesImpl(const StatsigUser &user) {
-    auto args = InitializeRequestArgs{
+    auto args = internal::InitializeRequestArgs{
         "djb2",
         user
     };
 
     auto response = PostWithRetry(
-        kEndpointInitialize,
-        Json::Serialize(args),
-        kInitializeRetryCount
+        constants::kEndpointInitialize,
+        internal::Json::Serialize(args),
+        constants::kInitializeRetryCount
     );
 
     if (response->status != 200) {
       return std::nullopt;
     }
 
-    auto initialize_res = json::parse(response->body)
+    auto initialize_res = nlohmann::json::parse(response->body)
         .template get<data::InitializeResponse>();
 
     return NetworkResult(initialize_res, response->body);
@@ -122,10 +120,10 @@ class NetworkService {
       const string &endpoint,
       const std::string &body
   ) {
-    auto api = options_.api.value_or(kDefaultApi);
+    auto api = options_.api.value_or(constants::kDefaultApi);
 
     httplib::Client client(api);
-    client.set_compress(endpoint == kEndpointLogEvent);
+    client.set_compress(endpoint == constants::kEndpointLogEvent);
 
 //    body["statsigMetadata"] = GetStatsigMetadata();
 
@@ -133,7 +131,7 @@ class NetworkService {
         endpoint,
         GetHeaders(),
         body,
-        kContentTypeJson);
+        constants::kContentTypeJson);
   }
 };
 

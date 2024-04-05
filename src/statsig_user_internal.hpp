@@ -6,12 +6,12 @@
 
 namespace statsig {
 
-using string = std::string;
-
-string MakeCacheKey(
-    const string &sdk_key,
+std::string MakeCacheKey(
+    const std::string &sdk_key,
     const StatsigUser &user
 ) {
+  using string = std::string;
+
   std::vector<std::pair<string, string>> pairs(
       user.custom_ids.begin(),
       user.custom_ids.end()

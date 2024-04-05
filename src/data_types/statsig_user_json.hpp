@@ -36,7 +36,7 @@ StatsigUser Deserialize(const std::string &input) {
 
   StatsigUser u;
   u.user_id = j.value("userID", "");
-  u.custom_ids = j.value("customIDs", std::unordered_map<string, string>());
+  u.custom_ids = j.value("customIDs", std::unordered_map<std::string, std::string>());
 
   OPT_STR_FROM_JSON(j, "email", u.email);
   OPT_STR_FROM_JSON(j, "ip", u.ip);

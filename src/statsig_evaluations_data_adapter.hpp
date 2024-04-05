@@ -22,7 +22,7 @@ std::optional<DataAdapterResult> ReadFromCacheFile(const std::string &cache_key)
 
 void WriteToCacheFile(const std::string &cache_key, const DataAdapterResult &result) {
   File::WriteToCache(cache_key, Json::Serialize(result));
-  File::RunCacheEviction(kCachedEvaluationsPrefix);
+  File::RunCacheEviction(constants::kCachedEvaluationsPrefix);
 }
 
 class StatsigEvaluationsDataAdapter : public statsig::EvaluationsDataAdapter {
@@ -98,7 +98,7 @@ class StatsigEvaluationsDataAdapter : public statsig::EvaluationsDataAdapter {
 
   std::string GetCacheKey(const StatsigUser &user) {
     const auto key = MakeCacheKey(GetSdkKey(), user);
-    return kCachedEvaluationsPrefix + key;
+    return constants::kCachedEvaluationsPrefix + key;
   }
 
   std::string GetSdkKey() {
@@ -111,7 +111,7 @@ class StatsigEvaluationsDataAdapter : public statsig::EvaluationsDataAdapter {
   }
 
   void AddToInMemoryCache(const std::string &cache_key, const DataAdapterResult &result) {
-    if (in_memory_cache_.size() < kMaxCacheEntriesCount) {
+    if (in_memory_cache_.size() < constants::kMaxCacheEntriesCount) {
       in_memory_cache_[cache_key] = result;
       return;
     }
