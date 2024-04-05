@@ -11,7 +11,7 @@
 #include "unordered_map_util.hpp"
 #include <nlohmann/json.hpp>
 
-namespace statsig {
+namespace statsig::internal {
 
 class EvaluationStore {
  public:
@@ -91,7 +91,7 @@ class EvaluationStore {
 
     return {
         values_->layer_configs[hash],
-        evaluation_details::RecognizedFromSourceInfo(source_info_)
+        RecognizedFromSourceInfo(source_info_)
     };
   }
 

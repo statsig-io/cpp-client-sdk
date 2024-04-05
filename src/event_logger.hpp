@@ -4,7 +4,7 @@
 #include "macros.hpp"
 #include <shared_mutex>
 
-namespace statsig {
+namespace statsig::internal {
 
 class EventLogger {
  public:

@@ -2,7 +2,7 @@
 
 #include "file.hpp"
 
-namespace statsig {
+namespace statsig:: internal {
 
 class StableID {
   using string = std::string;

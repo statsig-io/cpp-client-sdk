@@ -5,6 +5,8 @@
 
 namespace statsig::data_types::log_event_request_args {
 
+using LogEventRequestArgs = internal::LogEventRequestArgs;
+
 std::string Serialize(const LogEventRequestArgs &res) {
   auto j = nlohmann::json{
 
@@ -16,6 +18,8 @@ std::string Serialize(const LogEventRequestArgs &res) {
 }
 
 namespace statsig::data_types::statsig_event {
+
+using StatsigEventInternal = internal::StatsigEventInternal;
 
 std::string Serialize(const StatsigEventInternal &res) {
   auto j = nlohmann::json{

@@ -5,7 +5,7 @@
 
 #include "constants.h"
 
-namespace statsig {
+namespace statsig::internal {
 
 class ErrorBoundary {
  public:

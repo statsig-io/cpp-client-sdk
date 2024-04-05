@@ -3,7 +3,7 @@
 #include <iostream>
 #include <filesystem>
 
-namespace statsig {
+namespace statsig::internal {
 
 namespace fs = std::filesystem;
 

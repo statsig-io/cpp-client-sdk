@@ -7,7 +7,7 @@
 #include "initialize_response.hpp"
 #include "data_types/json_parser.hpp"
 
-namespace statsig {
+namespace statsig::internal {
 
 template<typename T>
 struct NetworkResult {

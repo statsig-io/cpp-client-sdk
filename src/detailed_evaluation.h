@@ -3,7 +3,7 @@
 #include <optional>
 #include "statsig/evaluation_details.h"
 
-namespace statsig {
+namespace statsig::internal {
 
 template<typename T>
 struct DetailedEvaluation {

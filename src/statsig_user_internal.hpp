@@ -4,7 +4,7 @@
 #include "macros.hpp"
 #include "statsig/statsig_user.h"
 
-namespace statsig {
+namespace statsig::internal {
 
 std::string MakeCacheKey(
     const std::string &sdk_key,

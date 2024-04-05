@@ -25,7 +25,7 @@ void WriteToCacheFile(const std::string &cache_key, const DataAdapterResult &res
   File::RunCacheEviction(constants::kCachedEvaluationsPrefix);
 }
 
-class StatsigEvaluationsDataAdapter : public statsig::EvaluationsDataAdapter {
+class StatsigEvaluationsDataAdapter : public EvaluationsDataAdapter {
  public:
   void Attach(
       std::string &sdk_key,

@@ -2,7 +2,7 @@
 
 #include <chrono>
 
-namespace statsig {
+namespace statsig::internal {
 
 class Time {
   using milliseconds = std::chrono::milliseconds;

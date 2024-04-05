@@ -11,9 +11,13 @@
 
 namespace statsig {
 
-
-
 class StatsigContext {
+  using NetworkService = statsig::internal::NetworkService;
+  using StatsigEvaluationsDataAdapter = statsig::internal::StatsigEvaluationsDataAdapter;
+  using EventLogger = statsig::internal::EventLogger;
+  using ErrorBoundary = statsig::internal::ErrorBoundary;
+  using EvaluationStore = statsig::internal::EvaluationStore;
+
  public:
   explicit StatsigContext(
       std::string sdk_key,
@@ -27,7 +31,7 @@ class StatsigContext {
       store(EvaluationStore()),
       data_adapter(
           this->options.data_adapter
-              .value_or(new statsig::internal::StatsigEvaluationsDataAdapter())
+              .value_or(new StatsigEvaluationsDataAdapter())
       ),
       logger(EventLogger(this->options, this->network)) {
     data_adapter->Attach(this->sdk_key, this->options);

@@ -2,7 +2,21 @@
 
 #include "statsig/evaluation_details.h"
 
-namespace statsig::evaluation_details {
+namespace statsig::internal::evaluation_details {
+
+std::string GetValueSourceString(const ValueSource &source) {
+  switch (source) {
+    case ValueSource::Uninitialized:return "Uninitialized";
+    case ValueSource::Loading:return "Loading";
+    case ValueSource::NoValues:return "NoValues";
+    case ValueSource::Cache:return "Cache";
+    case ValueSource::Network:return "Network";
+    case ValueSource::Bootstrap:return "Bootstrap";
+  }
+
+  return "";
+}
+
 
 struct SourceInfo {
   ValueSource source;

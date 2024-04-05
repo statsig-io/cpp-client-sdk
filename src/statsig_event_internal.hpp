@@ -6,7 +6,7 @@
 #include "macros.hpp"
 #include "detailed_evaluation.h"
 
-namespace statsig {
+namespace statsig::internal {
 
 struct StatsigEventInternal {
   using string = std::string;
@@ -42,7 +42,7 @@ StatsigEventInternal MakeExposureEvent(
     const std::optional<T> &evaluation,
     const EvaluationDetails &evaluation_details,
     const std::unordered_map<std::string, std::string> &metadata,
-    const std::optional<std::vector<statsig::data::SecondaryExposure>> &secondary_exposures = std::nullopt
+    const std::optional<std::vector<data::SecondaryExposure>> &secondary_exposures = std::nullopt
 ) {
   StatsigEventInternal result;
 
@@ -68,7 +68,7 @@ StatsigEventInternal MakeExposureEvent(
 StatsigEventInternal MakeGateExposure(
     const std::string &gate_name,
     const StatsigUser &user,
-    const DetailedEvaluation<statsig::data::GateEvaluation> &detailed_evaluation
+    const DetailedEvaluation<data::GateEvaluation> &detailed_evaluation
 ) {
   auto evaluation = detailed_evaluation.evaluation;
   auto value = UNWRAP(evaluation, value);
@@ -90,7 +90,7 @@ StatsigEventInternal MakeGateExposure(
 StatsigEventInternal MakeConfigExposure(
     const std::string &config_name,
     const StatsigUser &user,
-    const DetailedEvaluation<statsig::data::ConfigEvaluation> &detailed_evaluation
+    const DetailedEvaluation<data::ConfigEvaluation> &detailed_evaluation
 ) {
   auto evaluation = detailed_evaluation.evaluation;
   auto rule_id = UNWRAP(evaluation, rule_id);
@@ -111,7 +111,7 @@ StatsigEventInternal MakeLayerParamExposure(
     const std::string &layer_name,
     const std::string &param_name,
     const StatsigUser &user,
-    const DetailedEvaluation<statsig::data::LayerEvaluation> &detailed_evaluation
+    const DetailedEvaluation<data::LayerEvaluation> &detailed_evaluation
 ) {
   auto evaluation = detailed_evaluation.evaluation;
   auto rule_id = UNWRAP(evaluation, rule_id);

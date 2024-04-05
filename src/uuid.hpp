@@ -5,7 +5,7 @@
 #include <iomanip>
 #include <sstream>
 
-namespace statsig {
+namespace statsig::internal {
 
 class UUID {
  public:

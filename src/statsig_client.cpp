@@ -92,7 +92,7 @@ void StatsigClient::UpdateUserAsync(
           context_->user,
           result,
           [this, initiator, callback](std::optional<DataAdapterResult> result) {
-            if (AreUsersEqual(initiator, context_->user)) {
+            if (internal::AreUsersEqual(initiator, context_->user)) {
               context_->store.SetValuesFromDataAdapterResult(std::move(result));
             }
 
@@ -118,7 +118,7 @@ void StatsigClient::LogEvent(const StatsigEvent &event) {
   INIT_GUARD();
 
   EB(([this, &event]() {
-    context_->logger.Enqueue(InternalizeEvent(event, context_->user));
+    context_->logger.Enqueue(internal::InternalizeEvent(event, context_->user));
   }));
 }
 
@@ -130,14 +130,14 @@ bool StatsigClient::CheckGate(const std::string &gate_name) {
 }
 
 FeatureGate StatsigClient::GetFeatureGate(const std::string &gate_name) {
-  FeatureGate result(gate_name, evaluation_details::Uninitialized());
+  FeatureGate result(gate_name, internal::evaluation_details::Uninitialized());
   INIT_GUARD(result);
 
   EB(([this, &gate_name, &result]() {
     auto gate = context_->store.GetGate(gate_name);
 
     context_->logger.Enqueue(
-        MakeGateExposure(
+        internal::MakeGateExposure(
             gate_name,
             context_->user,
             gate
@@ -156,14 +156,14 @@ FeatureGate StatsigClient::GetFeatureGate(const std::string &gate_name) {
 }
 
 DynamicConfig StatsigClient::GetDynamicConfig(const std::string &config_name) {
-  DynamicConfig result(config_name, evaluation_details::Uninitialized());
+  DynamicConfig result(config_name, internal::evaluation_details::Uninitialized());
   INIT_GUARD(result);
 
   EB(([this, &config_name, &result]() {
     auto config = context_->store.GetConfig(config_name);
 
     context_->logger.Enqueue(
-        MakeConfigExposure(
+        internal::MakeConfigExposure(
             config_name,
             context_->user,
             config
@@ -182,13 +182,13 @@ DynamicConfig StatsigClient::GetDynamicConfig(const std::string &config_name) {
 }
 
 Experiment StatsigClient::GetExperiment(const std::string &experiment_name) {
-  Experiment result(experiment_name, evaluation_details::Uninitialized());
+  Experiment result(experiment_name, internal::evaluation_details::Uninitialized());
   INIT_GUARD(result);
 
   EB(([this, &experiment_name, &result]() {
     auto experiment = context_->store.GetConfig(experiment_name);
     context_->logger.Enqueue(
-        MakeConfigExposure(
+        internal::MakeConfigExposure(
             experiment_name,
             context_->user,
             experiment
@@ -207,7 +207,7 @@ Experiment StatsigClient::GetExperiment(const std::string &experiment_name) {
 }
 
 Layer StatsigClient::GetLayer(const std::string &layer_name) {
-  Layer result(layer_name, evaluation_details::Uninitialized());
+  Layer result(layer_name, internal::evaluation_details::Uninitialized());
   INIT_GUARD(result);
 
   EB(([this, &layer_name, &result]() {
@@ -216,7 +216,7 @@ Layer StatsigClient::GetLayer(const std::string &layer_name) {
     auto layer = context_->store.GetLayer(layer_name);
 
     auto log_exposure = [layer_name, layer, user, logger](const std::string &param_name) {
-      auto expo = MakeLayerParamExposure(
+      auto expo = internal::MakeLayerParamExposure(
           layer_name,
           param_name,
           user,
