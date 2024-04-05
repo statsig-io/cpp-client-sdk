@@ -3,7 +3,7 @@
 #include <optional>
 #include <string>
 
-#ifdef USING_NLOHMANN_JSON
+#ifdef STATSIG_WITH_NLOHMANN_JSON
 #include <nlohmann/json.hpp>
 typedef nlohmann::json JsonValue;
 #else

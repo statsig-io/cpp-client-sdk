@@ -4,12 +4,21 @@
 #include <unordered_map>
 #include <any>
 
-#include "data_adapter_result_json.hpp"
-#include "statsig_user_json.hpp"
-#include "initialize_request_args_json.hpp"
-#include "initialize_response_json.hpp"
-#include "statsig_event_json.hpp"
-#include "error_boundary_request_args_json.hpp"
+#ifdef STATSIG_WITH_NLOHMANN_JSON
+#include "nlohmann_json_types/data_adapter_result_json.hpp"
+#include "nlohmann_json_types/statsig_user_json.hpp"
+#include "nlohmann_json_types/initialize_request_args_json.hpp"
+#include "nlohmann_json_types/initialize_response_json.hpp"
+#include "nlohmann_json_types/statsig_event_json.hpp"
+#include "nlohmann_json_types/error_boundary_request_args_json.hpp"
+#else
+#include "default_json_types/data_adapter_result_json.hpp"
+#include "default_json_types/statsig_user_json.hpp"
+#include "default_json_types/initialize_request_args_json.hpp"
+#include "default_json_types/initialize_response_json.hpp"
+#include "default_json_types/statsig_event_json.hpp"
+#include "default_json_types/error_boundary_request_args_json.hpp"
+#endif
 
 namespace statsig::internal {
 

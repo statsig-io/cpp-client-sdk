@@ -1,7 +1,5 @@
 #pragma once
 
-#include <httplib.h>
-
 #include "statsig/statsig.h"
 
 #include "constants.h"

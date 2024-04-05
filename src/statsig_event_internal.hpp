@@ -23,6 +23,7 @@ struct StatsigEventInternal {
 
 struct LogEventRequestArgs {
   const std::vector<StatsigEventInternal> &events;
+  std::unordered_map<std::string, std::string> statsig_metadata;
 };
 
 StatsigEventInternal InternalizeEvent(StatsigEvent event, StatsigUser &user) {

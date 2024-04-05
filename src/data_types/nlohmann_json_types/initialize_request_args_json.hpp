@@ -2,7 +2,8 @@
 
 #include <nlohmann/json.hpp>
 
-#include "../initialize_request_args.h"
+#include "statsig_user_json.hpp"
+#include "../../initialize_request_args.h"
 
 namespace statsig::data_types::initialize_request_args {
 

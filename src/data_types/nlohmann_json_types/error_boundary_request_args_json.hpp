@@ -2,7 +2,7 @@
 
 #include <nlohmann/json.hpp>
 
-#include "../error_boundary.hpp"
+#include "../../error_boundary.hpp"
 
 namespace statsig::data_types::error_boundary_request_args {
 

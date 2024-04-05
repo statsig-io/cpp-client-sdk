@@ -4,7 +4,7 @@
 
 namespace statsig {
 
-#ifdef USING_NLOHMANN_JSON
+#ifdef STATSIG_WITH_NLOHMANN_JSON
 std::optional<std::string> ValueMap::GetStringValue(const std::string &key) {
   auto str = GetValue(key);
   if (str.is_string()) {

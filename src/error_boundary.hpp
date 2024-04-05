@@ -15,6 +15,8 @@ struct ErrorBoundaryRequestArgs {
 
 #include "data_types/json_parser.hpp"
 #include "constants.h"
+#include "network_compat.hpp"
+#include <set>
 
 namespace statsig::internal {
 
@@ -55,19 +57,18 @@ class ErrorBoundary {
 
       ErrorBoundaryRequestArgs body{error, tag, GetStackTrace()};
 
-      httplib::Headers headers = {
+      std::unordered_map<string, string> headers{
           {"STATSIG-API-KEY", sdk_key_},
           {"STATSIG-SDK-TYPE", constants::kSdkType},
           {"STATSIG-SDK-VERSION", constants::kSdkVersion}
       };
 
-      httplib::Client(eb_api)
-          .Post(
-              "/v1/sdk_exception",
-              headers,
-              Json::Serialize(body),
-              constants::kContentTypeJson
-          );
+      NetworkCompat::Post(
+          eb_api,
+          "/v1/sdk_exception",
+          headers,
+          Json::Serialize(body)
+      );
     } catch (std::exception &_) {
       // noop
     }

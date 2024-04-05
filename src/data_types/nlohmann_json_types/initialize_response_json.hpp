@@ -1,7 +1,7 @@
 #pragma once
 
 #include <nlohmann/json.hpp>
-#include "../initialize_response.hpp"
+#include "../../initialize_response.hpp"
 
 namespace statsig::data_types {
 
