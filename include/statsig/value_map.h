@@ -13,17 +13,18 @@ typedef std::any JsonValue;
 
 namespace statsig {
 
+template<typename T>
 class ValueMap {
  public:
   ValueMap() = default;
-  explicit ValueMap(JsonValue data) : data_(data) {}
+  explicit ValueMap(T data) : data_(data) {}
 
   std::optional<std::string> GetStringValue(const std::string &key);
 
-  JsonValue GetValue(const std::string &key);
+  T GetValue(const std::string &key);
 
  private:
-  JsonValue data_;
+  T data_;
 };
 
 }

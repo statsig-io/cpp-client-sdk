@@ -2,7 +2,7 @@
 
 #include "statsig/evaluations_data_adapter.h"
 #include "network_service.hpp"
-#include "data_types/json_parser.hpp"
+#include "json_parser.hpp"
 
 namespace statsig::internal {
 
@@ -60,21 +60,23 @@ class StatsigEvaluationsDataAdapter : public EvaluationsDataAdapter {
       const std::function<void(std::optional<DataAdapterResult>)> &callback
   ) override {
     const auto cache = current ? current : GetDataSync(user);
-    const auto latest = FetchLatest(user, cache);
-    const auto cache_key = GetCacheKey(user);
+    FetchLatest(user, cache, [&](std::optional<DataAdapterResult> latest){
+      const auto cache_key = GetCacheKey(user);
 
-    if (!latest.has_value()) {
-      callback(std::nullopt);
-      return;
-    }
+      if (!latest.has_value()) {
+        callback(std::nullopt);
+        return;
+      }
 
-    AddToInMemoryCache(cache_key, latest.value());
+      AddToInMemoryCache(cache_key, latest.value());
 
-    if (latest->source == ValueSource::Network) {
-      WriteToCacheFile(cache_key, latest.value());
-    }
+      if (latest->source == ValueSource::Network) {
+        WriteToCacheFile(cache_key, latest.value());
+      }
 
-    callback(latest);
+      callback(latest);
+    });
+
   }
 
   void SetData(
@@ -132,20 +134,26 @@ class StatsigEvaluationsDataAdapter : public EvaluationsDataAdapter {
     in_memory_cache_[cache_key] = result;
   }
 
-  std::optional<DataAdapterResult> FetchLatest(
+  void FetchLatest(
       const StatsigUser &user,
-      const std::optional<DataAdapterResult> current
+      const std::optional<DataAdapterResult> current,
+      const std::function<void(std::optional<DataAdapterResult>)> &callback
   ) {
-    const auto response = network_->FetchValues(user);
-    if (!response.has_value()) {
-      return std::nullopt;
-    }
+    network_->FetchValues(
+        user,
+        [&callback](FetchValuesResult response) {
+          if (!response.has_value()) {
+            callback(std::nullopt);
+            return;
+          }
 
-    DataAdapterResult result;
-    result.data = response->raw;
-    result.receivedAt = Time::now();
-    result.source = ValueSource::Network;
-    return result;
+          DataAdapterResult result;
+          result.data = response->raw;
+          result.receivedAt = Time::now();
+          result.source = ValueSource::Network;
+          callback(result);
+        });
+
   }
 };
 

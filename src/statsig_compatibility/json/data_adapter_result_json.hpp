@@ -2,7 +2,7 @@
 
 #include "statsig/evaluations_data_adapter.h"
 
-#include <nlohmann/json.hpp>
+#include "nlohmann/json.hpp"
 
 namespace statsig::data_types::data_adapter_result {
 

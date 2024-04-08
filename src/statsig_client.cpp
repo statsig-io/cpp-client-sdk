@@ -159,7 +159,7 @@ DynamicConfig StatsigClient::GetDynamicConfig(const std::string &config_name) {
   DynamicConfig result(config_name, internal::evaluation_details::Uninitialized());
   INIT_GUARD(result);
 
-  EB(([this, &config_name, &result]() {
+//  EB(([this, &config_name, &result]() {
     auto config = context_->store.GetConfig(config_name);
 
     context_->logger.Enqueue(
@@ -176,7 +176,7 @@ DynamicConfig StatsigClient::GetDynamicConfig(const std::string &config_name) {
         config.details,
         UNWRAP(config.evaluation, value)
     );
-  }));
+//  }));
 
   return result;
 }

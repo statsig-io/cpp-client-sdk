@@ -1,8 +1,7 @@
 #pragma once
 
-#ifdef STATSIG_WITH_HTTPLIB
 #include "httplib.h"
-#endif
+#include <functional>
 
 namespace statsig::internal {
 
@@ -11,17 +10,15 @@ struct HttpResponse {
   const int status = -1;
 };
 
-class NetworkCompat {
+class NetworkClient {
  public:
-  static HttpResponse Post(
+  static void Post(
       const std::string &api,
       const std::string &path,
       const std::unordered_map<std::string, std::string> &headers,
-      const std::string &body
+      const std::string &body,
+      const std::function<void(HttpResponse)>& callback
   ) {
-
-#ifdef STATSIG_WITH_HTTPLIB
-
     httplib::Client client(api);
     client.set_compress(path == constants::kEndpointLogEvent);
 
@@ -37,13 +34,7 @@ class NetworkCompat {
         constants::kContentTypeJson
     );
 
-    return {result->body, result->status};
-
-#else
-
-    return {};
-
-#endif
+    callback(HttpResponse{result->body, result->status});
   }
 };
 

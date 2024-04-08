@@ -21,7 +21,7 @@ endif ()
 include(FetchContent)
 
 # HttpLib
-add_compile_definitions(STATSIG_WITH_HTTPLIB "YES")
+#add_compile_definitions(STATSIG_WITH_HTTPLIB "YES")
 include(cmake/httplib.cmake)
 target_link_libraries(${PROJECT_NAME} PUBLIC httplib::httplib)
 target_compile_definitions(${PROJECT_NAME} PRIVATE CPPHTTPLIB_ZLIB_SUPPORT)
@@ -31,6 +31,6 @@ find_package(ZLIB REQUIRED)
 target_link_libraries(${PROJECT_NAME} PUBLIC ${ZLIB_LIBRARIES})
 
 # Json
-add_compile_definitions(STATSIG_WITH_NLOHMANN_JSON "YES")
+#add_compile_definitions(STATSIG_WITH_NLOHMANN_JSON "YES")
 include(cmake/json.cmake)
 target_link_libraries(${PROJECT_NAME} PUBLIC nlohmann_json::nlohmann_json)

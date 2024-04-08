@@ -28,7 +28,7 @@ JsonValue ValueMap::GetValue(const std::string &key) {
 }
 #else
 std::optional<std::string> ValueMap::GetStringValue(const std::string &key) {
-  throw "";
+  return "";
 }
 
 JsonValue ValueMap::GetValue(const std::string &key) {

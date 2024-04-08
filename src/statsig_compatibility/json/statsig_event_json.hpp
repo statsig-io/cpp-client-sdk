@@ -1,6 +1,6 @@
 #pragma once
 
-#include <nlohmann/json.hpp>
+#include "nlohmann/json.hpp"
 #include "../../statsig_event_internal.hpp"
 
 namespace statsig::data_types::log_event_request_args {

@@ -5,8 +5,8 @@
 #include "statsig_internal.h"
 #include "initialize_request_args.h"
 #include "initialize_response.hpp"
-#include "data_types/json_parser.hpp"
-#include "network_compat.hpp"
+#include "json_parser.hpp"
+#include "statsig_compatibility/network/network_client.hpp"
 #include "unordered_map_util.hpp"
 
 namespace statsig::internal {
@@ -17,7 +17,8 @@ struct NetworkResult {
   std::string raw;
 
   NetworkResult(T response, std::string raw)
-      : response(std::move(response)), raw(std::move(raw)) {}
+      : response(std::move(response)),
+        raw(std::move(raw)) {}
 };
 
 typedef std::optional<NetworkResult<data::InitializeResponse>> FetchValuesResult;
@@ -47,14 +48,13 @@ class NetworkService {
       err_boundary_(ErrorBoundary(sdk_key)),
       session_id_(UUID::v4()) {}
 
-  FetchValuesResult FetchValues(const StatsigUser &user) {
-    FetchValuesResult result;
-
-    err_boundary_.Capture(__func__, [this, &result, &user]() {
-      result = FetchValuesImpl(user);
+  void FetchValues(
+      const StatsigUser &user,
+      const std::function<void(FetchValuesResult)> &callback
+  ) {
+    err_boundary_.Capture(__func__, [this, &callback, &user]() {
+      FetchValuesImpl(user, callback);
     });
-
-    return result;
   }
 
   void SendEvents(const std::vector<StatsigEventInternal> &events) {
@@ -66,7 +66,10 @@ class NetworkService {
     PostWithRetry(
         constants::kEndpointLogEvent,
         internal::Json::Serialize(args),
-        constants::kLogEventRetryCount
+        constants::kLogEventRetryCount,
+        [](std::optional<HttpResponse> response) {
+          // todo: save to disk on failure
+        }
     );
   }
 
@@ -77,7 +80,7 @@ class NetworkService {
   string session_id_;
   StableID stable_id_;
 
-  std::unordered_map<std::string, std::string> GetHeaders() {
+  std::unordered_map<string, string> GetHeaders() {
     return {
         {"STATSIG-API-KEY", sdk_key_},
         {"STATSIG-CLIENT-TIME", std::to_string(Time::now())},
@@ -88,7 +91,7 @@ class NetworkService {
     };
   }
 
-  std::unordered_map<std::string, std::string> GetStatsigMetadata() {
+  std::unordered_map<string, string> GetStatsigMetadata() {
     return {
         {"sdkType", constants::kSdkType},
         {"sdkVersion", constants::kSdkVersion},
@@ -96,68 +99,89 @@ class NetworkService {
         {"stableID", stable_id_.Get()}};
   }
 
-  FetchValuesResult FetchValuesImpl(const StatsigUser &user) {
+  void FetchValuesImpl(
+      const StatsigUser &user,
+      const std::function<void(FetchValuesResult)> &callback
+  ) {
     auto args = internal::InitializeRequestArgs{
         "djb2",
         user,
         GetStatsigMetadata()
     };
 
-    auto response = PostWithRetry(
+    PostWithRetry(
         constants::kEndpointInitialize,
         internal::Json::Serialize(args),
-        constants::kInitializeRetryCount
+        constants::kInitializeRetryCount,
+        [&callback](std::optional<HttpResponse> response) {
+          if (!response.has_value()) {
+            callback(std::nullopt);
+            return;
+          }
+
+          if (response->status < 200 || response->status >= 300) {
+            callback(std::nullopt);
+            return;
+          }
+
+          auto init_response = Json::Deserialize<data::InitializeResponse>(response->text);
+          if (!init_response.has_value()) {
+            callback(std::nullopt);
+            return;
+          }
+
+          callback(NetworkResult(init_response.value(), response->text));
+        }
     );
-
-    if (!response.has_value()) {
-      return std::nullopt;
-    }
-
-    if (response->status < 200 || response->status >= 300) {
-      return std::nullopt;
-    }
-
-    auto init_response = Json::Deserialize<data::InitializeResponse>(response->text);
-    if (!init_response.has_value()) {
-      return std::nullopt;
-    }
-
-    return NetworkResult(init_response.value(), response->text);
   }
 
-  std::optional<HttpResponse> PostWithRetry(
+  void PostWithRetry(
       const string &endpoint,
       const std::string &body,
-      const int max_attempts
+      const int max_attempts,
+      const std::function<void(std::optional<HttpResponse>)> &callback
   ) {
-    for (int i = 0; i < max_attempts; i++) {
-      auto response = Post(endpoint, body);
+    int attempt = 0;
 
+    Post(endpoint, body, [&attempt, &callback](HttpResponse response) {
       if (response.status >= 200 && response.status < 300) {
-        return response;
+        callback(response);
+        return;
       }
 
       if (!MapContains(retryable_codes_, response.status)) {
-        break;
+        callback(std::nullopt);
+        return;
       }
-    }
+    });
+//
+//    for (int i = 0; i < max_attempts; i++) {
+//
+//
+//      if (response.status >= 200 && response.status < 300) {
+//        return response;
+//      }
+//
+//      if (!MapContains(retryable_codes_, response.status)) {
+//        break;
+//      }
+//    }
 
-    return std::nullopt;
   }
 
-  HttpResponse Post(
+  void Post(
       const string &endpoint,
-      const std::string &body
+      const std::string &body,
+      const std::function<void(HttpResponse)> &callback
   ) {
     auto api = options_.api.value_or(constants::kDefaultApi);
 
-//    body["statsigMetadata"] = GetStatsigMetadata();
-
-    return NetworkCompat::Post(
+    return NetworkClient::Post(
         api,
         endpoint,
         GetHeaders(),
-        body
+        body,
+        callback
     );
   }
 };

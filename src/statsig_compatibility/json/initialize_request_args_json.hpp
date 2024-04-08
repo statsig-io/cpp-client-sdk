@@ -1,6 +1,6 @@
 #pragma once
 
-#include <nlohmann/json.hpp>
+#include "nlohmann/json.hpp"
 
 #include "statsig_user_json.hpp"
 #include "../../initialize_request_args.h"

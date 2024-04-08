@@ -5,12 +5,8 @@
 #include <functional>
 
 #include "evaluation_details.h"
-#include "value_map.h"
 
 namespace statsig {
-
-typedef std::any JsonVal;
-typedef std::unordered_map<std::string, JsonVal> JsonObj;
 
 class BaseSpec {
  public:

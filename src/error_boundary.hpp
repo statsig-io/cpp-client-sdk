@@ -13,9 +13,9 @@ struct ErrorBoundaryRequestArgs {
 
 }
 
-#include "data_types/json_parser.hpp"
+#include "json_parser.hpp"
 #include "constants.h"
-#include "network_compat.hpp"
+#include "statsig_compatibility/network/network_client.hpp"
 #include <set>
 
 namespace statsig::internal {
@@ -63,11 +63,12 @@ class ErrorBoundary {
           {"STATSIG-SDK-VERSION", constants::kSdkVersion}
       };
 
-      NetworkCompat::Post(
+      NetworkClient::Post(
           eb_api,
           "/v1/sdk_exception",
           headers,
-          Json::Serialize(body)
+          Json::Serialize(body),
+          [](std::optional<HttpResponse> response) {}
       );
     } catch (std::exception &_) {
       // noop
