@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include "statsig_compatibility/json/json_value.hpp"
 
 namespace statsig::data {
 
@@ -18,7 +19,7 @@ struct GateEvaluation : Evaluation<bool> {
   std::optional<std::string> id_type;
 };
 
-struct ConfigEvaluation : Evaluation<ValueMap> {
+struct ConfigEvaluation : Evaluation<JsonValue> {
   std::string id_type;
   std::optional<std::string> group_name;
   bool is_device_based = false;

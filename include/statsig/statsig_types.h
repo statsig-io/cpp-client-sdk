@@ -5,6 +5,7 @@
 #include <functional>
 
 #include "evaluation_details.h"
+#include "statsig_compatibility/json/json_value.hpp"
 
 namespace statsig {
 
@@ -64,21 +65,21 @@ class FeatureGate : public EvaluatedSpec<bool> {
   using EvaluatedSpec<bool>::EvaluatedSpec;
 };
 
-class DynamicConfig : public EvaluatedSpec<ValueMap> {
+class DynamicConfig : public EvaluatedSpec<JsonValue> {
  public:
-  ValueMap GetValues();
+  JsonValue GetValues();
 
-  using EvaluatedSpec<ValueMap>::EvaluatedSpec;
+  using EvaluatedSpec<JsonValue>::EvaluatedSpec;
 };
 
-class Experiment : public EvaluatedSpec<ValueMap> {
+class Experiment : public EvaluatedSpec<JsonValue> {
  public:
-  ValueMap GetValues();
+  JsonValue GetValues();
 
-  using EvaluatedSpec<ValueMap>::EvaluatedSpec;
+  using EvaluatedSpec<JsonValue>::EvaluatedSpec;
 };
 
-class Layer : public EvaluatedSpec<ValueMap> {
+class Layer : public EvaluatedSpec<JsonValue> {
   friend class StatsigClient;
 
  public:
@@ -88,13 +89,13 @@ class Layer : public EvaluatedSpec<ValueMap> {
       const std::string &name,
       const std::string &rule_id,
       const EvaluationDetails &evaluation_details,
-      const ValueMap &value,
+      const JsonValue &value,
       const std::function<void(const std::string &)> &log_param_exposure)
-      : EvaluatedSpec<ValueMap>(name, rule_id, evaluation_details, value),
+      : EvaluatedSpec<JsonValue>(name, rule_id, evaluation_details, value),
         log_param_exposure_(log_param_exposure) {
   }
 
-  using EvaluatedSpec<ValueMap>::EvaluatedSpec;
+  using EvaluatedSpec<JsonValue>::EvaluatedSpec;
 
  private:
   std::function<void(const std::string &)> log_param_exposure_;

@@ -1,6 +1,20 @@
 .DS_Store
 .idea
 example/.idea
+_deps
+CMakeFiles
+CMakeCache.txt
+Makefile
+cmake_install.cmake
+.cmake
+.ninja_deps
+.ninja_log
+build.ninja
+Testing
+tests/CTestTestfile.cmake
+StatsigClientSDKTests
+build
+.vscode
 
 # Created by https://www.toptal.com/developers/gitignore/api/c++,clion
 # Edit at https://www.toptal.com/developers/gitignore?templates=c++,clion

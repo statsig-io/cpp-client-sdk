@@ -2,6 +2,7 @@
 #include "statsig/evaluation_details.h"
 
 #include <unordered_map>
+#include "statsig_compatibility/json/json_value.hpp"
 
 namespace statsig {
 
@@ -21,17 +22,18 @@ bool FeatureGate::GetValue() {
   return value_;
 }
 
-ValueMap DynamicConfig::GetValues() {
+JsonValue DynamicConfig::GetValues() {
   return value_;
 }
 
-ValueMap Experiment::GetValues() {
+JsonValue Experiment::GetValues() {
   return value_;
 }
 
 std::optional<JsonValue> Layer::GetValue(const std::string &parameter_name) {
   log_param_exposure_(parameter_name);
-  return value_.GetValue(parameter_name);
+
+  return JsonValue::GetValue(parameter_name, value_);
 }
 
 }

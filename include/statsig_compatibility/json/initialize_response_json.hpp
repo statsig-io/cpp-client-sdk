@@ -1,7 +1,8 @@
 #pragma once
 
 #include "nlohmann/json.hpp"
-#include "../../initialize_response.hpp"
+#include "../../../src/initialize_response.hpp"
+#include "json_value.hpp"
 
 namespace statsig::data_types {
 
@@ -47,7 +48,7 @@ statsig::data::ConfigEvaluation FromJson(const nlohmann::json &j) {
   j.at("name").get_to(e.name);
   j.at("rule_id").get_to(e.rule_id);
   j.at("secondary_exposures").get_to(e.secondary_exposures);
-  e.value = ValueMap(j["value"]);
+  e.value = JsonValue(j["value"]);
   return e;
 }
 
@@ -69,7 +70,7 @@ statsig::data::LayerEvaluation FromJson(const nlohmann::json &j) {
   j.at("name").get_to(e.name);
   j.at("rule_id").get_to(e.rule_id);
   j.at("secondary_exposures").get_to(e.secondary_exposures);
-  e.value = ValueMap(j["value"]);
+  e.value = JsonValue(j["value"]);
   j.at("explicit_parameters").get_to(e.explicit_parameters);
   j.at("undelegated_secondary_exposures").get_to(e.undelegated_secondary_exposures);
 
