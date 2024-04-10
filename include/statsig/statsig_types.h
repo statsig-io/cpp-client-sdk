@@ -5,7 +5,7 @@
 #include <functional>
 
 #include "evaluation_details.h"
-#include "json_value.hpp"
+#include "statsig_compatibility/json/json_value.hpp"
 
 namespace statsig {
 

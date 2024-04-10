@@ -3,7 +3,6 @@
 
 #include <unordered_map>
 
-#include "json_serialization/unreal_json_utils.hpp"
 #include "statsig_compatibility/json/json_value.hpp"
 
 namespace statsig {
