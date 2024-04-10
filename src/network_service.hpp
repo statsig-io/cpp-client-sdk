@@ -7,6 +7,7 @@
 #include "initialize_response.hpp"
 #include "json_parser.hpp"
 #include "statsig_compatibility/network/network_client.hpp"
+#include "statsig_compatibility/constants/constants.h"
 #include "unordered_map_util.hpp"
 
 namespace statsig::internal {
@@ -105,7 +106,7 @@ class NetworkService {
         {"STATSIG-API-KEY", sdk_key_},
         {"STATSIG-CLIENT-TIME", std::to_string(Time::now())},
         {"STATSIG-SERVER-SESSION-ID", session_id_},
-        {"STATSIG-SDK-TYPE", constants::kSdkType},
+        {"STATSIG-SDK-TYPE", statsig_compatibility::constants::kSdkType},
         {"STATSIG-SDK-VERSION", constants::kSdkVersion},
         {"Accept-Encoding", "gzip"}
     };
@@ -113,7 +114,7 @@ class NetworkService {
 
   std::unordered_map<string, string> GetStatsigMetadata() {
     return {
-        {"sdkType", constants::kSdkType},
+        {"sdkType", statsig_compatibility::constants::kSdkType},
         {"sdkVersion", constants::kSdkVersion},
         {"sessionID", session_id_},
         {"stableID", stable_id_.Get()}};

@@ -1,75 +1,44 @@
 #pragma once
 
-#include <fstream>
 #include <filesystem>
+
+#include "statsig_compatibility/filesystem/file_helper.hpp"
 
 namespace statsig::internal {
 
 namespace fs = std::filesystem;
 
 class File {
- public:
+public:
   using string = std::string;
+  using FileHelper = statsig_compatibility::FileHelper;
 
-  static void WriteToCache(const string &key, const string &content) {
-    EnsureCacheDirectoryExists();
+  static void WriteToCache(const string& key, const string& content) {
+    FileHelper::EnsureCacheDirectoryExists();
 
-    auto path = fs::path(constants::kCacheDirectory) / fs::path(key);
-
-    std::ofstream file(path);
-    file << content;
-    file.close();
+    auto path = FileHelper::CombinePath(FileHelper::GetCacheDir(), key);
+    FileHelper::WriteStringToFile(content, path);
   }
 
-  static std::optional<string> ReadFromCache(const string &key) {
-    EnsureCacheDirectoryExists();
+  static std::optional<string> ReadFromCache(const string& key) {
+    FileHelper::EnsureCacheDirectoryExists();
 
-    auto path = fs::path(constants::kCacheDirectory) / fs::path(key);
-
-    if (!fs::exists(path)) {
-      return std::nullopt;
-    }
-
-    std::ifstream file(path);
-    string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-    file.close();
-
-    return content;
+    auto path = FileHelper::CombinePath(FileHelper::GetCacheDir(), key);
+    return FileHelper::ReadStringToFile(path);
   }
 
   static void RunCacheEviction(std::string prefix) {
-    std::vector<fs::path> paths;
+    auto paths = FileHelper::GetCachePathsSortedYoungestFirst(prefix);
 
-    for (const auto &entry : fs::directory_iterator(constants::kCacheDirectory)) {
-      if (!entry.is_regular_file()) {
-        continue;
-      }
-
-      const auto filename = entry.path().filename().string();
-      if (filename.find_first_of(prefix) == std::string::npos) {
-        continue;
-      }
-
-      paths.push_back(entry.path());
-    }
-
-    sort(paths.begin(), paths.end(),
-         [](const fs::path &left, const fs::path &right) {
-           return fs::last_write_time(left) > fs::last_write_time(right);
-         });
-
-    while (paths.size() > constants::kMaxCacheEntriesCount) {
-      const auto &eldest = paths.back();
-      fs::remove(eldest);
-      paths.pop_back();
-    }
-  }
-
-  static void EnsureCacheDirectoryExists() {
-    if (fs::exists(constants::kCacheDirectory)) {
+    if (paths.size() < constants::kMaxCacheEntriesCount) {
       return;
     }
-    fs::create_directory(constants::kCacheDirectory);
+    
+    while (paths.size() > constants::kMaxCacheEntriesCount) {
+      const auto& eldest = paths.back();
+      FileHelper::DeleteFile(eldest);
+      paths.pop_back();
+    }
   }
 };
 

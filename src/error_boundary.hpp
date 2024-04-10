@@ -15,6 +15,7 @@ struct ErrorBoundaryRequestArgs {
 #include "json_parser.hpp"
 #include "constants.h"
 #include "statsig_compatibility/network/network_client.hpp"
+#include "statsig_compatibility/constants/constants.h"
 #include <set>
 
 namespace statsig::internal {
@@ -60,7 +61,7 @@ public:
 
       std::unordered_map<string, string> headers{
           {"STATSIG-API-KEY", sdk_key_},
-          {"STATSIG-SDK-TYPE", constants::kSdkType},
+          {"STATSIG-SDK-TYPE", statsig_compatibility::constants::kSdkType},
           {"STATSIG-SDK-VERSION", constants::kSdkVersion}
       };
 

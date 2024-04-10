@@ -21,8 +21,8 @@ std::optional<DataAdapterResult> ReadFromCacheFile(const std::string &cache_key)
 }
 
 void WriteToCacheFile(const std::string &cache_key, const DataAdapterResult &result) {
-  File::WriteToCache(cache_key, Json::Serialize(result));
   File::RunCacheEviction(constants::kCachedEvaluationsPrefix);
+  File::WriteToCache(cache_key, Json::Serialize(result));
 }
 
 class StatsigEvaluationsDataAdapter : public EvaluationsDataAdapter {
