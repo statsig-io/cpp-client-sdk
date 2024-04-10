@@ -46,6 +46,7 @@ class Json {
   static std::string Serialize(const T &input) {
     static_assert(
         std::disjunction<
+            // std::is_same<T, data::InitializeResponse>, Do Not Serialize InitRes, just use the raw network string
             std::is_same<T, InitializeRequestArgs>,
             std::is_same<T, StatsigUser>,
             std::is_same<T, DataAdapterResult>,
