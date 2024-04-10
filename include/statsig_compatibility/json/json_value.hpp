@@ -21,4 +21,8 @@ inline JsonObject GetSafeJsonObject(const JsonObject& object) {
   return nlohmann::json();
 }
 
+inline JsonObject EmptyJsonObject() {
+  return nlohmann::json::parse("{}");
+}
+
 }

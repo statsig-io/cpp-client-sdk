@@ -11,6 +11,8 @@ std::string Serialize(const internal::InitializeRequestArgs &args) {
   auto j = nlohmann::json{
       {"hash", args.hash},
       {"user", statsig_user::ToJson(args.user)},
+      {"statsigMetadata", args.statsig_metadata},
+      {"sinceTime", args.since_time},
   };
 
   return j.dump();

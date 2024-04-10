@@ -34,8 +34,9 @@ struct LayerEvaluation : ConfigEvaluation {
 };
 
 struct InitializeResponse {
-  std::optional<std::string> generator;
-  long time;
+  long time = 0;
+  bool has_updates = false;
+
   std::unordered_map<std::string, GateEvaluation> feature_gates;
   std::unordered_map<std::string, ConfigEvaluation> dynamic_configs;
   std::unordered_map<std::string, LayerEvaluation> layer_configs;

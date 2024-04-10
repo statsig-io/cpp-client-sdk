@@ -11,12 +11,12 @@ std::string GetValueSourceString(const ValueSource &source) {
     case ValueSource::NoValues:return "NoValues";
     case ValueSource::Cache:return "Cache";
     case ValueSource::Network:return "Network";
+    case ValueSource::NetworkNotModified:return "NetworkNotModified";
     case ValueSource::Bootstrap:return "Bootstrap";
   }
 
   return "";
 }
-
 
 struct SourceInfo {
   ValueSource source;

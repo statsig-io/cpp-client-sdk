@@ -57,7 +57,7 @@ class StatsigEvaluationsDataAdapter : public EvaluationsDataAdapter {
   void GetDataAsync(
       const StatsigUser &user,
       const std::optional<DataAdapterResult> &current,
-      const std::function<void(std::optional < DataAdapterResult > )> &callback
+      const std::function<void(std::optional<DataAdapterResult>)> &callback
   ) override {
     const auto cache = current ? current : GetDataSync(user);
     FetchLatest(user, cache, [this, callback, user]
@@ -137,21 +137,34 @@ class StatsigEvaluationsDataAdapter : public EvaluationsDataAdapter {
 
   void FetchLatest(
       const StatsigUser &user,
-      const std::optional<DataAdapterResult> current,
-      const std::function<void(std::optional < DataAdapterResult > )> &callback
+      const std::optional<DataAdapterResult> &current,
+      const std::function<void(std::optional<DataAdapterResult>)> &callback
   ) {
+    std::optional<std::string> current_data = std::nullopt;
+    if (current.has_value()) {
+      current_data = current->data;
+    }
+
     network_->FetchValues(
         user,
-        [callback](FetchValuesResult response) {
-          if (!response.has_value()) {
+        current_data,
+        [callback, current_data](std::optional<NetworkResult<data::InitializeResponse>> net_result) {
+          if (!net_result.has_value()) {
             callback(std::nullopt);
             return;
           }
 
           DataAdapterResult result;
-          result.data = response->raw;
           result.receivedAt = Time::now();
-          result.source = ValueSource::Network;
+
+          if (net_result->response.has_updates) {
+            result.data = net_result->raw;
+            result.source = ValueSource::Network;
+          } else {
+            result.data = current_data.value_or("");
+            result.source = ValueSource::NetworkNotModified;
+          }
+
           callback(result);
         });
 

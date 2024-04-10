@@ -13,6 +13,7 @@ enum class ValueSource {
   NoValues,
   Cache,
   Network,
+  NetworkNotModified,
   Bootstrap
 };
 

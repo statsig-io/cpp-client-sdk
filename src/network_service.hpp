@@ -21,9 +21,6 @@ struct NetworkResult {
         raw(std::move(raw)) {}
 };
 
-typedef std::optional<NetworkResult<data::InitializeResponse>>
-    FetchValuesResult;
-
 namespace {
 std::unordered_map<int, bool> retryable_codes_{
     {408, true},
@@ -39,6 +36,8 @@ std::unordered_map<int, bool> retryable_codes_{
 
 class NetworkService {
   using string = std::string;
+  using InitializeResponse = data::InitializeResponse;
+  using FetchValuesResult = std::optional<NetworkResult<InitializeResponse>>;
 
  public:
   explicit NetworkService(
@@ -52,42 +51,28 @@ class NetworkService {
 
   void FetchValues(
       const StatsigUser &user,
+      const std::optional<std::string> &current,
       const std::function<void(FetchValuesResult)> &callback
   ) {
-    err_boundary_.Capture(__func__, [this, callback, &user]() {
+    err_boundary_.Capture(__func__, [this, callback, &user, &current]() {
+      auto cache = current.has_value()
+                   ? Json::Deserialize<InitializeResponse>(current.value()) : std::nullopt;
+
       auto args = internal::InitializeRequestArgs{
           "djb2",
           user,
-          GetStatsigMetadata()
+          GetStatsigMetadata(),
       };
 
-      const auto inner_callback = [callback
-      ](std::optional<HttpResponse> response) {
-        if (!response.has_value()) {
-          callback(std::nullopt);
-          return;
-        }
-
-        if (response->status < 200 || response->status >= 300) {
-          callback(std::nullopt);
-          return;
-        }
-
-        auto init_response = Json::Deserialize<data::InitializeResponse>(
-            response->text);
-        if (!init_response.has_value()) {
-          callback(std::nullopt);
-          return;
-        }
-
-        callback(NetworkResult(init_response.value(), response->text));
-      };
+      if (cache.has_value() && cache->has_updates) {
+        args.since_time = cache->time;
+      }
 
       PostWithRetry(
           constants::kEndpointInitialize,
           internal::Json::Serialize(args),
           constants::kInitializeRetryCount,
-          inner_callback
+          HandleFetchValuesResponse(cache, callback)
       );
     });
   }
@@ -134,11 +119,41 @@ class NetworkService {
         {"stableID", stable_id_.Get()}};
   }
 
+  static std::function<void(std::optional<HttpResponse> response)> HandleFetchValuesResponse(
+      const std::optional<InitializeResponse> &cache,
+      const std::function<void(FetchValuesResult)> &callback
+  ) {
+    return [callback, cache](auto response) {
+      if (!response.has_value()) {
+        callback(std::nullopt);
+        return;
+      }
+
+      if (response->status < 200 || response->status >= 300) {
+        callback(std::nullopt);
+        return;
+      }
+
+      if (response->status == 204) {
+        callback(NetworkResult(InitializeResponse(), ""));
+        return;
+      }
+
+      auto data = Json::Deserialize<InitializeResponse>(response->text);
+      if (!data.has_value()) {
+        callback(std::nullopt);
+        return;
+      }
+
+      callback(NetworkResult(data.value(), response->text));
+    };
+  }
+
   void PostWithRetry(
       const string &endpoint,
       const std::string &body,
       const int max_attempts,
-      const std::function<void(std::optional < HttpResponse > )> &callback
+      const std::function<void(std::optional<HttpResponse>)> &callback
   ) {
     int attempt = 0;
 

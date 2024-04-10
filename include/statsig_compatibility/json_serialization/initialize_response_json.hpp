@@ -8,14 +8,6 @@ namespace statsig::data_types {
 
 namespace gate_evaluation {
 
-nlohmann::json ToJson(const statsig::data::GateEvaluation &e) {
-  return nlohmann::json{
-      {"name", e.name},
-      {"rule_id", e.rule_id},
-      {"secondary_exposures", e.secondary_exposures},
-  };
-}
-
 statsig::data::GateEvaluation FromJson(const nlohmann::json &j) {
   statsig::data::GateEvaluation e;
 
@@ -35,14 +27,6 @@ statsig::data::GateEvaluation FromJson(const nlohmann::json &j) {
 
 namespace config_evaluation {
 
-nlohmann::json ToJson(const statsig::data::ConfigEvaluation &e) {
-  return nlohmann::json{
-      {"name", e.name},
-      {"rule_id", e.rule_id},
-      {"secondary_exposures", e.secondary_exposures},
-  };
-}
-
 statsig::data::ConfigEvaluation FromJson(const nlohmann::json &j) {
   statsig::data::ConfigEvaluation e;
   j.at("name").get_to(e.name);
@@ -55,14 +39,6 @@ statsig::data::ConfigEvaluation FromJson(const nlohmann::json &j) {
 }
 
 namespace layer_evaluation {
-
-nlohmann::json ToJson(const statsig::data::LayerEvaluation &e) {
-  return nlohmann::json{
-      {"name", e.name},
-      {"rule_id", e.rule_id},
-      {"secondary_exposures", e.secondary_exposures},
-  };
-}
 
 statsig::data::LayerEvaluation FromJson(const nlohmann::json &j) {
   statsig::data::LayerEvaluation e;
@@ -85,45 +61,13 @@ statsig::data::LayerEvaluation FromJson(const nlohmann::json &j) {
 
 namespace initialize_response {
 
-nlohmann::json ToJson(const statsig::data::InitializeResponse &res) {
-  std::unordered_map<std::string, nlohmann::json> gates;
-  gates.reserve(res.feature_gates.size());
-  for (const auto &entry : res.feature_gates) {
-    gates[entry.first] = gate_evaluation::ToJson(entry.second);
-  }
-
-  std::unordered_map<std::string, nlohmann::json> configs;
-  configs.reserve(res.dynamic_configs.size());
-  for (const auto &entry : res.dynamic_configs) {
-    configs[entry.first] = config_evaluation::ToJson(entry.second);
-  }
-
-  std::unordered_map<std::string, nlohmann::json> layers;
-  layers.reserve(res.layer_configs.size());
-  for (const auto &entry : res.layer_configs) {
-    layers[entry.first] = layer_evaluation::ToJson(entry.second);
-  }
-
-  nlohmann::json j{
-      {"time", res.time},
-      {"feature_gates", gates},
-      {"dynamic_configs", configs},
-      {"layer_configs", layers},
-  };
-
-  if (res.generator.has_value()) {
-    j["generator"] = res.generator.value();
-  }
-
-  return j;
-}
-
 statsig::data::InitializeResponse FromJson(const nlohmann::json &j) {
   statsig::data::InitializeResponse response;
 
   using JMap = std::unordered_map<std::string, nlohmann::json>;
 
   j.at("time").get_to(response.time);
+  j.at("has_updates").get_to(response.has_updates);
 
   auto gates = j["feature_gates"].get<JMap>();
   response.feature_gates.reserve(gates.size());
@@ -143,16 +87,13 @@ statsig::data::InitializeResponse FromJson(const nlohmann::json &j) {
     response.layer_configs[entry.first] = layer_evaluation::FromJson(entry.second);
   }
 
-  if (j.contains("generator")) {
-    response.generator = j["generator"].get<std::string>();
-  }
-
   return response;
 }
 
-std::string Serialize(const statsig::data::InitializeResponse &response) {
-  return ToJson(response).dump();
-}
+// Do Not Serialize. Just use the Raw Network string
+//std::string Serialize(const statsig::data::InitializeResponse &response) {
+//  return ToJson(response).dump();
+//}
 
 statsig::data::InitializeResponse Deserialize(const std::string &input) {
   auto j = nlohmann::json::parse(input);
