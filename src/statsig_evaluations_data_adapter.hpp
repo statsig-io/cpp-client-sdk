@@ -57,10 +57,11 @@ class StatsigEvaluationsDataAdapter : public EvaluationsDataAdapter {
   void GetDataAsync(
       const StatsigUser &user,
       const std::optional<DataAdapterResult> &current,
-      const std::function<void(std::optional<DataAdapterResult>)> &callback
+      const std::function<void(std::optional < DataAdapterResult > )> &callback
   ) override {
     const auto cache = current ? current : GetDataSync(user);
-    FetchLatest(user, cache, [&](std::optional<DataAdapterResult> latest){
+    FetchLatest(user, cache, [this, callback, user]
+        (std::optional<DataAdapterResult> latest) {
       const auto cache_key = GetCacheKey(user);
 
       if (!latest.has_value()) {
@@ -137,11 +138,11 @@ class StatsigEvaluationsDataAdapter : public EvaluationsDataAdapter {
   void FetchLatest(
       const StatsigUser &user,
       const std::optional<DataAdapterResult> current,
-      const std::function<void(std::optional<DataAdapterResult>)> &callback
+      const std::function<void(std::optional < DataAdapterResult > )> &callback
   ) {
     network_->FetchValues(
         user,
-        [&callback](FetchValuesResult response) {
+        [callback](FetchValuesResult response) {
           if (!response.has_value()) {
             callback(std::nullopt);
             return;

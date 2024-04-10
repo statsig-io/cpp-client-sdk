@@ -4,12 +4,13 @@
 #include <unordered_map>
 #include <any>
 
-#include "statsig_compatibility/json/data_adapter_result_json.hpp"
-#include "statsig_compatibility/json/statsig_user_json.hpp"
-#include "statsig_compatibility/json/initialize_request_args_json.hpp"
-#include "statsig_compatibility/json/initialize_response_json.hpp"
-#include "statsig_compatibility/json/statsig_event_json.hpp"
-#include "statsig_compatibility/json/error_boundary_request_args_json.hpp"
+#include "statsig_compatibility/json_serialization/data_adapter_result_json.hpp"
+#include "statsig_compatibility/json_serialization/statsig_user_json.hpp"
+#include "statsig_compatibility/json_serialization/initialize_request_args_json.hpp"
+#include "statsig_compatibility/json_serialization/initialize_response_json.hpp"
+#include "statsig_compatibility/json_serialization/statsig_event_json.hpp"
+#include "statsig_compatibility/json_serialization/error_boundary_request_args_json.hpp"
+#include "statsig_compatibility/json_serialization/log_event_request_args_json.hpp"
 
 namespace statsig::internal {
 

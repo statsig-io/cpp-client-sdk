@@ -5,7 +5,6 @@
 
 #include "hashing.hpp"
 #include "macros.hpp"
-#include "file.hpp"
 #include "statsig/evaluations_data_adapter.h"
 #include "evaluation_details_internal.hpp"
 #include "unordered_map_util.hpp"
@@ -13,7 +12,7 @@
 namespace statsig::internal {
 
 class EvaluationStore {
- public:
+public:
   void Reset() {
     WRITE_LOCK(rw_lock_);
 
@@ -43,44 +42,47 @@ class EvaluationStore {
     source_info_.lcut = values_->time;
   }
 
-  DetailedEvaluation<data::GateEvaluation> GetGate(const std::string &gate_name) {
+  DetailedEvaluation<data::GateEvaluation>
+  GetGate(const std::string& gate_name) {
     READ_LOCK(rw_lock_);
 
     auto hash = hashing::DJB2(gate_name);
-    if (!values_.has_value() || !internal::MapContains(values_->feature_gates, hash)) {
+    if (!values_.has_value() || !MapContains(values_->feature_gates, hash)) {
       return {
           std::nullopt,
-          evaluation_details::UnrecognizedFromSourceInfo(source_info_)};
+          UnrecognizedFromSourceInfo(source_info_)};
     }
 
     return {
         values_->feature_gates[hash],
-        evaluation_details::RecognizedFromSourceInfo(source_info_)};
+        RecognizedFromSourceInfo(source_info_)};
   }
 
-  DetailedEvaluation<data::ConfigEvaluation> GetConfig(const std::string &config_name) {
+  DetailedEvaluation<data::ConfigEvaluation> GetConfig(
+      const std::string& config_name) {
     READ_LOCK(rw_lock_);
 
     auto hash = hashing::DJB2(config_name);
-    if (!values_.has_value() || !internal::MapContains(values_->dynamic_configs, hash)) {
+    if (!values_.has_value() || !MapContains(values_->dynamic_configs, hash)) {
       return {
           std::nullopt,
-          evaluation_details::UnrecognizedFromSourceInfo(source_info_)};
+          UnrecognizedFromSourceInfo(source_info_)};
     }
 
     return {
         values_->dynamic_configs[hash],
-        evaluation_details::RecognizedFromSourceInfo(source_info_)};
+        RecognizedFromSourceInfo(source_info_)};
   }
 
-  DetailedEvaluation<data::LayerEvaluation> GetLayer(const std::string &layer_name) {
+  DetailedEvaluation<data::LayerEvaluation> GetLayer(
+      const std::string& layer_name) {
     READ_LOCK(rw_lock_);
 
     auto hash = hashing::DJB2(layer_name);
-    if (!values_.has_value() || !internal::MapContains(values_->layer_configs, hash)) {
+    if (!values_.has_value() || !MapContains(values_->layer_configs, hash)) {
       return {
           std::nullopt,
-          evaluation_details::UnrecognizedFromSourceInfo(source_info_)};
+          UnrecognizedFromSourceInfo(source_info_)};
     }
 
     return {
@@ -88,10 +90,10 @@ class EvaluationStore {
         RecognizedFromSourceInfo(source_info_)};
   }
 
- private:
+private:
   std::shared_mutex rw_lock_;
   std::optional<data::InitializeResponse> values_;
-  evaluation_details::SourceInfo source_info_;
+  evaluation_details::SourceInfo source_info_ = {};
 };
 
 }

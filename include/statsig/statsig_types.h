@@ -5,7 +5,7 @@
 #include <functional>
 
 #include "evaluation_details.h"
-#include "statsig_compatibility/json/json_value.hpp"
+#include "json_value.hpp"
 
 namespace statsig {
 
@@ -65,37 +65,37 @@ class FeatureGate : public EvaluatedSpec<bool> {
   using EvaluatedSpec<bool>::EvaluatedSpec;
 };
 
-class DynamicConfig : public EvaluatedSpec<JsonValue> {
+class DynamicConfig : public EvaluatedSpec<JsonObject> {
  public:
-  JsonValue GetValues();
+  JsonObject GetValues();
 
-  using EvaluatedSpec<JsonValue>::EvaluatedSpec;
+  using EvaluatedSpec<JsonObject>::EvaluatedSpec;
 };
 
-class Experiment : public EvaluatedSpec<JsonValue> {
+class Experiment : public EvaluatedSpec<JsonObject> {
  public:
-  JsonValue GetValues();
+  JsonObject GetValues();
 
-  using EvaluatedSpec<JsonValue>::EvaluatedSpec;
+  using EvaluatedSpec<JsonObject>::EvaluatedSpec;
 };
 
-class Layer : public EvaluatedSpec<JsonValue> {
+class Layer : public EvaluatedSpec<JsonObject> {
   friend class StatsigClient;
 
  public:
-  std::optional<JsonValue> GetValue(const std::string &parameter_name);
-
   Layer(
       const std::string &name,
       const std::string &rule_id,
       const EvaluationDetails &evaluation_details,
-      const JsonValue &value,
+      const JsonObject &value,
       const std::function<void(const std::string &)> &log_param_exposure)
-      : EvaluatedSpec<JsonValue>(name, rule_id, evaluation_details, value),
+      : EvaluatedSpec<JsonObject>(name, rule_id, evaluation_details, value),
         log_param_exposure_(log_param_exposure) {
   }
+  using EvaluatedSpec<JsonObject>::EvaluatedSpec;
+  
+  std::optional<JsonValue> GetValue(const std::string &parameter_name);
 
-  using EvaluatedSpec<JsonValue>::EvaluatedSpec;
 
  private:
   std::function<void(const std::string &)> log_param_exposure_;

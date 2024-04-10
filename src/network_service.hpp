@@ -21,7 +21,8 @@ struct NetworkResult {
         raw(std::move(raw)) {}
 };
 
-typedef std::optional<NetworkResult<data::InitializeResponse>> FetchValuesResult;
+typedef std::optional<NetworkResult<data::InitializeResponse>>
+    FetchValuesResult;
 
 namespace {
 std::unordered_map<int, bool> retryable_codes_{
@@ -41,19 +42,53 @@ class NetworkService {
 
  public:
   explicit NetworkService(
-      string &sdk_key,
+      string sdk_key,
       StatsigOptions &options
-  ) : sdk_key_(sdk_key),
-      options_(options),
-      err_boundary_(ErrorBoundary(sdk_key)),
-      session_id_(UUID::v4()) {}
+  )
+      : sdk_key_(sdk_key),
+        options_(options),
+        err_boundary_(ErrorBoundary(sdk_key)),
+        session_id_(UUID::v4()) {}
 
   void FetchValues(
       const StatsigUser &user,
       const std::function<void(FetchValuesResult)> &callback
   ) {
-    err_boundary_.Capture(__func__, [this, &callback, &user]() {
-      FetchValuesImpl(user, callback);
+    err_boundary_.Capture(__func__, [this, callback, &user]() {
+      auto args = internal::InitializeRequestArgs{
+          "djb2",
+          user,
+          GetStatsigMetadata()
+      };
+
+      const auto inner_callback = [callback
+      ](std::optional<HttpResponse> response) {
+        if (!response.has_value()) {
+          callback(std::nullopt);
+          return;
+        }
+
+        if (response->status < 200 || response->status >= 300) {
+          callback(std::nullopt);
+          return;
+        }
+
+        auto init_response = Json::Deserialize<data::InitializeResponse>(
+            response->text);
+        if (!init_response.has_value()) {
+          callback(std::nullopt);
+          return;
+        }
+
+        callback(NetworkResult(init_response.value(), response->text));
+      };
+
+      PostWithRetry(
+          constants::kEndpointInitialize,
+          internal::Json::Serialize(args),
+          constants::kInitializeRetryCount,
+          inner_callback
+      );
     });
   }
 
@@ -74,7 +109,7 @@ class NetworkService {
   }
 
  private:
-  string &sdk_key_;
+  string sdk_key_;
   StatsigOptions &options_;
   ErrorBoundary err_boundary_;
   string session_id_;
@@ -99,51 +134,15 @@ class NetworkService {
         {"stableID", stable_id_.Get()}};
   }
 
-  void FetchValuesImpl(
-      const StatsigUser &user,
-      const std::function<void(FetchValuesResult)> &callback
-  ) {
-    auto args = internal::InitializeRequestArgs{
-        "djb2",
-        user,
-        GetStatsigMetadata()
-    };
-
-    PostWithRetry(
-        constants::kEndpointInitialize,
-        internal::Json::Serialize(args),
-        constants::kInitializeRetryCount,
-        [&callback](std::optional<HttpResponse> response) {
-          if (!response.has_value()) {
-            callback(std::nullopt);
-            return;
-          }
-
-          if (response->status < 200 || response->status >= 300) {
-            callback(std::nullopt);
-            return;
-          }
-
-          auto init_response = Json::Deserialize<data::InitializeResponse>(response->text);
-          if (!init_response.has_value()) {
-            callback(std::nullopt);
-            return;
-          }
-
-          callback(NetworkResult(init_response.value(), response->text));
-        }
-    );
-  }
-
   void PostWithRetry(
       const string &endpoint,
       const std::string &body,
       const int max_attempts,
-      const std::function<void(std::optional<HttpResponse>)> &callback
+      const std::function<void(std::optional < HttpResponse > )> &callback
   ) {
     int attempt = 0;
 
-    Post(endpoint, body, [&attempt, &callback](HttpResponse response) {
+    Post(endpoint, body, [&attempt, callback](HttpResponse response) {
       if (response.status >= 200 && response.status < 300) {
         callback(response);
         return;
@@ -154,18 +153,18 @@ class NetworkService {
         return;
       }
     });
-//
-//    for (int i = 0; i < max_attempts; i++) {
-//
-//
-//      if (response.status >= 200 && response.status < 300) {
-//        return response;
-//      }
-//
-//      if (!MapContains(retryable_codes_, response.status)) {
-//        break;
-//      }
-//    }
+    //
+    //    for (int i = 0; i < max_attempts; i++) {
+    //
+    //
+    //      if (response.status >= 200 && response.status < 300) {
+    //        return response;
+    //      }
+    //
+    //      if (!MapContains(retryable_codes_, response.status)) {
+    //        break;
+    //      }
+    //    }
 
   }
 
@@ -176,7 +175,7 @@ class NetworkService {
   ) {
     auto api = options_.api.value_or(constants::kDefaultApi);
 
-    return NetworkClient::Post(
+    NetworkClient::Post(
         api,
         endpoint,
         GetHeaders(),

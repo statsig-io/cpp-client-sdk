@@ -19,7 +19,7 @@ struct GateEvaluation : Evaluation<bool> {
   std::optional<std::string> id_type;
 };
 
-struct ConfigEvaluation : Evaluation<JsonValue> {
+struct ConfigEvaluation : Evaluation<JsonObject> {
   std::string id_type;
   std::optional<std::string> group_name;
   bool is_device_based = false;
