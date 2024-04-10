@@ -13,15 +13,9 @@ target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURR
 
 # === Third Party Deps ===
 
-if (DISABLE_THIRD_PARTY_DEPS)
-    message(STATUS "Skipping third-party deps due to DISABLE_THIRD_PARTY_DEPS being set.")
-    return()
-endif ()
-
 include(FetchContent)
 
 # HttpLib
-#add_compile_definitions(STATSIG_WITH_HTTPLIB "YES")
 include(cmake/httplib.cmake)
 target_link_libraries(${PROJECT_NAME} PUBLIC httplib::httplib)
 target_compile_definitions(${PROJECT_NAME} PRIVATE CPPHTTPLIB_ZLIB_SUPPORT)
@@ -31,6 +25,5 @@ find_package(ZLIB REQUIRED)
 target_link_libraries(${PROJECT_NAME} PUBLIC ${ZLIB_LIBRARIES})
 
 # Json
-#add_compile_definitions(STATSIG_WITH_NLOHMANN_JSON "YES")
 include(cmake/json.cmake)
 target_link_libraries(${PROJECT_NAME} PUBLIC nlohmann_json::nlohmann_json)
