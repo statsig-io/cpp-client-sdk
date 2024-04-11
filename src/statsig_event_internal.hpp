@@ -30,6 +30,11 @@ struct LogEventResponse {
   bool success;
 };
 
+struct FailedEventPayload {
+  int attempts;
+  std::vector<StatsigEventInternal> events;
+};
+
 StatsigEventInternal InternalizeEvent(StatsigEvent event, StatsigUser &user) {
   StatsigEventInternal result;
   result.event_name = event.event_name;

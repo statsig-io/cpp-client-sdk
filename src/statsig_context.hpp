@@ -29,7 +29,7 @@ class StatsigContext {
       err_boundary(this->sdk_key),
       network(NetworkService(this->sdk_key, this->options)),
       store(EvaluationStore()),
-      logger(EventLogger(this->options, this->network)),
+      logger(EventLogger(this->sdk_key, this->options, this->network)),
       data_adapter(
           this->options.data_adapter
               .value_or(new StatsigEvaluationsDataAdapter())

@@ -96,7 +96,7 @@ public:
           if (!HasSuccessCode(response)) {
             callback(false);
           } else {
-            auto res = Json::Deserialize<LogEventResponse>(response->text); 
+            auto res = Json::Deserialize<LogEventResponse>(response->text);
             callback(res.has_value() && res->success);
           }
         }
@@ -164,34 +164,24 @@ private:
       const string& endpoint,
       const std::string& body,
       const int max_attempts,
-      const std::function<void(std::optional<HttpResponse>)>& callback
+      const std::function<void(std::optional<HttpResponse>)>& callback,
+      const int attempt = 1
       ) {
-    int attempt = 0;
+    Post(endpoint, body, [&, endpoint, body, max_attempts, attempt, callback]
+     (HttpResponse response) {
+           if (response.status >= 200 && response.status < 300) {
+             callback(response);
+             return;
+           }
 
-    Post(endpoint, body, [&attempt, callback](HttpResponse response) {
-      if (response.status >= 200 && response.status < 300) {
-        callback(response);
-        return;
-      }
+           if (!MapContains(retryable_codes_, response.status) || attempt >=
+               max_attempts) {
+             callback(std::nullopt);
+             return;
+           }
 
-      if (!MapContains(retryable_codes_, response.status)) {
-        callback(std::nullopt);
-        return;
-      }
-    });
-    //
-    //    for (int i = 0; i < max_attempts; i++) {
-    //
-    //
-    //      if (response.status >= 200 && response.status < 300) {
-    //        return response;
-    //      }
-    //
-    //      if (!MapContains(retryable_codes_, response.status)) {
-    //        break;
-    //      }
-    //    }
-
+           PostWithRetry(endpoint, body, max_attempts, callback, attempt + 1);
+         });
   }
 
   void Post(

@@ -20,6 +20,12 @@ public:
     FileHelper::WriteStringToFile(content, path);
   }
 
+  static void DeleteFromCache(const string& key) {
+    FileHelper::EnsureCacheDirectoryExists();
+    auto path = FileHelper::CombinePath(FileHelper::GetCacheDir(), key);
+    FileHelper::DeleteFile(path);
+  }
+
   static std::optional<string> ReadFromCache(const string& key) {
     FileHelper::EnsureCacheDirectoryExists();
 
@@ -30,11 +36,11 @@ public:
   static void RunCacheEviction(std::string prefix) {
     auto paths = FileHelper::GetCachePathsSortedYoungestFirst(prefix);
 
-    if (paths.size() < constants::kMaxCacheEntriesCount) {
+    if (paths.size() < constants::kMaxCachedEvaluationsCount) {
       return;
     }
     
-    while (paths.size() > constants::kMaxCacheEntriesCount) {
+    while (paths.size() > constants::kMaxCachedEvaluationsCount) {
       const auto& eldest = paths.back();
       FileHelper::DeleteFile(eldest);
       paths.pop_back();

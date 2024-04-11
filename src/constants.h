@@ -13,11 +13,17 @@ const char *kEndpointLogEvent = "/v1/rgstr";
 const char *kContentTypeJson = "application/json";
 const char *kDefaultApi = "https://statsigapi.net";
 const int kInitializeRetryCount = 3;
-const int kLogEventRetryCount = 3;
+const int kLogEventRetryCount = 2;
 
 // Caching
 const char *kCachedEvaluationsPrefix = "statsig.cached.evaluations.";
 const char *kStableIdKey = "stable_id";
-const int kMaxCacheEntriesCount = 10;
+const int kMaxCachedEvaluationsCount = 10;
+
+// Logging Cache
+const char *kCachedFailedEventPayloadPrefix = "statsig.failed_events.";
+const int kFailedEventPayloadRetryCount = 3;
+const int kMaxCachedFailedEventPayloadsCount = 5;
+
 
 }

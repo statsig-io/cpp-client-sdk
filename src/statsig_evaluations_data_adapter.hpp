@@ -120,7 +120,7 @@ class StatsigEvaluationsDataAdapter : public EvaluationsDataAdapter {
   }
 
   void AddToInMemoryCache(const std::string &cache_key, const DataAdapterResult &result) {
-    if (in_memory_cache_.size() < constants::kMaxCacheEntriesCount) {
+    if (in_memory_cache_.size() < constants::kMaxCachedEvaluationsCount) {
       in_memory_cache_[cache_key] = result;
       return;
     }

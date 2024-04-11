@@ -12,6 +12,7 @@
 #include "statsig_compatibility/json_serialization/error_boundary_request_args_json.hpp"
 #include "statsig_compatibility/json_serialization/log_event_response_json.hpp"
 #include "statsig_compatibility/json_serialization/log_event_request_args_json.hpp"
+#include "statsig_compatibility/json_serialization/failed_log_event_payload_json.hpp"
 
 namespace statsig::internal {
 
@@ -24,7 +25,8 @@ class Json {
             std::is_same<T, StatsigUser>,
             std::is_same<T, DataAdapterResult>,
             std::is_same<T, data::InitializeResponse>,
-            std::is_same<T, LogEventResponse>
+            std::is_same<T, LogEventResponse>,
+            std::is_same<T, std::vector<FailedEventPayload>>
         >::value,
         "type T is invalid"
     );
@@ -45,6 +47,10 @@ class Json {
       return data_types::log_event_response::Deserialize(input);
     }
 
+    if constexpr (std::is_same_v<T, std::vector<FailedEventPayload>>) {
+      return data_types::failed_log_event_payload::Deserialize(input);
+    }
+
     return std::nullopt;
   }
 
@@ -57,7 +63,8 @@ class Json {
             std::is_same<T, StatsigUser>,
             std::is_same<T, DataAdapterResult>,
             std::is_same<T, LogEventRequestArgs>,
-            std::is_same<T, ErrorBoundaryRequestArgs>
+            std::is_same<T, ErrorBoundaryRequestArgs>,
+            std::is_same<T, std::vector<FailedEventPayload>>
         >::value,
         "type T is invalid"
     );
@@ -66,16 +73,24 @@ class Json {
       return data_types::initialize_request_args::Serialize(input);
     }
 
-    if constexpr (std::is_same_v<T, LogEventRequestArgs>) {
-      return data_types::log_event_request_args::Serialize(input);
-    }
-
     if constexpr (std::is_same_v<T, StatsigUser>) {
       return data_types::statsig_user::Serialize(input);
     }
 
     if constexpr (std::is_same_v<T, DataAdapterResult>) {
       return data_types::data_adapter_result::Serialize(input);
+    }
+
+    if constexpr (std::is_same_v<T, LogEventRequestArgs>) {
+      return data_types::log_event_request_args::Serialize(input);
+    }
+
+    if constexpr (std::is_same_v<T, ErrorBoundaryRequestArgs>) {
+      return data_types::error_boundary_request_args::Serialize(input);
+    }
+    
+    if constexpr (std::is_same_v<T, std::vector<FailedEventPayload>>) {
+      return data_types::failed_log_event_payload::Serialize(input);
     }
 
     return "";
