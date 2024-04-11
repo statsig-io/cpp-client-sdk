@@ -4,6 +4,12 @@
 #include "network_service.hpp"
 #include "json_parser.hpp"
 
+#ifdef _WIN32
+#define MAX_LONG_LONG LLONG_MAX
+#else
+#define MAX_LONG_LONG std::numeric_limits<long long>::max()
+#endif
+
 namespace statsig::internal {
 
 std::optional<DataAdapterResult> ReadFromCacheFile(const std::string &cache_key) {
@@ -120,11 +126,11 @@ class StatsigEvaluationsDataAdapter : public EvaluationsDataAdapter {
     }
 
     auto oldest = in_memory_cache_.begin();
-    long long smallestReceivedAt = std::numeric_limits<long long>::max();
+    long long oldest_rec_at = MAX_LONG_LONG;
     for (auto it = in_memory_cache_.begin(); it != in_memory_cache_.end(); ++it) {
-      if (it->second.receivedAt < smallestReceivedAt) {
+      if (it->second.receivedAt < oldest_rec_at) {
         oldest = it;
-        smallestReceivedAt = it->second.receivedAt;
+        oldest_rec_at = it->second.receivedAt;
       }
     }
 

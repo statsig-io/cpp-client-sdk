@@ -1,8 +1,8 @@
 #pragma once
 
 #include "hashing.hpp"
-#include "macros.hpp"
 #include "statsig/statsig_user.h"
+#include <numeric>
 
 namespace statsig::internal {
 

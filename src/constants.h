@@ -18,6 +18,6 @@ const int kLogEventRetryCount = 3;
 // Caching
 const char *kCachedEvaluationsPrefix = "statsig.cached.evaluations.";
 const char *kStableIdKey = "stable_id";
-const uint kMaxCacheEntriesCount = 10;
+const int kMaxCacheEntriesCount = 10;
 
 }

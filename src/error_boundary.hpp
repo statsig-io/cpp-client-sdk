@@ -24,6 +24,7 @@ struct ErrorBoundaryRequestArgs {
 
 #ifdef _WIN32
 #include <windows.h>
+#include <stdexcept>
 #endif
 
 namespace statsig::internal {
@@ -41,9 +42,7 @@ public:
       const string& tag,
       const std::function<void()>& task
       ) {
-#ifdef STATSIG_DISABLE_EXCEPTIONS
-    task();
-#elif __unix__
+#ifndef STATSIG_DISABLE_EXCEPTIONS
     try {
       task();
     } catch (const std::exception& error) {
@@ -51,21 +50,8 @@ public:
         std::cerr << "[Statsig]: An unexpected exception occurred. " << error.
             what() << std::endl;
         LogError(tag, error.what());
-      } catch (std::exception& _) {
+      } catch (std::exception&) {
         // noop
-      }
-    }
-#elif _WIN32
-    __try {
-      task();
-    }
-    __except(GetExceptionInformation() == EXCEPTION_EXECUTE_HANDLER) {
-      __try {
-        std::cerr << "[Statsig]: An unexpected exception occurred. " << GetExceptionCode() << std::endl;
-        LogError(tag, "__STATSIG_WINDOWS_EXC__" + GetExceptionCode());
-      }
-      __except(GetExceptionInformation() == EXCEPTION_EXECUTE_HANDLER) {
-          // noop  
       }
     }
 #else
