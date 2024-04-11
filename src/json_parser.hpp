@@ -10,6 +10,7 @@
 #include "statsig_compatibility/json_serialization/initialize_response_json.hpp"
 #include "statsig_compatibility/json_serialization/statsig_event_json.hpp"
 #include "statsig_compatibility/json_serialization/error_boundary_request_args_json.hpp"
+#include "statsig_compatibility/json_serialization/log_event_response_json.hpp"
 #include "statsig_compatibility/json_serialization/log_event_request_args_json.hpp"
 
 namespace statsig::internal {
@@ -22,7 +23,8 @@ class Json {
         std::disjunction<
             std::is_same<T, StatsigUser>,
             std::is_same<T, DataAdapterResult>,
-            std::is_same<T, data::InitializeResponse>
+            std::is_same<T, data::InitializeResponse>,
+            std::is_same<T, LogEventResponse>
         >::value,
         "type T is invalid"
     );
@@ -37,6 +39,10 @@ class Json {
 
     if constexpr (std::is_same_v<T, data::InitializeResponse>) {
       return data_types::initialize_response::Deserialize(input);
+    }
+
+    if constexpr (std::is_same_v<T, LogEventResponse>) {
+      return data_types::log_event_response::Deserialize(input);
     }
 
     return std::nullopt;

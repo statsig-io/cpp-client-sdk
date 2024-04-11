@@ -26,6 +26,10 @@ struct LogEventRequestArgs {
   std::unordered_map<std::string, std::string> statsig_metadata;
 };
 
+struct LogEventResponse {
+  bool success;
+};
+
 StatsigEventInternal InternalizeEvent(StatsigEvent event, StatsigUser &user) {
   StatsigEventInternal result;
   result.event_name = event.event_name;

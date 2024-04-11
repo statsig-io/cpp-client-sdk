@@ -12,14 +12,14 @@
 
 namespace statsig::internal {
 
-template<typename T>
+template <typename T>
 struct NetworkResult {
   T response;
   std::string raw;
 
   NetworkResult(T response, std::string raw)
-      : response(std::move(response)),
-        raw(std::move(raw)) {}
+    : response(std::move(response)),
+      raw(std::move(raw)) {}
 };
 
 namespace {
@@ -40,24 +40,25 @@ class NetworkService {
   using InitializeResponse = data::InitializeResponse;
   using FetchValuesResult = std::optional<NetworkResult<InitializeResponse>>;
 
- public:
+public:
   explicit NetworkService(
       string sdk_key,
-      StatsigOptions &options
-  )
-      : sdk_key_(sdk_key),
-        options_(options),
-        err_boundary_(ErrorBoundary(sdk_key)),
-        session_id_(UUID::v4()) {}
+      StatsigOptions& options
+      )
+    : sdk_key_(sdk_key),
+      options_(options),
+      err_boundary_(ErrorBoundary(sdk_key)),
+      session_id_(UUID::v4()) {}
 
   void FetchValues(
-      const StatsigUser &user,
-      const std::optional<std::string> &current,
-      const std::function<void(FetchValuesResult)> &callback
-  ) {
+      const StatsigUser& user,
+      const std::optional<std::string>& current,
+      const std::function<void(FetchValuesResult)>& callback
+      ) {
     err_boundary_.Capture(__func__, [this, callback, &user, &current]() {
       auto cache = current.has_value()
-                   ? Json::Deserialize<InitializeResponse>(current.value()) : std::nullopt;
+                     ? Json::Deserialize<InitializeResponse>(current.value())
+                     : std::nullopt;
 
       auto args = internal::InitializeRequestArgs{
           "djb2",
@@ -74,11 +75,14 @@ class NetworkService {
           internal::Json::Serialize(args),
           constants::kInitializeRetryCount,
           HandleFetchValuesResponse(cache, callback)
-      );
+          );
     });
   }
 
-  void SendEvents(const std::vector<StatsigEventInternal> &events) {
+  void SendEvents(
+      const std::vector<StatsigEventInternal>& events,
+      const std::function<void(bool)>& callback
+      ) {
     auto args = LogEventRequestArgs{
         events,
         GetStatsigMetadata()
@@ -88,18 +92,28 @@ class NetworkService {
         constants::kEndpointLogEvent,
         internal::Json::Serialize(args),
         constants::kLogEventRetryCount,
-        [](std::optional<HttpResponse> response) {
-          // todo: save to disk on failure
+        [callback](std::optional<HttpResponse> response) {
+          if (!HasSuccessCode(response)) {
+            callback(false);
+          } else {
+            auto res = Json::Deserialize<LogEventResponse>(response->text); 
+            callback(res.has_value() && res->success);
+          }
         }
-    );
+        );
   }
 
- private:
+private:
   string sdk_key_;
-  StatsigOptions &options_;
+  StatsigOptions& options_;
   ErrorBoundary err_boundary_;
   string session_id_;
   StableID stable_id_;
+
+  static bool HasSuccessCode(const std::optional<HttpResponse>& response) {
+    return response.has_value() && (
+             response->status >= 200 && response->status < 300);
+  }
 
   std::unordered_map<string, string> GetHeaders() {
     return {
@@ -120,17 +134,13 @@ class NetworkService {
         {"stableID", stable_id_.Get()}};
   }
 
-  static std::function<void(std::optional<HttpResponse> response)> HandleFetchValuesResponse(
-      const std::optional<InitializeResponse> &cache,
-      const std::function<void(FetchValuesResult)> &callback
-  ) {
+  static std::function<void(std::optional<HttpResponse> response)>
+  HandleFetchValuesResponse(
+      const std::optional<InitializeResponse>& cache,
+      const std::function<void(FetchValuesResult)>& callback
+      ) {
     return [callback, cache](auto response) {
-      if (!response.has_value()) {
-        callback(std::nullopt);
-        return;
-      }
-
-      if (response->status < 200 || response->status >= 300) {
+      if (!HasSuccessCode(response)) {
         callback(std::nullopt);
         return;
       }
@@ -151,11 +161,11 @@ class NetworkService {
   }
 
   void PostWithRetry(
-      const string &endpoint,
-      const std::string &body,
+      const string& endpoint,
+      const std::string& body,
       const int max_attempts,
-      const std::function<void(std::optional<HttpResponse>)> &callback
-  ) {
+      const std::function<void(std::optional<HttpResponse>)>& callback
+      ) {
     int attempt = 0;
 
     Post(endpoint, body, [&attempt, callback](HttpResponse response) {
@@ -185,10 +195,10 @@ class NetworkService {
   }
 
   void Post(
-      const string &endpoint,
-      const std::string &body,
-      const std::function<void(HttpResponse)> &callback
-  ) {
+      const string& endpoint,
+      const std::string& body,
+      const std::function<void(HttpResponse)>& callback
+      ) {
     auto api = options_.api.value_or(constants::kDefaultApi);
 
     NetworkClient::Post(
@@ -197,7 +207,7 @@ class NetworkService {
         GetHeaders(),
         body,
         callback
-    );
+        );
   }
 };
 

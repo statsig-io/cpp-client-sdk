@@ -7,13 +7,14 @@
 namespace statsig::internal {
 
 class EventLogger {
- public:
+public:
   explicit EventLogger(
-      StatsigOptions &options,
-      NetworkService &network
-  ) : options_(options), network_(network) {}
+      StatsigOptions& options,
+      NetworkService& network
+      )
+    : options_(options), network_(network) {}
 
-  void Enqueue(const StatsigEventInternal &event) {
+  void Enqueue(const StatsigEventInternal& event) {
     WRITE_LOCK(rw_lock_);
     events_.push_back(event);
   }
@@ -30,12 +31,14 @@ class EventLogger {
     }
 
     auto local_events = std::move(events_);
-    network_.SendEvents(local_events);
+    network_.SendEvents(local_events, [](bool isSuccess) {
+      // todo: save for next time
+    });
   }
 
- private:
-  StatsigOptions &options_;
-  NetworkService &network_;
+private:
+  StatsigOptions& options_;
+  NetworkService& network_;
   std::shared_mutex rw_lock_;
   std::vector<StatsigEventInternal> events_;
 };
