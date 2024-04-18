@@ -1,12 +1,16 @@
 #pragma once
 
+#ifndef STATSIG_DISABLE_FILESYSTEM
 #include <filesystem>
+#endif // STATSIG_DISABLE_FILESYSTEM
 
 #include "statsig_compatibility/filesystem/file_helper.hpp"
 
 namespace statsig::internal {
 
+#ifndef STATSIG_DISABLE_FILESYSTEM
 namespace fs = std::filesystem;
+#endif // STATSIG_DISABLE_FILESYSTEM
 
 class File {
 public:

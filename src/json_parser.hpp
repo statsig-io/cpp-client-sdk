@@ -2,7 +2,6 @@
 
 #include <string>
 #include <unordered_map>
-#include <any>
 
 #include "statsig_compatibility/json_serialization/data_adapter_result_json.hpp"
 #include "statsig_compatibility/json_serialization/statsig_user_json.hpp"
