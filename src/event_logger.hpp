@@ -39,11 +39,12 @@ public:
     }
 
     auto local_events = std::move(events_);
-    network_.SendEvents(local_events, [&, local_events](bool is_success) {
-      if (!is_success) {
-        SaveFailedEvents(local_events, 1);
-      }
-    });
+    network_.SendEvents(local_events,
+                        [&, local_events](NetworkResult<bool> result) {
+                          if (!result.response) {
+                            SaveFailedEvents(local_events, 1);
+                          }
+                        });
   }
 
 private:
@@ -53,14 +54,15 @@ private:
   std::shared_mutex rw_lock_;
   std::vector<StatsigEventInternal> events_;
 
-  void SaveFailedEvents(std::vector<StatsigEventInternal> events, const int attempt) {
-    std::vector<FailedEventPayload> failures;
+  void SaveFailedEvents(std::vector<StatsigEventInternal> events,
+                        const int attempt) {
+    std::vector<RetryableEventPayload> failures;
     const auto key = GetFailedEventCacheKey();
     const auto cache = File::ReadFromCache(key);
     if (cache.has_value()) {
-      failures = Json::Deserialize<std::vector<FailedEventPayload>>(
-              cache.value())
-          .value_or(failures);
+      auto parsed = Json::Deserialize<std::vector<RetryableEventPayload>>(
+          cache.value());
+      failures = parsed.value.value_or(failures);
     }
 
     failures.insert(failures.begin(), {attempt, events});
@@ -81,20 +83,22 @@ private:
 
       }
 
-      const auto failures = Json::Deserialize<std::vector<FailedEventPayload>>(
+      const auto failures = Json::Deserialize<std::vector<
+        RetryableEventPayload>>(
           cache.value());
 
       File::DeleteFromCache(key);
 
-      if (!failures.has_value()) {
+      if (failures.code != Ok || !failures.value.has_value()) {
         return;
       }
 
-      for (auto failure : failures.value()) {
+      for (auto failure : failures.value.value()) {
         const auto events = failure.events;
         const auto attempt = failure.attempts + 1;
-        network_.SendEvents(events, [&, events, attempt](bool is_success) {
-          if (!is_success && attempt <= constants::kFailedEventPayloadRetryCount) {
+        network_.SendEvents(events, [&, events, attempt](NetworkResult<bool> result) {
+          if (!result.response && attempt <=
+              constants::kFailedEventPayloadRetryCount) {
             SaveFailedEvents(events, attempt);
           }
         });

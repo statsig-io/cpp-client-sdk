@@ -14,12 +14,9 @@ namespace statsig::internal {
 
 template <typename T>
 struct NetworkResult {
-  T response;
+  StatsigResultCode code;
+  std::optional<T> response;
   std::string raw;
-
-  NetworkResult(T response, std::string raw)
-    : response(std::move(response)),
-      raw(std::move(raw)) {}
 };
 
 namespace {
@@ -38,7 +35,6 @@ std::unordered_map<int, bool> retryable_codes_{
 class NetworkService {
   using string = std::string;
   using InitializeResponse = data::InitializeResponse;
-  using FetchValuesResult = std::optional<NetworkResult<InitializeResponse>>;
 
 public:
   explicit NetworkService(
@@ -53,11 +49,11 @@ public:
   void FetchValues(
       const StatsigUser& user,
       const std::optional<std::string>& current,
-      const std::function<void(FetchValuesResult)>& callback
+      const std::function<void(NetworkResult<InitializeResponse>)>& callback
       ) {
     err_boundary_.Capture(__func__, [this, callback, &user, &current]() {
       auto cache = current.has_value()
-                     ? Json::Deserialize<InitializeResponse>(current.value())
+                     ? Json::Deserialize<InitializeResponse>(current.value()).value
                      : std::nullopt;
 
       auto args = internal::InitializeRequestArgs{
@@ -81,7 +77,7 @@ public:
 
   void SendEvents(
       const std::vector<StatsigEventInternal>& events,
-      const std::function<void(bool)>& callback
+      const std::function<void(NetworkResult<bool>)>& callback
       ) {
     auto args = LogEventRequestArgs{
         events,
@@ -90,14 +86,14 @@ public:
 
     PostWithRetry(
         constants::kEndpointLogEvent,
-        internal::Json::Serialize(args),
+        Json::Serialize(args),
         constants::kLogEventRetryCount,
         [callback](std::optional<HttpResponse> response) {
           if (!HasSuccessCode(response)) {
-            callback(false);
+            callback({NetworkFailureStatusCode, false});
           } else {
             auto res = Json::Deserialize<LogEventResponse>(response->text);
-            callback(res.has_value() && res->success);
+            callback({res.code, res.value.has_value() && res.value->success});
           }
         }
         );
@@ -137,26 +133,26 @@ private:
   static std::function<void(std::optional<HttpResponse> response)>
   HandleFetchValuesResponse(
       const std::optional<InitializeResponse>& cache,
-      const std::function<void(FetchValuesResult)>& callback
+      const std::function<void(NetworkResult<InitializeResponse>)>& callback
       ) {
     return [callback, cache](auto response) {
       if (!HasSuccessCode(response)) {
-        callback(std::nullopt);
+        callback({NetworkFailureStatusCode});
         return;
       }
 
       if (response->status == 204) {
-        callback(NetworkResult(InitializeResponse(), ""));
+        callback({Ok, InitializeResponse()});
         return;
       }
 
       auto data = Json::Deserialize<InitializeResponse>(response->text);
-      if (!data.has_value()) {
-        callback(std::nullopt);
+      if (data.code != Ok) {
+        callback({data.code});
         return;
       }
 
-      callback(NetworkResult(data.value(), response->text));
+      callback({Ok, data.value, response->text});
     };
   }
 

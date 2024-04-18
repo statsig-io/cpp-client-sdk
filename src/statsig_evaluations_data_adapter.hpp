@@ -12,21 +12,23 @@
 
 namespace statsig::internal {
 
-std::optional<DataAdapterResult> ReadFromCacheFile(const std::string &cache_key) {
+StatsigResult<DataAdapterResult>
+ReadFromCacheFile(const std::string& cache_key) {
   auto data = File::ReadFromCache(cache_key);
   if (!data.has_value()) {
-    return std::nullopt;
+    return {Ok, std::nullopt};
   }
 
   auto result = Json::Deserialize<DataAdapterResult>(data.value());
-  if (result.has_value()) {
-    result->source = ValueSource::Cache;
+  if (result.value.has_value()) {
+    result.value->source = ValueSource::Cache;
   }
 
   return result;
 }
 
-void WriteToCacheFile(const std::string &cache_key, const DataAdapterResult &result) {
+void WriteToCacheFile(const std::string& cache_key,
+                      const DataAdapterResult& result) {
   File::RunCacheEviction(constants::kCachedEvaluationsPrefix);
   File::WriteToCache(cache_key, Json::Serialize(result));
 }
@@ -36,78 +38,78 @@ class StatsigEvaluationsDataAdapter : public EvaluationsDataAdapter {
   virtual ~StatsigEvaluationsDataAdapter() = default;
 
   void Attach(
-      std::string &sdk_key,
-      StatsigOptions &options
-  ) override {
+      std::string& sdk_key,
+      StatsigOptions& options
+      ) override {
     sdk_key_ = sdk_key;
     network_ = new NetworkService(sdk_key, options);
   }
 
-  std::optional<DataAdapterResult> GetDataSync(
-      const StatsigUser &user
-  ) override {
+  StatsigResult<DataAdapterResult> GetDataSync(
+      const StatsigUser& user
+      ) override {
     const auto cache_key = GetCacheKey(user);
     auto result = MapGetOrNull(in_memory_cache_, cache_key);
 
     if (result.has_value()) {
-      return result;
+      return {Ok, result};
     }
 
     auto cache = ReadFromCacheFile(cache_key);
-    if (cache.has_value()) {
-      AddToInMemoryCache(cache_key, cache.value());
-      return cache;
+    if (cache.code == Ok && cache.value.has_value()) {
+      AddToInMemoryCache(cache_key, cache.value.value());
+      return {Ok, cache.value};
     }
 
-    return std::nullopt;
+    return {cache.code, std::nullopt};
   }
 
   void GetDataAsync(
-      const StatsigUser &user,
-      const std::optional<DataAdapterResult> &current,
-      const std::function<void(std::optional<DataAdapterResult>)> &callback
-  ) override {
-    const auto cache = current ? current : GetDataSync(user);
+      const StatsigUser& user,
+      const std::optional<DataAdapterResult>& current,
+      const std::function<void(StatsigResult<DataAdapterResult>)>& callback
+      ) override {
+    const auto cache = current.has_value() ? current : GetDataSync(user).value;
     FetchLatest(user, cache, [this, callback, user]
-        (std::optional<DataAdapterResult> latest) {
-      const auto cache_key = GetCacheKey(user);
+            (StatsigResult<DataAdapterResult> latest) {
+                  const auto cache_key = GetCacheKey(user);
 
-      if (!latest.has_value()) {
-        callback(std::nullopt);
-        return;
-      }
+                  if (!latest.value.has_value()) {
+                    callback({latest.code,std::nullopt});
+                    return;
+                  }
 
-      AddToInMemoryCache(cache_key, latest.value());
+                  AddToInMemoryCache(cache_key, latest.value.value());
 
-      if (latest->source == ValueSource::Network) {
-        WriteToCacheFile(cache_key, latest.value());
-      }
+                  if (latest.value->source == ValueSource::Network) {
+                    WriteToCacheFile(cache_key, latest.value.value());
+                  }
 
-      callback(latest);
-    });
+                  callback(latest);
+                });
 
   }
 
   void SetData(
-      const StatsigUser &user,
-      const std::string &data
-  ) override {
+      const StatsigUser& user,
+      const std::string& data
+      ) override {
     // TODO: Support Bootstrap
   }
 
   void PrefetchData(
-      const StatsigUser &user,
-      const std::function<void(void)> &callback
-  ) override {
+      const StatsigUser& user,
+      const std::function<void(void)>& callback
+      ) override {
     // TODO: Support Prefetch
   }
 
- private:
+private:
   std::optional<std::string> sdk_key_;
   std::unordered_map<std::string, DataAdapterResult> in_memory_cache_ = {};
-  NetworkService *network_;
+  NetworkService* network_;
 
-  std::string GetCacheKey(const StatsigUser &user) {
+  std::string GetCacheKey(const StatsigUser& user) {
     const auto key = MakeCacheKey(GetSdkKey(), user);
     return constants::kCachedEvaluationsPrefix + key;
   }
@@ -117,11 +119,14 @@ class StatsigEvaluationsDataAdapter : public EvaluationsDataAdapter {
       return sdk_key_.value();
     }
 
-    std::cerr << "[Statsig]: StatsigEvaluationsDataAdapter is not attached to a Client. " << std::endl;
+    std::cerr <<
+        "[Statsig]: StatsigEvaluationsDataAdapter is not attached to a Client. "
+        << std::endl;
     return "";
   }
 
-  void AddToInMemoryCache(const std::string &cache_key, const DataAdapterResult &result) {
+  void AddToInMemoryCache(const std::string& cache_key,
+                          const DataAdapterResult& result) {
     if (in_memory_cache_.size() < constants::kMaxCachedEvaluationsCount) {
       in_memory_cache_[cache_key] = result;
       return;
@@ -129,7 +134,8 @@ class StatsigEvaluationsDataAdapter : public EvaluationsDataAdapter {
 
     auto oldest = in_memory_cache_.begin();
     long long oldest_rec_at = MAX_LONG_LONG;
-    for (auto it = in_memory_cache_.begin(); it != in_memory_cache_.end(); ++it) {
+    for (auto it = in_memory_cache_.begin(); it != in_memory_cache_.end(); ++
+         it) {
       if (it->second.receivedAt < oldest_rec_at) {
         oldest = it;
         oldest_rec_at = it->second.receivedAt;
@@ -144,10 +150,10 @@ class StatsigEvaluationsDataAdapter : public EvaluationsDataAdapter {
   }
 
   void FetchLatest(
-      const StatsigUser &user,
-      const std::optional<DataAdapterResult> &current,
-      const std::function<void(std::optional<DataAdapterResult>)> &callback
-  ) {
+      const StatsigUser& user,
+      const std::optional<DataAdapterResult>& current,
+      const std::function<void(StatsigResult<DataAdapterResult>)>& callback
+      ) {
     std::optional<std::string> current_data = std::nullopt;
     if (current.has_value()) {
       current_data = current->data;
@@ -156,24 +162,25 @@ class StatsigEvaluationsDataAdapter : public EvaluationsDataAdapter {
     network_->FetchValues(
         user,
         current_data,
-        [callback, current_data](std::optional<NetworkResult<data::InitializeResponse>> net_result) {
-          if (!net_result.has_value()) {
-            callback(std::nullopt);
+        [callback, current_data](
+        NetworkResult<data::InitializeResponse> net_result) {
+          if (net_result.code != Ok) {
+            callback({net_result.code});
             return;
           }
 
           DataAdapterResult result;
           result.receivedAt = Time::now();
 
-          if (net_result->response.has_updates) {
-            result.data = net_result->raw;
+          if (net_result.response->has_updates) {
+            result.data = net_result.raw;
             result.source = ValueSource::Network;
           } else {
             result.data = current_data.value_or("");
             result.source = ValueSource::NetworkNotModified;
           }
 
-          callback(result);
+          callback({Ok, result});
         });
 
   }

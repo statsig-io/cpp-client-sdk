@@ -30,7 +30,7 @@ struct LogEventResponse {
   bool success;
 };
 
-struct FailedEventPayload {
+struct RetryableEventPayload {
   int attempts;
   std::vector<StatsigEventInternal> events;
 };

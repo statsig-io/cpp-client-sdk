@@ -4,6 +4,7 @@
 
 #include "statsig_user.h"
 #include "statsig_options.h"
+#include "statsig_result.h"
 
 namespace statsig {
 
@@ -30,14 +31,14 @@ class EvaluationsDataAdapter {
       StatsigOptions &options
   ) = 0;
 
-  virtual std::optional<DataAdapterResult> GetDataSync(
+  virtual StatsigResult<DataAdapterResult> GetDataSync(
       const StatsigUser &user
   ) = 0;
 
   virtual void GetDataAsync(
       const StatsigUser &user,
       const std::optional<DataAdapterResult> &current,
-      const std::function<void(std::optional<DataAdapterResult>)> &callback
+      const std::function<void(StatsigResult<DataAdapterResult>)> &callback
   ) = 0;
 
   virtual void SetData(
@@ -47,7 +48,7 @@ class EvaluationsDataAdapter {
 
   virtual void PrefetchData(
       const StatsigUser &user,
-      const std::function<void(void)> &callback
+      const std::function<void()> &callback
   ) = 0;
 };
 

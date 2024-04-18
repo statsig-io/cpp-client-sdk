@@ -26,19 +26,23 @@ StatsigClient::~StatsigClient() {
   context_.reset();
 }
 
-void StatsigClient::InitializeSync(
+StatsigResultCode StatsigClient::InitializeSync(
     const std::string& sdk_key,
     const std::optional<StatsigUser>& user,
     const std::optional<StatsigOptions>& options) {
-  EB(([this, &sdk_key, &user, &options]() {
+  auto code = Ok;
+
+  EB(([this, &sdk_key, &user, &options, &code] {
     context_.reset(new StatsigContext(sdk_key, user, options));
-    UpdateUserSync(context_->user);
+    code = UpdateUserSync(context_->user);
     }));
+
+  return code;
 }
 
 void StatsigClient::InitializeAsync(
     const std::string& sdk_key,
-    const std::function<void()>& callback,
+    const std::function<void(StatsigResultCode)>& callback,
     const std::optional<StatsigUser>& user,
     const std::optional<StatsigOptions>& options) {
   EB(([this, &sdk_key, &user, &options, &callback]() {
@@ -47,63 +51,68 @@ void StatsigClient::InitializeAsync(
     }));
 }
 
-void StatsigClient::UpdateUserSync(const StatsigUser& user) {
-  INIT_GUARD();
+StatsigResultCode StatsigClient::UpdateUserSync(const StatsigUser& user) {
+  INIT_GUARD(ClientUninitialized);
+  auto code = Ok;
 
-  // EB(([this, &user]() {
-  context_->user = user;
-  context_->store.Reset();
+  EB(([this, &user, &code] {
+    context_->user = user;
+    context_->store.Reset();
 
-  auto result = context_->data_adapter->GetDataSync(context_->user);
-  context_->store.SetValuesFromDataAdapterResult(result);
+    auto result = context_->data_adapter->GetDataSync(context_->user);
+    if (result.code == Ok) {
+    context_->store.SetValuesFromDataAdapterResult(result.value);
+    }
 
-  context_->store.Finalize();
+    context_->store.Finalize();
 
-  AsyncHelper::RunInBackground([this, result]() {
-    context_->data_adapter->GetDataAsync(
+    AsyncHelper::RunInBackground([this, result]() {
+      context_->data_adapter->GetDataAsync(
         context_->user,
-        result,
-        [](const std::optional<DataAdapterResult>& result) {
-          // noop
-        }
-        );
-  });
-  // }));
+        result.value,
+        [](auto) {}
+      );
+      });
+    }));
+
+  return code;
 }
 
 void StatsigClient::UpdateUserAsync(
     const StatsigUser& user,
-    const std::function<void()>& callback
+    const std::function<void(StatsigResultCode)>& callback
     ) {
   INIT_GUARD();
 
-  // EB(([this, &user, &callback]() {
-  context_->user = user;
-  context_->store.Reset();
+  EB(([this, &user, &callback] {
+    context_->user = user;
+    context_->store.Reset();
 
-  auto result = context_->data_adapter->GetDataSync(context_->user);
-  context_->store.SetValuesFromDataAdapterResult(result);
+    auto result = context_->data_adapter->GetDataSync(context_->user);
+    if (result.code == Ok) {
+    context_->store.SetValuesFromDataAdapterResult(result.value);
+    }
 
-  const auto initiator = context_->user;
+    const auto initiator = context_->user;
 
-  const auto inner_callback = [this, initiator, callback]
-  (std::optional<DataAdapterResult> result) {
+    const auto inner_callback = [this, initiator, callback]
+    (StatsigResult<DataAdapterResult> result) {
 
     const auto current_user = context_->user;
-    if (internal::AreUsersEqual(initiator, current_user)) {
-      context_->store.SetValuesFromDataAdapterResult(result);
+    if (result.code != Ok && internal::AreUsersEqual(initiator, current_user)) {
+    context_->store.SetValuesFromDataAdapterResult(result.value);
     }
 
     context_->store.Finalize();
-    callback();
-  };
+    callback(result.code);
+    };
 
-  context_->data_adapter->GetDataAsync(
+    context_->data_adapter->GetDataAsync(
       initiator,
-      result,
+      result.value,
       inner_callback
-      );
-  // }));
+    );
+    }));
 }
 
 void StatsigClient::Shutdown() {

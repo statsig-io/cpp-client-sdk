@@ -1,5 +1,6 @@
 #pragma once
 
+#include "statsig.h"
 
 namespace statsig::internal {
 
@@ -11,11 +12,10 @@ struct ErrorBoundaryRequestArgs {
 
 }
 
-
 #include "json_parser.hpp"
 #include "constants.h"
-#include "statsig_compatibility/network/network_client.hpp"
-#include "statsig_compatibility/constants/constants.h"
+#include "compat/network/network_client.hpp"
+#include "compat/constants/constants.h"
 #include <set>
 
 #ifndef STATSIG_DISABLE_EXCEPTIONS
@@ -40,6 +40,17 @@ public:
 
   inline static string eb_api = constants::kDefaultApi;
 
+  StatsigResultCode Enforce(
+      const StatsigResultCode& failure_result,
+      const std::function<bool()>& verification
+      ) {
+    if (verification()) {
+      return Ok;
+    }
+
+    return failure_result;
+  }
+
   void Capture(
       const string& tag,
       const std::function<void()>& task
@@ -47,57 +58,28 @@ public:
 #ifndef STATSIG_DISABLE_EXCEPTIONS
     try {
       task();
-    } catch (const std::exception& error) {
+    } catch (const std::exception &error) {
       try {
         std::cerr << "[Statsig]: An unexpected exception occurred. " << error.
             what() << std::endl;
         LogError(tag, error.what());
-      } catch (std::exception&) {
+      } catch (std::exception &) {
         // noop
       }
     }
-#else
+#else // STATSIG_DISABLE_EXCEPTIONS
     task();
 #endif
   }
-
-#ifndef STATSIG_DISABLE_EXCEPTIONS
-  void LogError(
-      const string& tag,
-      const string& error
-      ) {
-    if (seen_.find(error) != seen_.end()) {
-      return;
-    }
-
-    seen_.insert(error);
-
-    ErrorBoundaryRequestArgs body{error, tag, GetStackTrace()};
-
-    std::unordered_map<string, string> headers{
-        {"STATSIG-API-KEY", sdk_key_},
-        {"STATSIG-SDK-TYPE", statsig_compatibility::constants::kSdkType},
-        {"STATSIG-SDK-VERSION", constants::kSdkVersion}
-    };
-
-    NetworkClient::Post(
-        eb_api,
-        "/v1/sdk_exception",
-        headers,
-        Json::Serialize(body),
-        [](std::optional<HttpResponse> response) {}
-        );
-  }
-#endif // STATSIG_DISABLE_EXCEPTIONS
 
 private:
   string& sdk_key_;
   std::set<string> seen_;
 
-#ifndef STATSIG_DISABLE_EXCEPTIONS
   static std::vector<string> GetStackTrace() {
     std::vector<string> trace;
 
+#ifndef STATSIG_DISABLE_EXCEPTIONS
 #ifdef __unix__
     const int maxFrames = 128;
     void* stackTrace[maxFrames];
@@ -113,11 +95,40 @@ private:
     }
 
     free(symbols);
-#endif
+#endif // __unix__
+#endif // STATSIG_DISABLE_EXCEPTIONS
 
     return trace;
   }
-#endif // STATSIG_DISABLE_EXCEPTIONS
+
+  void LogError(
+      const string& tag,
+      const string& error
+      ) {
+
+    if (seen_.find(error) != seen_.end()) {
+      return;
+    }
+
+    seen_.insert(error);
+
+    ErrorBoundaryRequestArgs body{error, tag, GetStackTrace()};
+
+    std::unordered_map<string, string> headers{
+        {"STATSIG-API-KEY", sdk_key_},
+        {"STATSIG-SDK-TYPE", statsig_compatibility::constants::kSdkType},
+        {"STATSIG-SDK-VERSION", constants::kSdkVersion}
+    };
+
+    NetworkClient::Post(
+        {
+            eb_api,
+            "/v1/sdk_exception",
+            headers,
+            Json::Serialize(body)
+        },
+        [](std::optional<HttpResponse> response) {});
+  }
 
 };
 

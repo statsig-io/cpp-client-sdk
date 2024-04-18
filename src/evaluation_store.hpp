@@ -29,17 +29,25 @@ public:
     source_info_ = {ValueSource::NoValues};
   }
 
-  void SetValuesFromDataAdapterResult(std::optional<DataAdapterResult> result) {
+  StatsigResultCode SetValuesFromDataAdapterResult(
+      std::optional<DataAdapterResult> result) {
     if (!result.has_value()) {
-      return;
+      return Ok;
     }
 
     WRITE_LOCK(rw_lock_);
 
-    values_ = Json::Deserialize<data::InitializeResponse>(result->data);
+    auto parsed = Json::Deserialize<data::InitializeResponse>(result->data);
+    if (parsed.code != Ok) {
+      return parsed.code;
+    }
+
+    values_ = parsed.value;
     source_info_.source = result->source;
     source_info_.received_at = result->receivedAt;
     source_info_.lcut = values_->time;
+
+    return Ok;
   }
 
   DetailedEvaluation<data::GateEvaluation>

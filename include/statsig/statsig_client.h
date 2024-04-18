@@ -1,8 +1,5 @@
 #pragma once
 
-#include <future>
-#include <shared_mutex>
-
 #include "statsig.h"
 
 namespace statsig {
@@ -15,7 +12,7 @@ public:
   StatsigClient();
   ~StatsigClient();
 
-  void InitializeSync(
+  StatsigResultCode InitializeSync(
       const std::string& sdk_key,
       const std::optional<StatsigUser>& user = std::nullopt,
       const std::optional<StatsigOptions>& options = std::nullopt
@@ -23,15 +20,15 @@ public:
 
   void InitializeAsync(
       const std::string& sdk_key,
-      const std::function<void()>& callback,
+      const std::function<void(StatsigResultCode)>& callback,
       const std::optional<StatsigUser>& user = std::nullopt,
       const std::optional<StatsigOptions>& options = std::nullopt
       );
 
-  void UpdateUserSync(const StatsigUser& user);
+  StatsigResultCode UpdateUserSync(const StatsigUser& user);
 
   void UpdateUserAsync(const StatsigUser& user,
-                       const std::function<void()>& callback);
+                       const std::function<void(StatsigResultCode)>& callback);
 
   void Shutdown();
 
