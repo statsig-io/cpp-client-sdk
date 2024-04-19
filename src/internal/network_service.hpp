@@ -90,10 +90,10 @@ class NetworkService {
         constants::kLogEventRetryCount,
         [callback](std::optional<HttpResponse> response) {
           if (!HasSuccessCode(response)) {
-            callback({NetworkFailureBadStatusCode, std::nullopt, GetStatusCodeErr(response)});
+            callback({{NetworkFailureBadStatusCode, std::nullopt, GetStatusCodeErr(response)}});
           } else {
             auto res = Json::Deserialize<LogEventResponse>(response->text);
-            callback({res.code, res.value.has_value() && res.value->success});
+            callback({{res.code, res.value.has_value() && res.value->success}});
           }
         }
     );
@@ -146,28 +146,24 @@ class NetworkService {
       const std::optional<InitializeResponse> &cache,
       const std::function<void(NetworkResult<InitializeResponse>)> &callback
   ) {
-    NetworkResult<InitializeResponse> foo = {
-        Ok, std::nullopt, std::nullopt, ""
-    };
-
     return [callback, cache](auto response) {
       if (!HasSuccessCode(response)) {
-        callback({NetworkFailureBadStatusCode, std::nullopt, GetStatusCodeErr(response)});
+        callback({{NetworkFailureBadStatusCode, std::nullopt, GetStatusCodeErr(response)}});
         return;
       }
 
       if (response->status == 204) {
-        callback({Ok, InitializeResponse()});
+        callback({{Ok, {}}});
         return;
       }
 
       auto data = Json::Deserialize<InitializeResponse>(response->text);
       if (data.code != Ok) {
-        callback({data.code});
+        callback({{data.code}});
         return;
       }
 
-      NetworkResult<InitializeResponse> result = {Ok};
+      NetworkResult<InitializeResponse> result = {{Ok}};
       result.raw = response->text;
       result.value = data.value;
       callback(result);
