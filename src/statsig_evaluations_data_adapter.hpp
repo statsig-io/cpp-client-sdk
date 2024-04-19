@@ -33,6 +33,8 @@ void WriteToCacheFile(const std::string &cache_key, const DataAdapterResult &res
 
 class StatsigEvaluationsDataAdapter : public EvaluationsDataAdapter {
  public:
+  virtual ~StatsigEvaluationsDataAdapter() = default;
+
   void Attach(
       std::string &sdk_key,
       StatsigOptions &options

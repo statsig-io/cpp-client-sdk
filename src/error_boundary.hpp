@@ -18,6 +18,7 @@ struct ErrorBoundaryRequestArgs {
 #include "statsig_compatibility/constants/constants.h"
 #include <set>
 
+#ifndef STATSIG_DISABLE_EXCEPTIONS
 #ifdef __unix__
 #include <execinfo.h>
 #endif
@@ -26,6 +27,7 @@ struct ErrorBoundaryRequestArgs {
 #include <windows.h>
 #include <stdexcept>
 #endif
+#endif // STATSIG_DISABLE_EXCEPTIONS
 
 namespace statsig::internal {
 
@@ -59,6 +61,7 @@ public:
 #endif
   }
 
+#ifndef STATSIG_DISABLE_EXCEPTIONS
   void LogError(
       const string& tag,
       const string& error
@@ -85,11 +88,13 @@ public:
         [](std::optional<HttpResponse> response) {}
         );
   }
+#endif // STATSIG_DISABLE_EXCEPTIONS
 
 private:
   string& sdk_key_;
   std::set<string> seen_;
 
+#ifndef STATSIG_DISABLE_EXCEPTIONS
   static std::vector<string> GetStackTrace() {
     std::vector<string> trace;
 
@@ -112,6 +117,7 @@ private:
 
     return trace;
   }
+#endif // STATSIG_DISABLE_EXCEPTIONS
 
 };
 
