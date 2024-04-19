@@ -5,11 +5,13 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Add source files to the Library
-file(GLOB STATSIG_SOURCES "src/*.cpp")
+file(GLOB STATSIG_SOURCES "src/**/*.cpp")
 add_library(${PROJECT_NAME} SHARED ${STATSIG_SOURCES})
 
 # Include the header files in the Library
-target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+target_include_directories(${PROJECT_NAME} PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+)
 
 # === Third Party Deps ===
 
