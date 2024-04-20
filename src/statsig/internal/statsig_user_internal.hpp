@@ -2,7 +2,7 @@
 
 #include "hashing.hpp"
 #include "statsig/statsig_user.h"
-#include "compat/primitives/string.hpp"
+#include "statsig/compat/primitives/string.hpp"
 
 namespace statsig::internal {
 

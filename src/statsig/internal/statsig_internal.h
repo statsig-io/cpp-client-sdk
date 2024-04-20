@@ -1,6 +1,6 @@
 #pragma once
 
-#include "statsig.h"
+#include "statsig/statsig.h"
 
 #include "constants.h"
 #include "time.hpp"

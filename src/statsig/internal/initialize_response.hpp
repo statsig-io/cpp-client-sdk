@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-#include "compat/primitives/json_value.hpp"
+#include "statsig/compat/primitives/json_value.hpp"
 
 namespace statsig::data {
 

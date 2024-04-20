@@ -1,6 +1,6 @@
 #pragma once
 
-#include "statsig.h"
+#include "statsig/statsig.h"
 
 namespace statsig::internal {
 
@@ -17,8 +17,8 @@ struct ErrorBoundaryRequestArgs {
 
 #include "json_parser.hpp"
 #include "constants.h"
-#include "compat/network/network_client.hpp"
-#include "compat/constants/constants.h"
+#include "statsig/compat/network/network_client.hpp"
+#include "statsig/compat/constants/constants.h"
 #include "unordered_map_util.hpp"
 
 #ifndef STATSIG_DISABLE_EXCEPTIONS

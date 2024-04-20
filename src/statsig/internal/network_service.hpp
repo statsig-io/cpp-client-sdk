@@ -6,8 +6,8 @@
 #include "initialize_request_args.h"
 #include "initialize_response.hpp"
 #include "json_parser.hpp"
-#include "compat/network/network_client.hpp"
-#include "compat/constants/constants.h"
+#include "statsig/compat/network/network_client.hpp"
+#include "statsig/compat/constants/constants.h"
 #include "unordered_map_util.hpp"
 
 namespace statsig::internal {

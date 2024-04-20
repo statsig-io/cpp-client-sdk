@@ -1,13 +1,12 @@
 #include "statsig/statsig_client.h"
 
 #include <memory>
-#include <utility>
 
 #include "statsig/statsig_event.h"
 #include "statsig_context.hpp"
 #include "evaluation_details_internal.hpp"
-#include "compat/async/async_helper.hpp"
-#include "compat/primitives/string.hpp"
+#include "statsig/compat/async/async_helper.hpp"
+#include "statsig/compat/primitives/string.hpp"
 
 #define INIT_GUARD(result) do { if (!EnsureInitialized(__func__)) { return result; }} while(0)
 #define EB_WITH_TAG(tag, task) context_->err_boundary.Capture((tag), (task))

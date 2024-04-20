@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include "compat/filesystem/file_helper.hpp"
+#include "statsig/compat/filesystem/file_helper.hpp"
 
 namespace statsig::internal {
 

@@ -2,7 +2,7 @@
 
 #include <shared_mutex>
 
-#include "compat/async/async_helper.hpp"
+#include "statsig/compat/async/async_helper.hpp"
 
 #include "statsig_event_internal.hpp"
 #include "macros.hpp"

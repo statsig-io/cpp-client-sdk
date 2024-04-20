@@ -3,16 +3,16 @@
 #include <string>
 #include <unordered_map>
 
-#include "statsig.h"
-#include "compat/json_serialization/data_adapter_result_json.hpp"
-#include "compat/json_serialization/statsig_user_json.hpp"
-#include "compat/json_serialization/initialize_request_args_json.hpp"
-#include "compat/json_serialization/initialize_response_json.hpp"
-#include "compat/json_serialization/statsig_event_json.hpp"
-#include "compat/json_serialization/error_boundary_request_args_json.hpp"
-#include "compat/json_serialization/log_event_response_json.hpp"
-#include "compat/json_serialization/log_event_request_args_json.hpp"
-#include "compat/json_serialization/failed_log_event_payload_json.hpp"
+#include "statsig/statsig.h"
+#include "statsig/compat/json_serialization/data_adapter_result_json.hpp"
+#include "statsig/compat/json_serialization/statsig_user_json.hpp"
+#include "statsig/compat/json_serialization/initialize_request_args_json.hpp"
+#include "statsig/compat/json_serialization/initialize_response_json.hpp"
+#include "statsig/compat/json_serialization/statsig_event_json.hpp"
+#include "statsig/compat/json_serialization/error_boundary_request_args_json.hpp"
+#include "statsig/compat/json_serialization/log_event_response_json.hpp"
+#include "statsig/compat/json_serialization/log_event_request_args_json.hpp"
+#include "statsig/compat/json_serialization/failed_log_event_payload_json.hpp"
 
 namespace statsig::internal {
 
