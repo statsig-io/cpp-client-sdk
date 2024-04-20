@@ -3,6 +3,8 @@ project(StatsigClientSDKTests)
 
 set(CMAKE_CXX_STANDARD 17)
 
+add_definitions(-DSTATSIG_TESTS -DROOT_DIR="${CMAKE_SOURCE_DIR}")
+
 
 file(GLOB TEST_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
 add_executable(${PROJECT_NAME} ${TEST_SOURCES})

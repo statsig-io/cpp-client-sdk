@@ -1,64 +1,31 @@
-#include <thread>
-#include <memory>
-#include <future>
-#include <chrono>
+#ifdef STATSIG_TESTS
 
 #include "gtest/gtest.h"
+#include "mock_eval_data_adapter.hpp"
 #include "statsig/statsig.h"
+#include "test_helpers.hpp"
 
 using namespace statsig;
-
-class MockEvaluationsDataAdapter : public EvaluationsDataAdapter {
- public:
- public:
-  void Attach(
-      const std::string &sdk_key
-  ) override {
-  }
-
-  std::optional<DataAdapterResult> GetDataSync(
-      const StatsigUser &user
-  ) override {
-    return std::nullopt;
-  }
-
-  void GetDataAsync(
-      const StatsigUser &user,
-      const std::optional<DataAdapterResult> &current,
-      const std::function<void(std::optional<DataAdapterResult>)> &callback
-  ) override {
-    sleep(5);
-  }
-
-  void SetData(
-      const StatsigUser &user,
-      const std::string &data
-  ) override {
-    // TODO: Support Bootstrap
-  }
-
-  void PrefetchData(
-      const StatsigUser &user,
-      const std::function<void(void)> &callback
-  ) override {
-    // TODO: Support Prefetch
-  }
-};
 
 TEST(StatsigClientThreadedTest, DoesNotBlock) {
   StatsigClient client;
 
+  auto mock_adapter = new MockEvaluationsDataAdapter();
+  mock_adapter->on_get_data_async = [](auto, auto, auto) {
+    sleep(5);
+  };
+
   StatsigOptions opts;
-  opts.data_adapter = new MockEvaluationsDataAdapter();
+  opts.data_adapter = mock_adapter;
 
-  std::promise<void> promise;
-  auto future = promise.get_future();
+  auto completed = RunBlocking(1000, [&client, &opts](auto done) {
+    client.InitializeAsync(
+        "client-test", [](auto) {}, std::nullopt, opts);
+    done();
+  });
 
-  std::thread([&promise, &client, &opts]() {
-    client.InitializeAsync("client-test", []() {}, std::nullopt, opts);
-    promise.set_value();
-  }).detach();
-
-  auto status = future.wait_for(std::chrono::seconds(1));
-  EXPECT_TRUE(status == std::future_status::ready) << "Asynchronous task did not complete within the timeout";
+  EXPECT_TRUE(completed)
+      << "Asynchronous task did not complete within the timeout";
 }
+
+#endif

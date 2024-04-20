@@ -1,3 +1,5 @@
+#ifndef STATSIG_UNREAL
+
 #include <statsig/statsig.h>
 #include <iostream>
 
@@ -37,3 +39,5 @@ int main() {
   SimpleGateCheck();
   SessionDelayedNetworkInit();
 }
+
+#endif

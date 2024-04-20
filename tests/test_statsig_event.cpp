@@ -1,5 +1,7 @@
+#ifdef STATSIG_TESTS
+
 #include "gtest/gtest.h"
-#include "statsig/statsig_event.h"
+#include "statsig/statsig.h"
 
 using namespace statsig;
 
@@ -29,7 +31,7 @@ TEST(StatsigEventTest, ConstructorWithStringValue) {
 
 TEST(StatsigEventTest, ConstructorWithMetadata) {
   std::string event_name = "test_event";
-  StrMap metadata = {{"key1", "value1"}, {"key2", "value2"}};
+  StringMap metadata = {{"key1", "value1"}, {"key2", "value2"}};
   StatsigEvent event(event_name, metadata);
 
   EXPECT_EQ(event.event_name, event_name);
@@ -42,7 +44,7 @@ TEST(StatsigEventTest, ConstructorWithMetadata) {
 TEST(StatsigEventTest, ConstructorWithDoubleValueAndMetadata) {
   std::string event_name = "test_event";
   double value = 42.0;
-  StrMap metadata = {{"key1", "value1"}, {"key2", "value2"}};
+  StringMap metadata = {{"key1", "value1"}, {"key2", "value2"}};
   StatsigEvent event(event_name, value, metadata);
 
   EXPECT_EQ(event.event_name, event_name);
@@ -55,7 +57,7 @@ TEST(StatsigEventTest, ConstructorWithDoubleValueAndMetadata) {
 TEST(StatsigEventTest, ConstructorWithStringValueAndMetadata) {
   std::string event_name = "test_event";
   std::string value = "value";
-  StrMap metadata = {{"key1", "value1"}, {"key2", "value2"}};
+  StringMap metadata = {{"key1", "value1"}, {"key2", "value2"}};
   StatsigEvent event(event_name, value, metadata);
 
   EXPECT_EQ(event.event_name, event_name);
@@ -76,3 +78,4 @@ TEST(StatsigEventTest, ConstructorWithoutValueAndMetadata) {
   EXPECT_FALSE(event.metadata.has_value());
 }
 
+#endif
