@@ -1,25 +1,25 @@
 #pragma once
 
-#include <unordered_map>
 #include <optional>
 #include <functional>
 
 #include "evaluation_details.h"
-#include "compat/json/json_value.hpp"
+#include "compat/primitives/json_value.hpp"
+#include "compat/primitives/string.hpp"
 
 namespace statsig {
 
 class BaseSpec {
  public:
-  std::string GetName();
+  String GetName();
 
-  std::string GetRuleId();
+  String GetRuleId();
 
   EvaluationDetails GetEvaluationDetails();
 
   BaseSpec(
-      std::string name,
-      std::string rule_id,
+      String name,
+      String rule_id,
       EvaluationDetails evaluation_details
   )
       : name_(std::move(name)),
@@ -27,13 +27,13 @@ class BaseSpec {
         evaluation_details_(std::move(evaluation_details)) {}
 
   BaseSpec(
-      std::string name,
+      String name,
       EvaluationDetails evaluation_details
   ) : name_(std::move(name)), evaluation_details_(std::move(evaluation_details)) {}
 
  private:
-  std::string name_;
-  std::string rule_id_;
+  String name_;
+  String rule_id_;
   EvaluationDetails evaluation_details_;
 };
 
@@ -41,8 +41,8 @@ template<typename T>
 class EvaluatedSpec : public BaseSpec {
  public:
   EvaluatedSpec(
-      std::string name,
-      std::string rule_id,
+      String name,
+      String rule_id,
       EvaluationDetails evaluation_details,
       T value
   )
@@ -50,7 +50,7 @@ class EvaluatedSpec : public BaseSpec {
         value_(std::move(value)) {}
 
   EvaluatedSpec(
-      std::string name,
+      String name,
       EvaluationDetails evaluation_details
   ) : BaseSpec(name, evaluation_details) {}
 
@@ -62,21 +62,21 @@ class FeatureGate : public EvaluatedSpec<bool> {
  public:
   bool GetValue();
 
-  using EvaluatedSpec<bool>::EvaluatedSpec;
+  using EvaluatedSpec::EvaluatedSpec;
 };
 
 class DynamicConfig : public EvaluatedSpec<JsonObject> {
  public:
   JsonObject GetValues();
 
-  using EvaluatedSpec<JsonObject>::EvaluatedSpec;
+  using EvaluatedSpec::EvaluatedSpec;
 };
 
 class Experiment : public EvaluatedSpec<JsonObject> {
  public:
   JsonObject GetValues();
 
-  using EvaluatedSpec<JsonObject>::EvaluatedSpec;
+  using EvaluatedSpec::EvaluatedSpec;
 };
 
 class Layer : public EvaluatedSpec<JsonObject> {
@@ -84,15 +84,15 @@ class Layer : public EvaluatedSpec<JsonObject> {
 
  public:
   Layer(
-      const std::string &name,
-      const std::string &rule_id,
+      const String &name,
+      const String &rule_id,
       const EvaluationDetails &evaluation_details,
       const JsonObject &value,
       const std::function<void(const std::string &)> &log_param_exposure)
-      : EvaluatedSpec<JsonObject>(name, rule_id, evaluation_details, value),
+      : EvaluatedSpec(name, rule_id, evaluation_details, value),
         log_param_exposure_(log_param_exposure) {
   }
-  using EvaluatedSpec<JsonObject>::EvaluatedSpec;
+  using EvaluatedSpec::EvaluatedSpec;
   
   std::optional<JsonValue> GetValue(const std::string &parameter_name);
 

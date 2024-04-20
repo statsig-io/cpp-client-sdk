@@ -2,10 +2,12 @@
 
 #include <string>
 
+#include "compat/primitives/string.hpp"
+
 namespace statsig {
 
 struct EvaluationDetails {
-  std::string reason;
+  String reason;
   long lcut;
   long received_at;
 };

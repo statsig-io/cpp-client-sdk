@@ -1,6 +1,6 @@
 #pragma once
 
-#include "public/evaluations_data_adapter.h"
+#include "statsig/evaluations_data_adapter.h"
 #include "network_service.hpp"
 #include "json_parser.hpp"
 

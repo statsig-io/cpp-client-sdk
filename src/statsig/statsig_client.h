@@ -1,6 +1,7 @@
 #pragma once
 
-#include "statsig.h"
+#include "compat/primitives/string.hpp"
+#include "statsig/statsig.h"
 
 namespace statsig {
 
@@ -13,13 +14,13 @@ public:
   ~StatsigClient();
 
   StatsigResultCode InitializeSync(
-      const std::string& sdk_key,
+      const String& sdk_key,
       const std::optional<StatsigUser>& user = std::nullopt,
       const std::optional<StatsigOptions>& options = std::nullopt
       );
 
   void InitializeAsync(
-      const std::string& sdk_key,
+      const String& sdk_key,
       const std::function<void(StatsigResultCode)>& callback,
       const std::optional<StatsigUser>& user = std::nullopt,
       const std::optional<StatsigOptions>& options = std::nullopt
@@ -36,15 +37,15 @@ public:
 
   void LogEvent(const StatsigEvent& event);
 
-  bool CheckGate(const std::string& gate_name);
+  bool CheckGate(const String& gate_name);
 
-  FeatureGate GetFeatureGate(const std::string& gate_name);
+  FeatureGate GetFeatureGate(const String& gate_name);
 
-  DynamicConfig GetDynamicConfig(const std::string& config_name);
+  DynamicConfig GetDynamicConfig(const String& config_name);
 
-  Experiment GetExperiment(const std::string& experiment_name);
+  Experiment GetExperiment(const String& experiment_name);
 
-  Layer GetLayer(const std::string& layer_name);
+  Layer GetLayer(const String& layer_name);
 
 private:
   std::shared_ptr<StatsigContext> context_;

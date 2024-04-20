@@ -10,19 +10,19 @@
 namespace statsig::internal {
 
 struct StatsigEventInternal {
-  using string = std::string;
 
   std::string event_name;
   long time{};
   StatsigUser user;
-  std::optional<string> string_value;
+  std::optional<std::string> string_value;
   std::optional<double> double_value;
-  std::optional<std::unordered_map<string, string>> metadata;
-  std::optional<std::vector<std::unordered_map<string, string>>> secondary_exposures;
+  std::optional<std::unordered_map<std::string, std::string>> metadata;
+  std::optional<std::vector<std::unordered_map<std::string, std::string>>>
+  secondary_exposures;
 };
 
 struct LogEventRequestArgs {
-  const std::vector<StatsigEventInternal> &events;
+  const std::vector<StatsigEventInternal>& events;
   std::unordered_map<std::string, std::string> statsig_metadata;
 };
 
@@ -35,26 +35,40 @@ struct RetryableEventPayload {
   std::vector<StatsigEventInternal> events;
 };
 
-StatsigEventInternal InternalizeEvent(StatsigEvent event, StatsigUser &user) {
+inline StatsigEventInternal InternalizeEvent(StatsigEvent event, const StatsigUser& user) {
   StatsigEventInternal result;
-  result.event_name = event.event_name;
+  result.event_name = FromCompat(event.event_name);
   result.time = event.time.has_value() ? event.time.value() : Time::now();
   result.user = user;
-  result.metadata = event.metadata;
   result.double_value = event.double_value;
-  result.string_value = event.string_value;
+
+  if (event.string_value.has_value()) {
+    result.string_value = FromCompat(event.string_value.value());
+  }
+
+  if (event.metadata.has_value()) {
+    std::unordered_map<std::string, std::string> meta; 
+    for (auto [fst, snd] : event.metadata.value()) {
+      meta[FromCompat(fst)] = FromCompat(snd);
+    }
+    result.metadata = meta;
+  }
+  
+
+  
   return result;
 }
 
-template<typename T>
+template <typename T>
 StatsigEventInternal MakeExposureEvent(
-    const std::string &event_name,
-    const StatsigUser &user,
-    const std::optional<T> &evaluation,
-    const EvaluationDetails &evaluation_details,
-    const std::unordered_map<std::string, std::string> &metadata,
-    const std::optional<std::vector<data::SecondaryExposure>> &secondary_exposures = std::nullopt
-) {
+    const std::string& event_name,
+    const StatsigUser& user,
+    const std::optional<T>& evaluation,
+    const EvaluationDetails& evaluation_details,
+    const std::unordered_map<std::string, std::string>& metadata,
+    const std::optional<std::vector<data::SecondaryExposure>>&
+        secondary_exposures = std::nullopt
+    ) {
   StatsigEventInternal result;
 
   result.event_name = event_name;
@@ -67,8 +81,8 @@ StatsigEventInternal MakeExposureEvent(
     result.secondary_exposures = UNWRAP(evaluation, secondary_exposures);
   }
 
-  std::unordered_map<std::string, std::string> final_metadata(metadata);
-  final_metadata["reason"] = evaluation_details.reason;
+  std::unordered_map final_metadata(metadata);
+  final_metadata["reason"] = FromCompat(evaluation_details.reason);
   final_metadata["lcut"] = std::to_string(evaluation_details.lcut);
   final_metadata["receivedAt"] = std::to_string(evaluation_details.received_at);
 
@@ -77,10 +91,10 @@ StatsigEventInternal MakeExposureEvent(
 }
 
 StatsigEventInternal MakeGateExposure(
-    const std::string &gate_name,
-    const StatsigUser &user,
-    const DetailedEvaluation<data::GateEvaluation> &detailed_evaluation
-) {
+    const std::string& gate_name,
+    const StatsigUser& user,
+    const DetailedEvaluation<data::GateEvaluation>& detailed_evaluation
+    ) {
   auto evaluation = detailed_evaluation.evaluation;
   auto value = UNWRAP(evaluation, value);
   auto rule_id = UNWRAP(evaluation, rule_id);
@@ -95,14 +109,14 @@ StatsigEventInternal MakeGateExposure(
           {"gateValue", value ? "true" : "false"},
           {"ruleID", rule_id}
       }
-  );
+      );
 }
 
 StatsigEventInternal MakeConfigExposure(
-    const std::string &config_name,
-    const StatsigUser &user,
-    const DetailedEvaluation<data::ConfigEvaluation> &detailed_evaluation
-) {
+    const std::string& config_name,
+    const StatsigUser& user,
+    const DetailedEvaluation<data::ConfigEvaluation>& detailed_evaluation
+    ) {
   auto evaluation = detailed_evaluation.evaluation;
   auto rule_id = UNWRAP(evaluation, rule_id);
 
@@ -115,19 +129,20 @@ StatsigEventInternal MakeConfigExposure(
           {"config", config_name},
           {"ruleID", rule_id},
       }
-  );
+      );
 }
 
 StatsigEventInternal MakeLayerParamExposure(
-    const std::string &layer_name,
-    const std::string &param_name,
-    const StatsigUser &user,
-    const DetailedEvaluation<data::LayerEvaluation> &detailed_evaluation
-) {
+    const std::string& layer_name,
+    const std::string& param_name,
+    const StatsigUser& user,
+    const DetailedEvaluation<data::LayerEvaluation>& detailed_evaluation
+    ) {
   auto evaluation = detailed_evaluation.evaluation;
   auto rule_id = UNWRAP(evaluation, rule_id);
   auto explicit_params = UNWRAP(evaluation, explicit_parameters);
-  auto is_explicit = std::find(explicit_params.begin(), explicit_params.end(), param_name) != explicit_params.end();
+  auto is_explicit = std::find(explicit_params.begin(), explicit_params.end(),
+                               param_name) != explicit_params.end();
 
   auto exposures = UNWRAP(evaluation, undelegated_secondary_exposures);
 
@@ -150,7 +165,7 @@ StatsigEventInternal MakeLayerParamExposure(
           {"allocatedExperiment", UNWRAP_OR(allocated, "")}
       },
       exposures
-  );
+      );
 }
 
 }

@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../public/evaluation_details.h"
+#include "statsig/evaluation_details.h"
 
 namespace statsig::internal::evaluation_details {
 
-std::string GetValueSourceString(const ValueSource &source) {
+String GetValueSourceString(const ValueSource &source) {
   switch (source) {
     case ValueSource::Uninitialized:return "Uninitialized";
     case ValueSource::Loading:return "Loading";

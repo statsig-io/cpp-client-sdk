@@ -1,16 +1,13 @@
-#include "public/statsig_types.h"
+#include "statsig/statsig_types.h"
 
-#include <unordered_map>
-
-#include "compat/json/json_value.hpp"
 
 namespace statsig {
 
-std::string BaseSpec::GetName() {
+String BaseSpec::GetName() {
   return name_;
 }
 
-std::string BaseSpec::GetRuleId() {
+String BaseSpec::GetRuleId() {
   return rule_id_;
 }
 

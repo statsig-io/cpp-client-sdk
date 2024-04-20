@@ -4,14 +4,16 @@
 #include <string>
 #include <unordered_map>
 
+#include "compat/primitives/string.hpp"
+#include "compat/primitives/map.hpp"
+
 namespace statsig {
 
-typedef std::optional<std::string> OptString;
-typedef std::unordered_map<std::string, std::string> StrMap;
+typedef std::optional<String> OptString;
 
 struct StatsigUser {
-  std::string user_id;
-  StrMap custom_ids;
+  String user_id;
+  StringMap custom_ids;
 
   OptString email;
   OptString ip;
@@ -19,8 +21,8 @@ struct StatsigUser {
   OptString country;
   OptString locale;
   OptString app_version;
-  std::optional<StrMap> custom;
-  std::optional<StrMap> private_attributes;
+  std::optional<StringMap> custom;
+  std::optional<StringMap> private_attributes;
 };
 
 }
