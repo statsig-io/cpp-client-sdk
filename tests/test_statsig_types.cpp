@@ -1,6 +1,8 @@
+#ifdef STATSIG_TESTS
+
 #include "gtest/gtest.h"
-#include "statsig/statsig.h"
 #include "nlohmann/json.hpp"
+#include "statsig/statsig.h"
 
 using namespace statsig;
 
@@ -14,9 +16,11 @@ TEST(EvaluatedSpecTest, ConstructorWithBoolValue) {
 
   EXPECT_EQ(feature_gate.GetName(), name);
   EXPECT_EQ(feature_gate.GetRuleId(), rule_id);
-  EXPECT_EQ(feature_gate.GetEvaluationDetails().reason, evaluation_details.reason);
+  EXPECT_EQ(feature_gate.GetEvaluationDetails().reason,
+            evaluation_details.reason);
   EXPECT_EQ(feature_gate.GetEvaluationDetails().lcut, evaluation_details.lcut);
-  EXPECT_EQ(feature_gate.GetEvaluationDetails().received_at, evaluation_details.received_at);
+  EXPECT_EQ(feature_gate.GetEvaluationDetails().received_at,
+            evaluation_details.received_at);
   EXPECT_EQ(feature_gate.GetValue(), value);
 }
 
@@ -29,9 +33,12 @@ TEST(EvaluatedSpecTest, ConstructorWithJsonValue) {
 
   EXPECT_EQ(dynamic_config.GetName(), name);
   EXPECT_EQ(dynamic_config.GetRuleId(), rule_id);
-  EXPECT_EQ(dynamic_config.GetEvaluationDetails().reason, evaluation_details.reason);
-  EXPECT_EQ(dynamic_config.GetEvaluationDetails().lcut, evaluation_details.lcut);
-  EXPECT_EQ(dynamic_config.GetEvaluationDetails().received_at, evaluation_details.received_at);
+  EXPECT_EQ(dynamic_config.GetEvaluationDetails().reason,
+            evaluation_details.reason);
+  EXPECT_EQ(dynamic_config.GetEvaluationDetails().lcut,
+            evaluation_details.lcut);
+  EXPECT_EQ(dynamic_config.GetEvaluationDetails().received_at,
+            evaluation_details.received_at);
 
   auto values = dynamic_config.GetValues();
   EXPECT_EQ(values["key1"], "value1");
@@ -49,9 +56,11 @@ TEST(EvaluatedSpecTest, ConstructorWithJsonObjValue) {
 
   EXPECT_EQ(experiment.GetName(), name);
   EXPECT_EQ(experiment.GetRuleId(), rule_id);
-  EXPECT_EQ(experiment.GetEvaluationDetails().reason, evaluation_details.reason);
+  EXPECT_EQ(experiment.GetEvaluationDetails().reason,
+            evaluation_details.reason);
   EXPECT_EQ(experiment.GetEvaluationDetails().lcut, evaluation_details.lcut);
-  EXPECT_EQ(experiment.GetEvaluationDetails().received_at, evaluation_details.received_at);
+  EXPECT_EQ(experiment.GetEvaluationDetails().received_at,
+            evaluation_details.received_at);
 
   auto values = experiment.GetValues();
   EXPECT_EQ(values["key1"], "value1");
@@ -69,7 +78,7 @@ TEST(EvaluatedSpecTest, GetValueFromLayer) {
   std::string parameter_name = "key1";
   bool param_exposure_logged = false;
 
-  auto log_param_exposure = [&](const std::string &param) {
+  auto log_param_exposure = [&](const std::string& param) {
     if (param == parameter_name) {
       param_exposure_logged = true;
     }
@@ -81,3 +90,5 @@ TEST(EvaluatedSpecTest, GetValueFromLayer) {
   EXPECT_EQ(retrieved_value, value[parameter_name]);
   EXPECT_TRUE(param_exposure_logged);
 }
+
+#endif

@@ -1,3 +1,5 @@
+#ifdef STATSIG_TESTS
+
 #include "gtest/gtest.h"
 #include "statsig/statsig.h"
 
@@ -76,3 +78,4 @@ TEST(StatsigEventTest, ConstructorWithoutValueAndMetadata) {
   EXPECT_FALSE(event.metadata.has_value());
 }
 
+#endif

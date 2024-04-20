@@ -1,9 +1,11 @@
+#ifdef STATSIG_TESTS
+
 #include "gtest/gtest.h"
 #include "nlohmann/json.hpp"
 
+#include "statsig/compat/network/network_client.hpp"
 #include "statsig/statsig.h"
 #include "test_helpers.hpp"
-#include "statsig/compat/network/network_client.hpp"
 
 using namespace statsig;
 using namespace statsig::internal;
@@ -33,10 +35,13 @@ class ErrorBoundaryTest : public ::testing::Test {
 
     auto result = Ok;
     RunBlocking(1000, [&](auto done) {
-      client.InitializeAsync(sdk_key_, [&, done](auto new_result) {
-        result = new_result;
-        done();
-      }, std::nullopt, options_);
+      client.InitializeAsync(
+          sdk_key_,
+          [&, done](auto new_result) {
+            result = new_result;
+            done();
+          },
+          std::nullopt, options_);
     });
 
     return result;
@@ -72,6 +77,4 @@ TEST_F(ErrorBoundaryTest, YesErrorBoundary5xx) {
   EXPECT_EQ(requests_[1]["body"]["exception"], "NetworkError_590");
 }
 
-
-
-
+#endif

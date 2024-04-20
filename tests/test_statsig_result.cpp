@@ -1,14 +1,16 @@
+#ifdef STATSIG_TESTS
+
 #include "gtest/gtest.h"
 
-#include "statsig/statsig.h"
 #include "mock_eval_data_adapter.hpp"
+#include "statsig/statsig.h"
 #include "test_helpers.hpp"
 
 using namespace statsig;
 
 struct SetupArgs {
-  StatsigClient *client;
-  MockEvaluationsDataAdapter *mock_adapter;
+  StatsigClient* client;
+  MockEvaluationsDataAdapter* mock_adapter;
 };
 
 static SetupArgs Setup() {
@@ -25,7 +27,7 @@ class StatsigResultTest : public ::testing::Test {
  protected:
   StatsigClient client_;
   StatsigOptions options_;
-  MockEvaluationsDataAdapter *mock_adapter_{};
+  MockEvaluationsDataAdapter* mock_adapter_{};
   std::string sdk_key_ = "client-key";
 
   void SetUp() override {
@@ -35,13 +37,17 @@ class StatsigResultTest : public ::testing::Test {
 };
 
 TEST_F(StatsigResultTest, SynchronousSuccess) {
-  mock_adapter_->on_get_data_sync = [](auto) { return StatsigResult<DataAdapterResult>{Ok}; };
+  mock_adapter_->on_get_data_sync = [](auto) {
+    return StatsigResult<DataAdapterResult>{Ok};
+  };
   auto result = client_.InitializeSync(sdk_key_, std::nullopt, options_);
   EXPECT_EQ(result, Ok);
 }
 
 TEST_F(StatsigResultTest, SynchronousNetworkFailure) {
-  mock_adapter_->on_get_data_sync = [](auto) { return StatsigResult<DataAdapterResult>{NetworkFailureBadStatusCode}; };
+  mock_adapter_->on_get_data_sync = [](auto) {
+    return StatsigResult<DataAdapterResult>{NetworkFailureBadStatusCode};
+  };
   auto result = client_.InitializeSync(sdk_key_, std::nullopt, options_);
   EXPECT_EQ(result, NetworkFailureBadStatusCode);
 }
@@ -52,37 +58,47 @@ TEST_F(StatsigResultTest, SynchronousInvalidSdkKey) {
 }
 
 TEST_F(StatsigResultTest, AsynchronousSuccess) {
-  mock_adapter_->on_get_data_sync = [](auto) { return StatsigResult<DataAdapterResult>{Ok}; };
+  mock_adapter_->on_get_data_sync = [](auto) {
+    return StatsigResult<DataAdapterResult>{Ok};
+  };
   mock_adapter_->on_get_data_async = [](auto, auto, auto cb) {
     cb(StatsigResult<DataAdapterResult>{Ok});
   };
 
   auto result = InvalidSdkKey;
   RunBlocking(10000, [&](auto done) {
-    client_.InitializeAsync(sdk_key_, [&, done](auto new_result) {
-      result = new_result;
-      done();
-    }, std::nullopt, options_);
+    client_.InitializeAsync(
+        sdk_key_,
+        [&, done](auto new_result) {
+          result = new_result;
+          done();
+        },
+        std::nullopt, options_);
   });
 
   EXPECT_EQ(result, Ok);
 }
 
 TEST_F(StatsigResultTest, AsynchronousNetworkFailure) {
-  mock_adapter_->on_get_data_sync = [](auto) { return StatsigResult<DataAdapterResult>{Ok}; };
+  mock_adapter_->on_get_data_sync = [](auto) {
+    return StatsigResult<DataAdapterResult>{Ok};
+  };
   mock_adapter_->on_get_data_async = [](auto, auto, auto cb) {
     cb(StatsigResult<DataAdapterResult>{NetworkFailureBadStatusCode});
   };
 
   auto result = Ok;
   RunBlocking(10000, [&](auto done) {
-    client_.InitializeAsync(sdk_key_, [&, done](auto new_result) {
-      result = new_result;
-      done();
-    }, std::nullopt, options_);
+    client_.InitializeAsync(
+        sdk_key_,
+        [&, done](auto new_result) {
+          result = new_result;
+          done();
+        },
+        std::nullopt, options_);
   });
 
   EXPECT_EQ(result, NetworkFailureBadStatusCode);
 }
 
-
+#endif
