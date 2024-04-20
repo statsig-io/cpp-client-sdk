@@ -4,8 +4,8 @@
 #include <functional>
 
 #include "evaluation_details.h"
-#include "compat/primitives/json_value.hpp"
-#include "compat/primitives/string.hpp"
+#include "statsig/compat/primitives/json_value.hpp"
+#include "statsig/compat/primitives/string.hpp"
 
 namespace statsig {
 

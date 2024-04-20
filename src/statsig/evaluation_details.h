@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "compat/primitives/string.hpp"
+#include "statsig/compat/primitives/string.hpp"
 
 namespace statsig {
 

@@ -4,8 +4,8 @@
 #include <string>
 #include <unordered_map>
 
-#include "compat/primitives/string.hpp"
-#include "compat/primitives/map.hpp"
+#include "statsig/compat/primitives/string.hpp"
+#include "statsig/compat/primitives/map.hpp"
 
 namespace statsig {
 
