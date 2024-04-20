@@ -3,6 +3,7 @@
 #include <future>
 #include <thread>
 #include <memory>
+#include <fstream>
 
 typedef std::function<void()> DoneBlocking;
 
@@ -11,7 +12,7 @@ inline bool RunBlocking(long timeout_ms, const std::function<void(DoneBlocking)>
   auto future = promise.get_future();
 
   std::thread([&, task]() {
-    task([&promise]{
+    task([&promise] {
       promise.set_value();
     });
   }).detach();
@@ -22,4 +23,19 @@ inline bool RunBlocking(long timeout_ms, const std::function<void(DoneBlocking)>
   }
 
   return true;
+}
+
+inline std::string ReadFile(const std::string &path) {
+  const std::string root = ROOT_DIR;
+  std::ifstream stream(root + "/" + path, std::ios::binary);
+
+  if (!stream) {
+    throw std::runtime_error("Could not open file: " + path);
+  }
+
+  std::stringstream buffer;
+  buffer << stream.rdbuf();
+
+  stream.close();
+  return buffer.str();
 }
