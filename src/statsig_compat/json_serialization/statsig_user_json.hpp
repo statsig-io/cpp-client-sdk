@@ -12,14 +12,13 @@ namespace statsig::data_types::statsig_user {
 #define OPT_STR_MAP_FROM_JSON(jsonObj, fieldName, target) do { if (jsonObj.contains(fieldName)) { target = jsonObj[fieldName].get<std::unordered_map<std::string, std::string>>(); } } while(0)
 
 nlohmann::json ToJson(const StatsigUser &u) {
-  auto j = nlohmann::json{
-      {"userID", u.user_id},
-  };
+  auto j = nlohmann::json{};
 
   if (!u.custom_ids.empty()) {
     j["customIDs"] = u.custom_ids;
   }
 
+  OPT_TO_JSON(j, "userID", u.user_id);
   OPT_TO_JSON(j, "email", u.email);
   OPT_TO_JSON(j, "ip", u.ip);
   OPT_TO_JSON(j, "userAgent", u.user_agent);
@@ -32,8 +31,8 @@ nlohmann::json ToJson(const StatsigUser &u) {
   return j;
 }
 
-std::string Serialize(const StatsigUser &user) {
-  return ToJson(user).dump();
+StatsigResult<std::string> Serialize(const StatsigUser &user) {
+  return {Ok, ToJson(user).dump()};
 }
 
 StatsigResult<StatsigUser> Deserialize(const std::string &input) {

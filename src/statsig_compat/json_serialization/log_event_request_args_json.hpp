@@ -6,13 +6,24 @@
 
 namespace statsig::data_types::log_event_request_args {
 
-inline std::string Serialize(const internal::LogEventRequestArgs &args) {
+inline StatsigResult<std::string> Serialize(const internal::LogEventRequestArgs &args) {
+  if (args.statsig_metadata.empty()) {
+    return {JsonFailureLogEventRequestArgs};
+  }
+
+  std::vector<nlohmann::json> events_json_arr;
+  events_json_arr.reserve(args.events.size());
+
+  for (const auto& event : args.events) {
+    events_json_arr.push_back(statsig_event::ToJson(event));
+  }
+
   auto j = nlohmann::json{
-//      {"events", args.events},
+      {"events", events_json_arr},
       {"statsigMetadata", args.statsig_metadata}
   };
 
-  return j.dump();
+  return {Ok, j.dump()};
 }
 
 }

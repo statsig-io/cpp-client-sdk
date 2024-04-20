@@ -30,7 +30,13 @@ ReadFromCacheFile(const std::string &cache_key) {
 void WriteToCacheFile(const std::string &cache_key,
                       const DataAdapterResult &result) {
   File::RunCacheEviction(constants::kCachedEvaluationsPrefix);
-  File::WriteToCache(cache_key, Json::Serialize(result));
+
+  auto serialized = Json::Serialize(result);
+  if (serialized.code == Ok && serialized.value.has_value()) {
+    File::WriteToCache(cache_key, serialized.value.value());
+  }
+
+//  return serialized.code;
 }
 
 class StatsigEvaluationsDataAdapter : public EvaluationsDataAdapter {

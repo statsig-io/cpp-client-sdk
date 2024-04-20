@@ -10,7 +10,6 @@
 namespace statsig::internal {
 
 struct StatsigEventInternal {
-
   std::string event_name;
   long time{};
   StatsigUser user;

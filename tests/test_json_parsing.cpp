@@ -30,10 +30,19 @@ TEST(JsonParsingTest, InitializeResponseValidJson) {
 }
 
 TEST(JsonParsingTest, LogEventRequestValidJson) {
-  auto args = LogEventRequestArgs{{}, {{"foo", "bar"}}};
+  std::vector<StatsigEventInternal> events = {{"my_event", 123}};
+  auto args = LogEventRequestArgs{events, {{"foo", "bar"}}};
+  auto result = Json::Serialize(args);
+
+  EXPECT_EQ(result.value.value(), R"({"events":[{"eventName":"my_event","time":123,"user":null}],"statsigMetadata":{"foo":"bar"}})");
+}
+
+TEST(JsonParsingTest, LogEventRequestMissingStatsigMetadata) {
+  auto args = LogEventRequestArgs{{}};
 
   auto result = Json::Serialize(args);
-  EXPECT_EQ(result, "{\"statsigMetadata\":{\"foo\":\"bar\"}}");
+  EXPECT_EQ(result.value, std::nullopt);
+  EXPECT_EQ(result.code, JsonFailureLogEventRequestArgs);
 }
 
 #endif
