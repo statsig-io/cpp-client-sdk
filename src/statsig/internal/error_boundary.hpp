@@ -1,17 +1,5 @@
 #pragma once
 
-#include "statsig/statsig.h"
-
-namespace statsig::internal {
-
-struct ErrorBoundaryRequestArgs {
-  std::string tag;
-  std::string exception;
-  std::vector<std::string> info;
-};
-
-}
-
 #include <set>
 #include <unordered_map>
 
@@ -20,6 +8,7 @@ struct ErrorBoundaryRequestArgs {
 #include "statsig/compat/network/network_client.hpp"
 #include "statsig/compat/constants/constants.h"
 #include "unordered_map_util.hpp"
+#include "error_boundary_request_args.h"
 
 #ifndef STATSIG_DISABLE_EXCEPTIONS
 #ifdef __unix__
@@ -127,7 +116,7 @@ class ErrorBoundary {
       case JsonFailureLogEventResponse: return "JsonFailureLogEventResponse";
       case JsonFailureNoDeserializerFound: return "JsonFailureNoDeserializerFound";
       case JsonFailureStatsigUser: return "JsonFailureStatsigUser";
-      case Ok:return "Ok";
+      case Ok: return "Ok";
       case UnexpectedError:return "UnexpectedError";
       case InvalidSdkKey: return "InvalidSdkKey";
       case JsonFailureDataAdapterResult: return "JsonFailureDataAdapterResult";
