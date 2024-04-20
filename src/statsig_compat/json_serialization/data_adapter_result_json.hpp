@@ -6,14 +6,14 @@
 
 namespace statsig::data_types::data_adapter_result {
 
-std::string Serialize( const DataAdapterResult &res) {
+StatsigResult<std::string> Serialize( const DataAdapterResult &res) {
   auto j = nlohmann::json{
       {"source", res.source},
       {"data", res.data},
       {"receivedAt", res.receivedAt},
   };
 
-  return j.dump();
+  return {Ok, j.dump()};
 }
 
 StatsigResult<DataAdapterResult> Deserialize(const std::string &input) {

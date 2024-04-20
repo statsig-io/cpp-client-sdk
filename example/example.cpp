@@ -1,4 +1,4 @@
-#ifndef STATSIG_UNREAL
+#ifndef STATSIG_UNREAL_PLUGIN
 
 #include <statsig/statsig.h>
 #include <iostream>
@@ -23,11 +23,11 @@ void SessionDelayedNetworkInit() {
   user.user_id = "user_session_delayed_network_init";
 
   StatsigOptions opts;
-  opts.providers = {
-      new statsig::evaluations_data_providers::LocalFileCacheEvaluationsDataProvider()
-  };
+  opts.providers = {new statsig::evaluations_data_providers::
+                        LocalFileCacheEvaluationsDataProvider()};
 
-  client.Initialize("client-rfLvYGag3eyU0jYW5zcIJTQip7GXxSrhOFN69IGMjvq", user, opts);
+  client.Initialize("client-rfLvYGag3eyU0jYW5zcIJTQip7GXxSrhOFN69IGMjvq", user,
+                    opts);
 
   auto a_gate = client.CheckGate("a_gate");
   std::cout << "a_gate: " << (a_gate ? "Pass" : "Fail") << std::endl;

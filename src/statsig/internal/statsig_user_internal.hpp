@@ -34,7 +34,7 @@ namespace statsig::internal
     }
 
     std::vector parts{
-        "uid:" + user.user_id,
+        "uid:" + user.user_id.value_or(""),
         "cids:" + custom_ids,
         "k:" + ToCompat(sdk_key)};
 

@@ -6,14 +6,14 @@
 
 namespace statsig::data_types::error_boundary_request_args {
 
-std::string Serialize(const internal::ErrorBoundaryRequestArgs &args) {
+StatsigResult<std::string> Serialize(const internal::ErrorBoundaryRequestArgs &args) {
   auto j = nlohmann::json{
       {"tag", args.tag},
       {"exception", args.exception},
       {"info", args.info},
   };
 
-  return j.dump();
+  return {Ok, j.dump()};
 }
 
 }

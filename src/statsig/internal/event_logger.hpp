@@ -83,7 +83,12 @@ namespace statsig::internal
         failures.pop_back();
       }
 
-      File::WriteToCache(key, Json::Serialize(failures));
+      auto serialized = Json::Serialize(failures);
+      if (serialized.code == Ok && serialized.value.has_value()) {
+        File::WriteToCache(key, serialized.value.value());
+      }
+
+//      return serialized.code;
     }
 
     void RetryFailedEvents()

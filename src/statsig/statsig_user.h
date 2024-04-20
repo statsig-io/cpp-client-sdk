@@ -14,7 +14,7 @@ namespace statsig
 
   struct StatsigUser
   {
-    String user_id;
+    OptString user_id;
     StringMap custom_ids;
 
     OptString email;
