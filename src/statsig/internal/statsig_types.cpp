@@ -1,5 +1,4 @@
-#include "statsig/statsig_types.h"
-
+#include "../statsig_types.h"
 
 namespace statsig {
 

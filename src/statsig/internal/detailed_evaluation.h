@@ -1,7 +1,7 @@
 #pragma once
 
 #include <optional>
-#include "statsig/evaluation_details.h"
+#include "../evaluation_details.h"
 
 namespace statsig::internal {
 

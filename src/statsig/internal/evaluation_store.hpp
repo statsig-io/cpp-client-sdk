@@ -5,7 +5,7 @@
 
 #include "hashing.hpp"
 #include "macros.hpp"
-#include "statsig/evaluations_data_adapter.h"
+#include "../evaluations_data_adapter.h"
 #include "evaluation_details_internal.hpp"
 #include "unordered_map_util.hpp"
 

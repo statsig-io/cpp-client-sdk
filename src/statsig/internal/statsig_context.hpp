@@ -2,7 +2,7 @@
 
 #include <utility>
 
-#include "statsig/statsig_user.h"
+#include "../statsig_user.h"
 
 #include "network_service.hpp"
 #include "event_logger.hpp"
