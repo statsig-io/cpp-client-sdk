@@ -3,6 +3,7 @@
 #include <optional>
 #include <unordered_map>
 #include <string>
+#include <cstdint>
 
 namespace statsig {
 
@@ -33,7 +34,7 @@ inline StatsigResultCode operator&(StatsigResultCode a, StatsigResultCode b) {
 
 template<class T>
 struct StatsigResult {
-  StatsigResultCode code;
+  StatsigResultCode code = Ok;
   std::optional<T> value;
   std::optional<std::unordered_map<std::string, std::string>> extra;
 };
