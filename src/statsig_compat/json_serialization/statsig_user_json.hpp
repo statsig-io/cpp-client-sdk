@@ -18,26 +18,20 @@ nlohmann::json ToJson(const StatsigUser &u) {
     j["customIDs"] = u.custom_ids;
   }
 
-  OPT_TO_JSON(j, "userID", u.user_id);
-  OPT_TO_JSON(j, "email", u.email);
-  OPT_TO_JSON(j, "ip", u.ip);
-  OPT_TO_JSON(j, "userAgent", u.user_agent);
-  OPT_TO_JSON(j, "country", u.country);
-  OPT_TO_JSON(j, "locale", u.locale);
-  OPT_TO_JSON(j, "appVersion", u.app_version);
-  OPT_TO_JSON(j, "custom", u.custom);
-  OPT_TO_JSON(j, "privateAttributes", u.private_attributes);
+  OPT_TO_JSON(j, userID, u.user_id);
+  OPT_TO_JSON(j, email, u.email);
+  OPT_TO_JSON(j, ip, u.ip);
+  OPT_TO_JSON(j, userAgent, u.user_agent);
+  OPT_TO_JSON(j, country, u.country);
+  OPT_TO_JSON(j, locale, u.locale);
+  OPT_TO_JSON(j, appVersion, u.app_version);
+  OPT_TO_JSON(j, custom, u.custom);
+  OPT_TO_JSON(j, privateAttributes, u.private_attributes);
 
   return j;
 }
 
-StatsigResult<std::string> Serialize(const StatsigUser &user) {
-  return {Ok, ToJson(user).dump()};
-}
-
-StatsigResult<StatsigUser> Deserialize(const std::string &input) {
-  auto j = nlohmann::json::parse(input);
-
+StatsigUser FromJson(const nlohmann::json &j) {
   StatsigUser u;
   u.user_id = j.value("userID", "");
   u.custom_ids = j.value("customIDs", std::unordered_map<std::string, std::string>());
@@ -51,7 +45,21 @@ StatsigResult<StatsigUser> Deserialize(const std::string &input) {
   OPT_STR_MAP_FROM_JSON(j, "custom", u.custom);
   OPT_STR_MAP_FROM_JSON(j, "privateAttributes", u.private_attributes);
 
-  return {Ok, u};
+  return u;
+}
+
+StatsigResult<std::string> Serialize(const StatsigUser &user) {
+  return {Ok, ToJson(user).dump()};
+}
+
+StatsigResult<StatsigUser> Deserialize(const std::string &input) {
+  try {
+    auto j = nlohmann::json::parse(input);
+    auto user = FromJson(j);
+    return {Ok, user};
+  } catch (std::exception &) {
+    return {JsonFailureStatsigUser};
+  }
 }
 
 }

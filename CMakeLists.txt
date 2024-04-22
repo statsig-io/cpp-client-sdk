@@ -11,6 +11,9 @@ add_library(${PROJECT_NAME} SHARED ${STATSIG_SOURCES})
 # Include the header files in the Library
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/src)
 
+# SDK specific compiler options
+target_compile_options(${PROJECT_NAME} PRIVATE -Wswitch -Werror=switch)
+
 # === Third Party Deps ===
 
 include(FetchContent)

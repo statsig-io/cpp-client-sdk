@@ -8,93 +8,79 @@
 #include "macros.hpp"
 #include "constants.h"
 
-namespace statsig::internal
-{
+namespace statsig::internal {
 
-  class EventLogger
-  {
-  public:
-    explicit EventLogger(
-        std::string sdk_key,
-        StatsigOptions &options,
-        NetworkService &network)
-        : sdk_key_(sdk_key),
-          options_(options),
-          network_(network)
-    {
-      RetryFailedEvents();
+class EventLogger {
+ public:
+  explicit EventLogger(
+      std::string sdk_key,
+      StatsigOptions &options,
+      NetworkService &network)
+      : sdk_key_(sdk_key),
+        options_(options),
+        network_(network) {
+    RetryFailedEvents();
+  }
+
+  void Enqueue(const StatsigEventInternal &event) {
+    WRITE_LOCK(rw_lock_);
+    events_.push_back(event);
+  }
+
+  void Shutdown() {
+    Flush();
+  }
+
+  void Flush() {
+    WRITE_LOCK(rw_lock_);
+
+    if (events_.empty()) {
+      return;
     }
 
-    void Enqueue(const StatsigEventInternal &event)
-    {
-      WRITE_LOCK(rw_lock_);
-      events_.push_back(event);
+    auto local_events = std::move(events_);
+    network_.SendEvents(local_events,
+                        [&, local_events](NetworkResult<bool> result) {
+                          if (!result.value) {
+                            SaveFailedEvents(local_events, 1);
+                          }
+                        });
+  }
+
+ private:
+  std::string sdk_key_;
+  StatsigOptions &options_;
+  NetworkService &network_;
+  std::shared_mutex rw_lock_;
+  std::vector<StatsigEventInternal> events_;
+
+  void SaveFailedEvents(std::vector<StatsigEventInternal> events,
+                        const int attempt) {
+    std::vector<RetryableEventPayload> failures;
+    const auto key = GetFailedEventCacheKey();
+    const auto cache = File::ReadFromCache(key);
+    if (cache.has_value()) {
+      auto parsed = Json::Deserialize<std::vector<RetryableEventPayload>>(
+          cache.value());
+      failures = parsed.value.value_or(failures);
     }
 
-    void Shutdown()
-    {
-      Flush();
+    failures.insert(failures.begin(), {attempt, events});
+
+    if (failures.size() > constants::kMaxCachedFailedEventPayloadsCount) {
+      failures.pop_back();
     }
 
-    void Flush()
-    {
-      WRITE_LOCK(rw_lock_);
-
-      if (events_.empty())
-      {
-        return;
-      }
-
-      auto local_events = std::move(events_);
-      network_.SendEvents(local_events,
-                          [&, local_events](NetworkResult<bool> result)
-                          {
-                            if (!result.value)
-                            {
-                              SaveFailedEvents(local_events, 1);
-                            }
-                          });
+    auto serialized = Json::Serialize(failures);
+    if (serialized.code == Ok && serialized.value.has_value()) {
+      File::WriteToCache(key, serialized.value.value());
     }
-
-  private:
-    std::string sdk_key_;
-    StatsigOptions &options_;
-    NetworkService &network_;
-    std::shared_mutex rw_lock_;
-    std::vector<StatsigEventInternal> events_;
-
-    void SaveFailedEvents(std::vector<StatsigEventInternal> events,
-                          const int attempt)
-    {
-      std::vector<RetryableEventPayload> failures;
-      const auto key = GetFailedEventCacheKey();
-      const auto cache = File::ReadFromCache(key);
-      if (cache.has_value())
-      {
-        auto parsed = Json::Deserialize<std::vector<RetryableEventPayload>>(
-            cache.value());
-        failures = parsed.value.value_or(failures);
-      }
-
-      failures.insert(failures.begin(), {attempt, events});
-
-      if (failures.size() > constants::kMaxCachedFailedEventPayloadsCount)
-      {
-        failures.pop_back();
-      }
-
-      auto serialized = Json::Serialize(failures);
-      if (serialized.code == Ok && serialized.value.has_value()) {
-        File::WriteToCache(key, serialized.value.value());
-      }
 
 //      return serialized.code;
-    }
+  }
 
-    void RetryFailedEvents()
-    {
-      AsyncHelper::RunInBackground([&]
-                                   {
+  void RetryFailedEvents() {
+    AsyncHelper::RunInBackground([&] {
       const auto key = GetFailedEventCacheKey();
       const auto cache = File::ReadFromCache(key);
       if (!cache.has_value()) {
@@ -120,13 +106,13 @@ namespace statsig::internal
             SaveFailedEvents(events, attempt);
           }
         });
-      } });
-    }
+      }
+    });
+  }
 
-    std::string GetFailedEventCacheKey()
-    {
-      return constants::kCachedFailedEventPayloadPrefix + hashing::DJB2(sdk_key_);
-    }
-  };
+  std::string GetFailedEventCacheKey() {
+    return constants::kCachedFailedEventPayloadPrefix + hashing::DJB2(sdk_key_);
+  }
+};
 
 }

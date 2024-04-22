@@ -25,7 +25,7 @@ TEST(StatsigClientThreadedTest, DoesNotBlock) {
   });
 
   EXPECT_TRUE(completed)
-      << "Asynchronous task did not complete within the timeout";
+            << "Asynchronous task did not complete within the timeout";
 }
 
 #endif

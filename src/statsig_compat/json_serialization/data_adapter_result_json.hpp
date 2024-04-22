@@ -6,7 +6,7 @@
 
 namespace statsig::data_types::data_adapter_result {
 
-StatsigResult<std::string> Serialize( const DataAdapterResult &res) {
+StatsigResult<std::string> Serialize(const DataAdapterResult &res) {
   auto j = nlohmann::json{
       {"source", res.source},
       {"data", res.data},
@@ -17,12 +17,17 @@ StatsigResult<std::string> Serialize( const DataAdapterResult &res) {
 }
 
 StatsigResult<DataAdapterResult> Deserialize(const std::string &input) {
-  auto j = nlohmann::json::parse(input);
-  DataAdapterResult res;
-  j.at("source").get_to(res.source);
-  j.at("data").get_to(res.data);
-  j.at("receivedAt").get_to(res.receivedAt);
-  return {Ok, res};
+  try {
+    auto j = nlohmann::json::parse(input);
+    DataAdapterResult res;
+    j.at("source").get_to(res.source);
+    j.at("data").get_to(res.data);
+    j.at("receivedAt").get_to(res.receivedAt);
+    return {Ok, res};
+  }
+  catch (std::exception &) {
+    return {JsonFailureDataAdapterResult};
+  }
 }
 
 }

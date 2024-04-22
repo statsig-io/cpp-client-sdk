@@ -6,7 +6,7 @@ namespace statsig::data_types::log_event_response {
 
 using LogEventResponse = internal::LogEventResponse;
 
-inline StatsigResult<LogEventResponse> Deserialize(const std::string& input) {
+inline StatsigResult<LogEventResponse> Deserialize(const std::string &input) {
   return {Ok};
 }
 
