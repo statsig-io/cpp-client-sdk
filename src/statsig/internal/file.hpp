@@ -36,7 +36,7 @@ class File {
       return;
     }
 
-    while (paths.size() > constants::kMaxCachedEvaluationsCount) {
+    while (paths.size() >= constants::kMaxCachedEvaluationsCount) {
       const auto &eldest = paths.back();
       FileHelper::DeleteFile(eldest);
       paths.pop_back();

@@ -20,16 +20,17 @@ inline JsonValue GetJsonValueFromJsonObject(
   return {};
 }
 
+inline JsonObject EmptyJsonObject() {
+  return nlohmann::json::parse("{}");
+}
+
 inline JsonObject GetSafeJsonObject(const JsonObject &object) {
   if (object.is_null()) {
-    return {};
+    return EmptyJsonObject();
   }
 
   return object;
 }
 
-inline JsonObject EmptyJsonObject() {
-  return nlohmann::json::parse("{}");
-}
 
 }
