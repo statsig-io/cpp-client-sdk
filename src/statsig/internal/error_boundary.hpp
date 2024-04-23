@@ -124,6 +124,7 @@ class ErrorBoundary {
       case NetworkFailureBadStatusCode:return "NetworkFailureBadStatusCode";
       case ClientUninitialized:return "ClientUninitialized";
       case JsonFailureNoSerializerFound:return "JsonFailureNoSerializerFound";
+      case JsonFailureLogEventRequestArgs:return "JsonFailureLogEventRequestArgs";
     }
 
     return std::to_string(code);

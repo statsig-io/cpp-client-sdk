@@ -9,8 +9,8 @@
 using namespace statsig;
 
 struct SetupArgs {
-  StatsigClient* client;
-  MockEvaluationsDataAdapter* mock_adapter;
+  StatsigClient *client;
+  MockEvaluationsDataAdapter *mock_adapter;
 };
 
 static SetupArgs Setup() {
@@ -27,7 +27,7 @@ class StatsigResultTest : public ::testing::Test {
  protected:
   StatsigClient client_;
   StatsigOptions options_;
-  MockEvaluationsDataAdapter* mock_adapter_{};
+  MockEvaluationsDataAdapter *mock_adapter_{};
   std::string sdk_key_ = "client-key";
 
   void SetUp() override {

@@ -14,7 +14,7 @@ inline StatsigResult<std::string> Serialize(const internal::LogEventRequestArgs 
   std::vector<nlohmann::json> events_json_arr;
   events_json_arr.reserve(args.events.size());
 
-  for (const auto& event : args.events) {
+  for (const auto &event : args.events) {
     events_json_arr.push_back(statsig_event::ToJson(event));
   }
 

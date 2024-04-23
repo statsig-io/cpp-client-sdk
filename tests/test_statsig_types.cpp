@@ -78,7 +78,7 @@ TEST(EvaluatedSpecTest, GetValueFromLayer) {
   std::string parameter_name = "key1";
   bool param_exposure_logged = false;
 
-  auto log_param_exposure = [&](const std::string& param) {
+  auto log_param_exposure = [&](const std::string &param) {
     if (param == parameter_name) {
       param_exposure_logged = true;
     }

@@ -12,7 +12,7 @@
 namespace statsig::internal {
 
 class EvaluationStore {
-public:
+ public:
   void Reset() {
     WRITE_LOCK(rw_lock_);
 
@@ -51,7 +51,7 @@ public:
   }
 
   DetailedEvaluation<data::GateEvaluation>
-  GetGate(const std::string& gate_name) {
+  GetGate(const std::string &gate_name) {
     READ_LOCK(rw_lock_);
 
     auto hash = hashing::DJB2(gate_name);
@@ -67,7 +67,7 @@ public:
   }
 
   DetailedEvaluation<data::ConfigEvaluation> GetConfig(
-      const std::string& config_name) {
+      const std::string &config_name) {
     READ_LOCK(rw_lock_);
 
     auto hash = hashing::DJB2(config_name);
@@ -83,7 +83,7 @@ public:
   }
 
   DetailedEvaluation<data::LayerEvaluation> GetLayer(
-      const std::string& layer_name) {
+      const std::string &layer_name) {
     READ_LOCK(rw_lock_);
 
     auto hash = hashing::DJB2(layer_name);
@@ -98,7 +98,7 @@ public:
         RecognizedFromSourceInfo(source_info_)};
   }
 
-private:
+ private:
   std::shared_mutex rw_lock_;
   std::optional<data::InitializeResponse> values_;
   evaluation_details::SourceInfo source_info_ = {};

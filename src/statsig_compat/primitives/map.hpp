@@ -8,11 +8,11 @@ namespace statsig {
 
 typedef std::unordered_map<std::string, std::string> StringMap;
 
-inline std::unordered_map<std::string, std::string> FromCompat(const StringMap& input) {
+inline std::unordered_map<std::string, std::string> FromCompat(const StringMap &input) {
   return input;
 }
 
-inline StringMap ToCompat(const std::unordered_map<std::string, std::string>& input) {
+inline StringMap ToCompat(const std::unordered_map<std::string, std::string> &input) {
   return input;
 }
 

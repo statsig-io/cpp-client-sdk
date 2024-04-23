@@ -34,7 +34,7 @@ class StatsigContext {
       data_adapter(
           this->options.data_adapter
               .value_or(new StatsigEvaluationsDataAdapter())
-      ){
+      ) {
     data_adapter->Attach(this->sdk_key, this->options);
   }
 
