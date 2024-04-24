@@ -21,10 +21,12 @@ const char *kStableIdKey = "stable_id";
 const int kMaxCachedEvaluationsCount = 10;
 const char *kCacheDirectory = "/tmp/statsig_cpp_client";
 
-// Logging Cache
+// Logging
 const char *kCachedFailedEventPayloadPrefix = "statsig.failed_events.";
 const int kFailedEventPayloadRetryCount = 3;
 const int kMaxCachedFailedEventPayloadsCount = 5;
+const int kLoggingIntervalMs = 10000;
+const int kMaxQueuedEvents = 50;
 
 // Error Reporting
 const std::string kBadNetworkErr = "NetworkError_";
