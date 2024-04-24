@@ -31,4 +31,18 @@ nlohmann::json ToJson(const StatsigEventInternal &event) {
   return j;
 }
 
+StatsigEventInternal FromJson(const nlohmann::json &json) {
+  StatsigEventInternal result;
+
+  json.at("eventName").get_to(result.event_name);
+  json.at("time").get_to(result.time);
+
+  const auto& user_json = json.at("user");
+  if (user_json.is_object()) {
+    result.user = statsig_user::FromJson(user_json);
+  }
+
+  return result;
+}
+
 }

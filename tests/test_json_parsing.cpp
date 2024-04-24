@@ -109,4 +109,41 @@ TEST(JsonParsingTest, DataAdapterResultInvalidJson) {
   EXPECT_EQ(result.code, JsonFailureDataAdapterResult);
 }
 
+/**
+ * RetryableEventPayload
+ */
+
+std::string valid_retryable_event_payload_json =
+    R"([{"attempts":1,"events":[{"eventName":"my_event","time":123,"user":{"userID":"a-user"}}]}])";
+
+TEST(JsonParsingTest, RetryableEventPayloadSerialize) {
+  std::vector<StatsigEventInternal> events = {{"my_event", 123, {"a-user"}}};
+  auto payload = RetryableEventPayload{1, events};
+  auto result = Json::Serialize(std::vector{payload});
+  EXPECT_EQ(result.value, valid_retryable_event_payload_json);
+}
+
+TEST(JsonParsingTest, RetryableEventPayloadParseValidJson) {
+  auto result = Json::Deserialize<std::vector<RetryableEventPayload>>(valid_retryable_event_payload_json);
+
+  EXPECT_EQ(result.code, Ok);
+  EXPECT_EQ(result.value.value().size(), 1);
+
+  auto payload = result.value->at(0);
+  EXPECT_EQ(payload.attempts, 1);
+  EXPECT_EQ(payload.events.size(), 1);
+
+  auto event = payload.events[0];
+  EXPECT_EQ(event.event_name, "my_event");
+  EXPECT_EQ(event.time, 123);
+  EXPECT_EQ(event.user.user_id, "a-user");
+}
+
+TEST(JsonParsingTest, RetryableEventPayloadParseInvalidJson) {
+  auto result = Json::Deserialize<std::vector<RetryableEventPayload>>("<Not Json>");
+
+  EXPECT_EQ(result.value, std::nullopt);
+  EXPECT_EQ(result.code, JsonFailureRetryableEventPayload);
+}
+
 #endif
