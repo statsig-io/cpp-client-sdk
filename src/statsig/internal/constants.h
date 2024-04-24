@@ -3,7 +3,7 @@
 namespace statsig::constants {
 
 // Statsig Metadata
-const char *kSdkVersion = "0.0.1";
+const char *kSdkVersion = "0.0.2";
 
 // HTTP Endpoints
 const char *kEndpointInitialize = "/v1/initialize";
