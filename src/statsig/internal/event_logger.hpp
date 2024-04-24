@@ -1,12 +1,14 @@
 #pragma once
 
 #include <shared_mutex>
+#include <utility>
 
 #include "statsig_compat/async/async_helper.hpp"
 
 #include "statsig_event_internal.hpp"
 #include "macros.hpp"
 #include "constants.h"
+#include "log.hpp"
 
 namespace statsig::internal {
 
@@ -16,12 +18,12 @@ class EventLogger {
       std::string sdk_key,
       StatsigOptions &options,
       NetworkService &network)
-      : sdk_key_(sdk_key),
+      : sdk_key_(std::move(sdk_key)),
         options_(options),
-        network_(network),
+        network_(std::make_shared<NetworkService>(network)),
         is_shutdown_(false),
         max_buffer_size_(options.logging_max_buffer_size.value_or(constants::kMaxQueuedEvents)),
-        logging_interval_ms_(options.logging_interval_ms.value_or(constants::kLoggingIntervalMs)){
+        logging_interval_ms_(options.logging_interval_ms.value_or(constants::kLoggingIntervalMs)) {
     RetryFailedEvents();
     StartBackgroundFlusher();
   }
@@ -34,33 +36,42 @@ class EventLogger {
     WRITE_LOCK(rw_lock_);
     events_.push_back(event);
 
+    Log::Debug("Enqueueing Event - " + event.event_name);
+
     if (events_.size() > max_buffer_size_) {
-      FlushImpl();
+      Log::Debug("Max buffer size reached, flushing...");
+
+      FlushImpl(true);
     }
   }
 
   void Shutdown() {
-    Flush();
+    Log::Debug("Shutting down EventLogger");
     is_shutdown_.store(true);
+
+    WRITE_LOCK(rw_lock_);
+    FlushImpl(false);
   }
 
   void Flush() {
     WRITE_LOCK(rw_lock_);
-    FlushImpl();
+    FlushImpl(true);
   }
 
  private:
   std::string sdk_key_;
   StatsigOptions &options_;
-  NetworkService &network_;
+  std::shared_ptr<NetworkService> network_;
   std::shared_mutex rw_lock_;
   std::vector<StatsigEventInternal> events_;
   std::atomic<bool> is_shutdown_;
   int max_buffer_size_;
   int logging_interval_ms_;
 
-  void SaveFailedEvents(std::vector<StatsigEventInternal> events,
-                        const int attempt) {
+  void SaveFailedEvents(
+      std::vector<StatsigEventInternal> events,
+      const int attempt
+  ) {
     std::vector<RetryableEventPayload> failures;
     const auto key = GetFailedEventCacheKey();
     const auto cache = File::ReadFromCache(key);
@@ -83,7 +94,8 @@ class EventLogger {
   }
 
   void RetryFailedEvents() {
-    AsyncHelper::RunInBackground([&] {
+    std::weak_ptr<NetworkService> weak_net = network_;
+    AsyncHelper::RunInBackground([&, weak_net] {
       const auto key = GetFailedEventCacheKey();
       const auto cache = File::ReadFromCache(key);
       if (!cache.has_value()) {
@@ -103,7 +115,9 @@ class EventLogger {
       for (const auto &failure : failures.value.value()) {
         const auto events = failure.events;
         const auto attempt = failure.attempts + 1;
-        network_.SendEvents(
+        USE_REF(weak_net, shared_net);
+
+        shared_net->SendEvents(
             events,
             [&, events, attempt](const NetworkResult<bool> &result) {
               if (!result.value && attempt <=
@@ -119,14 +133,30 @@ class EventLogger {
     return constants::kCachedFailedEventPayloadPrefix + hashing::DJB2(sdk_key_);
   }
 
-  void FlushImpl() {
+  void FlushImpl(bool should_run_async) {
     if (events_.empty()) {
       return;
     }
 
     auto local_events = std::move(events_);
-    AsyncHelper::RunInBackground([this, local_events]() {
-      network_.SendEvents(
+    Log::Debug("Flushing Events " + std::to_string(local_events.size()));
+
+    if (!should_run_async) {
+      network_->SendEvents(
+          local_events,
+          [&, local_events](const NetworkResult<bool> &result) {
+            if (!result.value) {
+              SaveFailedEvents(local_events, 1);
+            }
+          });
+      return;
+    }
+
+    std::weak_ptr<NetworkService> weak_net = network_;
+    AsyncHelper::RunInBackground([this, weak_net, local_events]() {
+      USE_REF(weak_net, shared_net);
+
+      shared_net->SendEvents(
           local_events,
           [&, local_events](const NetworkResult<bool> &result) {
             if (!result.value) {
@@ -137,9 +167,16 @@ class EventLogger {
   }
 
   void StartBackgroundFlusher() {
-    AsyncHelper::RunInBackground([this] {
+    std::weak_ptr<NetworkService> weak_net = network_;
+    AsyncHelper::RunInBackground([this, weak_net] {
       while (!is_shutdown_.load()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(logging_interval_ms_));
+        if (is_shutdown_.load()) {
+          break;
+        }
+        USE_REF(weak_net, shared_net);
+
+        Log::Debug("Attempting background flush...");
         Flush();
       }
     });

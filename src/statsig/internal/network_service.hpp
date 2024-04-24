@@ -195,6 +195,7 @@ class NetworkService {
       const string &endpoint,
       const std::string &body,
       const std::function<void(HttpResponse)> &callback) {
+    const auto a = options_.api;
     auto api = options_.api.value_or(constants::kDefaultApi);
 
     NetworkClient::Post(
