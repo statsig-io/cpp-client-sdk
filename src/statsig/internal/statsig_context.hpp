@@ -36,6 +36,10 @@ class StatsigContext {
               .value_or(new StatsigEvaluationsDataAdapter())
       ) {
     data_adapter->Attach(this->sdk_key, this->options);
+
+    if (this->options.output_logger_level.has_value()) {
+      statsig::internal::Log::level = this->options.output_logger_level.value();
+    }
   }
 
   std::string sdk_key;

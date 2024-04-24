@@ -7,6 +7,7 @@
 #include "evaluation_details_internal.hpp"
 #include "statsig_compat/async/async_helper.hpp"
 #include "statsig_compat/primitives/string.hpp"
+#include "macros.hpp"
 
 #define INIT_GUARD(result)            \
   do                                  \
@@ -16,12 +17,10 @@
       return result;                  \
     }                                 \
   } while (0)
+
 #define EB_WITH_TAG(tag, task) context_->err_boundary.Capture((tag), (task))
 #define EB(task) EB_WITH_TAG(__func__, task)
-#define USE_CTX(weak_ctx, shared_ctx) \
-  auto shared_ctx = weak_ctx.lock();  \
-  if (!shared_ctx)                    \
-    return
+
 
 namespace statsig {
 
@@ -89,7 +88,7 @@ StatsigResultCode StatsigClient::UpdateUserSync(const StatsigUser &user) {
 
     std::weak_ptr<StatsigContext> weak_ctx = context_;
     AsyncHelper::RunInBackground([weak_ctx, result]() {
-      USE_CTX(weak_ctx, shared_ctx);
+      USE_REF(weak_ctx, shared_ctx);
 
       shared_ctx->data_adapter->GetDataAsync(
           shared_ctx->user,
@@ -119,11 +118,11 @@ void StatsigClient::UpdateUserAsync(
     const auto initiator = context_->user;
     std::weak_ptr<StatsigContext> weak_ctx = context_;
     AsyncHelper::RunInBackground([weak_ctx, tag, initiator, result, callback]() {
-      USE_CTX(weak_ctx, shared_ctx);
+      USE_REF(weak_ctx, shared_ctx);
 
       const auto inner_callback =
           [weak_ctx, tag, initiator, callback](auto result) {
-            USE_CTX(weak_ctx, shared_ctx);
+            USE_REF(weak_ctx, shared_ctx);
 
             const auto current_user = shared_ctx->user;
             if (result.code == Ok && internal::AreUsersEqual(initiator, current_user)) {

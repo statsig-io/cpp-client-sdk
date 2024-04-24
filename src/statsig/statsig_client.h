@@ -26,8 +26,10 @@ class StatsigClient {
 
   StatsigResultCode UpdateUserSync(const StatsigUser &user);
 
-  void UpdateUserAsync(const StatsigUser &user,
-                       const std::function<void(StatsigResultCode)> &callback);
+  void UpdateUserAsync(
+      const StatsigUser &user,
+      const std::function<void(StatsigResultCode)> &callback
+  );
 
   void Shutdown();
 
