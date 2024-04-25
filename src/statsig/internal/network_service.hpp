@@ -71,7 +71,7 @@ class NetworkService {
             constants::kEndpointInitialize,
             serialized.value.value(),
             constants::kInitializeRetryCount,
-            HandleFetchValuesResponse(cache, callback)
+            HandleFetchValuesResponse(diagnostics_, cache, callback)
         );
       }
 
@@ -147,13 +147,17 @@ class NetworkService {
 
   static std::function<void(std::optional<HttpResponse> response)>
   HandleFetchValuesResponse(
+      const std::shared_ptr<Diagnostics> &diagnostics,
       const std::optional<InitializeResponse> &cache,
-      const std::function<void(NetworkResult<InitializeResponse>)> &callback) {
-    return [callback, cache](auto response) {
+      const std::function<void(NetworkResult<InitializeResponse>)> &callback
+  ) {
+    return [diagnostics, callback, cache](auto response) {
       if (!HasSuccessCode(response)) {
         callback({{NetworkFailureBadStatusCode, std::nullopt, GetStatusCodeErr(response)}});
         return;
       }
+
+      diagnostics->Mark(markers::ProcessStart()); // ended in StatsigEvaluationsDataAdapter
 
       if (response->status == 204) {
         callback({{Ok, {}}});
@@ -162,6 +166,7 @@ class NetworkService {
 
       auto data = Json::Deserialize<InitializeResponse>(response->text);
       if (data.code != Ok) {
+        diagnostics->Mark(markers::ProcessEnd(false));
         callback({{data.code}});
         return;
       }
@@ -178,8 +183,21 @@ class NetworkService {
       const std::string &body,
       const int max_attempts,
       const std::function<void(std::optional<HttpResponse>)> &callback,
-      const int attempt = 1) {
+      const int attempt = 1
+  ) {
+    const auto is_initialize = endpoint == constants::kEndpointInitialize;
+    if (is_initialize) { diagnostics_->Mark(markers::NetworkStart(attempt)); }
+
     Post(endpoint, body, [&, endpoint, body, max_attempts, attempt, callback](HttpResponse response) {
+      if (is_initialize) {
+        diagnostics_->Mark(markers::NetworkEnd(
+            attempt,
+            response.status,
+            response.sdk_region,
+            response.error
+        ));
+      }
+
       if (HasSuccessCode(response)) {
         callback(response);
         return;

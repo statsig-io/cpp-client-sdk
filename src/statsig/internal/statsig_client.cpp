@@ -57,7 +57,10 @@ StatsigResultCode StatsigClient::InitializeSync(
     context_ = std::make_shared<StatsigContext>(actual_key, user, options);
     auto result = UpdateUserSync(context_->user);
 
-    diag->Mark(markers::OverallEnd(false, {}));
+    diag->Mark(markers::OverallEnd(
+        result == Ok,
+        context_->store.GetSourceDetails())
+    );
     return result;
   }));
 }
@@ -78,8 +81,16 @@ void StatsigClient::InitializeAsync(
     diag->Mark(markers::OverallStart());
 
     context_ = std::make_shared<StatsigContext>(actual_key, user, options);
-    UpdateUserAsync(context_->user, [callback, diag](const StatsigResultCode code) {
-      diag->Mark(markers::OverallEnd(code == Ok, {}));
+
+    std::weak_ptr<StatsigContext> weak_ctx = context_;
+    UpdateUserAsync(context_->user, [callback, diag, weak_ctx](const StatsigResultCode code) {
+      auto shared_ctx = weak_ctx.lock();
+      if (shared_ctx) {
+        diag->Mark(markers::OverallEnd(
+            code == Ok,
+            shared_ctx->store.GetSourceDetails())
+        );
+      }
 
       callback(code);
     });
@@ -168,6 +179,7 @@ void StatsigClient::Shutdown() {
   INIT_GUARD();
 
   EB(([this]() {
+    Diagnostics::Shutdown(context_->sdk_key);
     context_->logger.Shutdown();
     context_.reset();
 

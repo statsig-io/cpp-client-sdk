@@ -37,22 +37,24 @@ StatsigEventInternal FromJson(const nlohmann::json &json) {
   json.at("eventName").get_to(result.event_name);
   json.at("time").get_to(result.time);
 
-  const auto &user_json = json.at("user");
+  const auto null_json = nlohmann::json();
+
+  const auto &user_json = json.value("user", null_json);
   if (user_json.is_object()) {
     result.user = statsig_user::FromJson(user_json);
   }
 
-  const auto &metadata = json.at("metadata");
+  const auto &metadata = json.value("metadata", null_json);
   if (metadata.is_object()) {
     result.metadata = metadata.get<std::unordered_map<std::string, JsonValue>>();
   }
 
-  const auto &secondary_exposures = json.at("secondary_exposures");
+  const auto &secondary_exposures = json.value("secondary_exposures", null_json);
   if (secondary_exposures.is_array()) {
     result.secondary_exposures = secondary_exposures.get<std::vector<std::unordered_map<std::string, std::string>>>();
   }
 
-  const auto &value = json.at("value");
+  const auto &value = json.value("value", null_json);
   if (value.is_string()) {
     result.string_value = value.get<std::string>();
   } else if (value.is_number()) {

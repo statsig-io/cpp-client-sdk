@@ -31,12 +31,21 @@ class Diagnostics {
     return inst;
   }
 
+  static void Shutdown(const string &sdk_key) {
+    LOCK(static_mutex_);
+    instances_.erase(sdk_key);
+  }
+
   void SetUser(StatsigUser user) {
     user_ = std::move(user);
   }
 
   void Mark(const markers::Base &marker) {
     LOCK(mutex_);
+    if (markers_.size() > constants::kMaxDiagnosticsMarkers) {
+      Log::Warn("Diagnostics max reached, unable to add more markers");
+      return;
+    }
     markers_.push_back(marker.get<JsonValue>());
   }
 

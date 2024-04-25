@@ -58,7 +58,6 @@ class ErrorBoundary {
     }
     catch (const std::exception &error) {
       try {
-        std::string message = error.what();
         LogError(tag, error.what());
       }
       catch (std::exception &) {

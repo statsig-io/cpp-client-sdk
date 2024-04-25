@@ -29,6 +29,16 @@ class EvaluationStore {
     source_info_ = {ValueSource::NoValues};
   }
 
+  EvaluationDetails GetSourceDetails() {
+    READ_LOCK(rw_lock_);
+
+    return {
+        evaluation_details::GetValueSourceString(source_info_.source),
+        source_info_.lcut,
+        source_info_.received_at
+    };
+  }
+
   StatsigResultCode SetValuesFromDataAdapterResult(
       std::optional<DataAdapterResult> result) {
     if (!result.has_value()) {

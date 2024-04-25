@@ -27,6 +27,7 @@ const int kFailedEventPayloadRetryCount = 3;
 const int kMaxCachedFailedEventPayloadsCount = 5;
 const int kLoggingIntervalMs = 10000;
 const int kMaxQueuedEvents = 50;
+const int kMaxDiagnosticsMarkers = 30;
 
 // Error Reporting
 const std::string kBadNetworkErr = "NetworkError_";

@@ -39,3 +39,9 @@ inline std::string ReadFile(const std::string &path) {
   stream.close();
   return buffer.str();
 }
+
+inline std::string Trim(const std::string &in) {
+  std::string out(in);
+  out.erase(std::remove_if(out.begin(), out.end(), ::isspace), out.end());
+  return out;
+}

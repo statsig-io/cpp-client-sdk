@@ -91,6 +91,7 @@ class StatsigEvaluationsDataAdapter : public EvaluationsDataAdapter {
         WriteToCacheFile(cache_key, latest.value.value());
       }
 
+      Diagnostics::Get(GetSdkKey())->Mark(markers::ProcessEnd(true));
       callback(latest);
     });
 
