@@ -9,7 +9,7 @@ namespace statsig {
 
 struct StatsigEvent {
   String event_name;
-  std::optional<long> time;
+  std::optional<time_t> time;
   std::optional<String> string_value;
   std::optional<double> double_value;
   std::optional<StringMap> metadata;

@@ -117,7 +117,7 @@ std::string valid_retryable_event_payload_json =
     R"([{"attempts":1,"events":[{"eventName":"my_event","time":123,"user":{"userID":"a-user"}}]}])";
 
 TEST(JsonParsingTest, RetryableEventPayloadSerialize) {
-  std::vector<StatsigEventInternal> events = {{"my_event", 123, {"a-user"}}};
+  std::vector<StatsigEventInternal> events = {{"my_event", 123, {"a-user"}, "a_string", std::nullopt, {{"key", "value"}}}};
   auto payload = RetryableEventPayload{1, events};
   auto result = Json::Serialize(std::vector{payload});
   EXPECT_EQ(result.value, valid_retryable_event_payload_json);

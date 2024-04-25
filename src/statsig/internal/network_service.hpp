@@ -9,6 +9,7 @@
 #include "statsig_compat/network/network_client.hpp"
 #include "statsig_compat/constants/constants.h"
 #include "unordered_map_util.hpp"
+#include "diagnostics.hpp"
 
 namespace statsig::internal {
 
@@ -37,9 +38,11 @@ class NetworkService {
  public:
   explicit NetworkService(
       string sdk_key,
-      StatsigOptions &options)
+      StatsigOptions &options
+  )
       : sdk_key_(sdk_key),
         options_(options),
+        diagnostics_(Diagnostics::Get(sdk_key)),
         err_boundary_(ErrorBoundary(sdk_key)),
         session_id_(UUID::v4()) {}
 
@@ -105,6 +108,7 @@ class NetworkService {
  private:
   string sdk_key_;
   StatsigOptions &options_;
+  std::shared_ptr<Diagnostics> diagnostics_;
   ErrorBoundary err_boundary_;
   string session_id_;
   StableID stable_id_;
