@@ -65,7 +65,7 @@ class NetworkClient {
       error = "httplib::Error" + httplib::to_string(err);
     }
 
-    callback(HttpResponse{"", 500, "", error.value_or("httplib::Error::Unknown")});
+    callback(HttpResponse{"", -1, "", error.value_or("httplib::Error::Unknown")});
   }
 };
 

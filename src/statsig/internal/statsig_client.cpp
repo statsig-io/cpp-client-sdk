@@ -58,7 +58,7 @@ StatsigResultCode StatsigClient::InitializeSync(
     auto result = UpdateUserSync(context_->user);
 
     diag->Mark(markers::OverallEnd(
-        result == Ok,
+        result,
         context_->store.GetSourceDetails())
     );
     return result;
@@ -87,7 +87,7 @@ void StatsigClient::InitializeAsync(
       auto shared_ctx = weak_ctx.lock();
       if (shared_ctx) {
         diag->Mark(markers::OverallEnd(
-            code == Ok,
+            code,
             shared_ctx->store.GetSourceDetails())
         );
       }

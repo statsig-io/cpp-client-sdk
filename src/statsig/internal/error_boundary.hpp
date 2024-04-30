@@ -45,7 +45,7 @@ class ErrorBoundary {
       return;
     }
 
-    LogError(tag, ResultCodeToString(code, extra));
+    LogError(tag, ErrorFromResultCode(code, extra));
   }
 
   StatsigResultCode Capture(
@@ -102,7 +102,7 @@ class ErrorBoundary {
     return trace;
   }
 
-  static std::string ResultCodeToString(
+  static std::string ErrorFromResultCode(
       StatsigResultCode code,
       const std::optional<std::unordered_map<std::string, std::string>> &extra) {
     auto custom = MapGetOrNull(extra, constants::kBadNetworkErr);
@@ -110,24 +110,7 @@ class ErrorBoundary {
       return custom.value();
     }
 
-    switch (code) {
-      case JsonFailureInitializeRequestArgs:return "JsonFailureInitializeRequestArgs";
-      case JsonFailureInitializeResponse:return "JsonFailureInitializeResponse";
-      case JsonFailureLogEventResponse:return "JsonFailureLogEventResponse";
-      case JsonFailureNoDeserializerFound:return "JsonFailureNoDeserializerFound";
-      case JsonFailureStatsigUser:return "JsonFailureStatsigUser";
-      case Ok:return "Ok";
-      case UnexpectedError:return "UnexpectedError";
-      case InvalidSdkKey:return "InvalidSdkKey";
-      case JsonFailureDataAdapterResult:return "JsonFailureDataAdapterResult";
-      case JsonFailureRetryableEventPayload:return "JsonFailureRetryableEventPayload";
-      case NetworkFailureBadStatusCode:return "NetworkFailureBadStatusCode";
-      case ClientUninitialized:return "ClientUninitialized";
-      case JsonFailureNoSerializerFound:return "JsonFailureNoSerializerFound";
-      case JsonFailureLogEventRequestArgs:return "JsonFailureLogEventRequestArgs";
-    }
-
-    return std::to_string(code);
+    return ResultCodeToString(code);
   }
 
   void LogError(
