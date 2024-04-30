@@ -12,6 +12,8 @@ namespace statsig::internal {
 struct HttpResponse {
   const std::string text;
   const int status = -1;
+  const std::string sdk_region;
+  const std::optional<std::string> error;
 };
 
 struct HttpRequest {
@@ -30,6 +32,8 @@ class NetworkClient {
       const std::function<void(HttpResponse)> &callback
   ) {
     httplib::Client client(request.api);
+
+    client.set_follow_location(true);
     client.set_compress(request.path == constants::kEndpointLogEvent);
 
     httplib::Headers compat_headers;
@@ -44,11 +48,26 @@ class NetworkClient {
         constants::kContentTypeJson
     );
 
-    callback(HttpResponse{result->body, result->status});
+    if (result) {
+      std::string region;
+      const auto it = result->headers.find("x-statsig-region");
+      if (it != result->headers.end()) {
+        region = it->second;
+      }
+
+      callback(HttpResponse{result->body, result->status, region});
+      return;
+    }
+
+    std::optional<std::string> error;
+    auto err = result.error();
+    if (err != httplib::Error::Success) {
+      error = "httplib::Error" + httplib::to_string(err);
+    }
+
+    callback(HttpResponse{"", 500, "", error.value_or("httplib::Error::Unknown")});
   }
-
 };
-
 
 #else
 

@@ -20,8 +20,8 @@ String GetValueSourceString(const ValueSource &source) {
 
 struct SourceInfo {
   ValueSource source;
-  long lcut;
-  long received_at;
+  time_t lcut;
+  time_t received_at;
 };
 
 EvaluationDetails Uninitialized() {

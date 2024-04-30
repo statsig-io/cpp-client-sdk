@@ -11,11 +11,11 @@ namespace statsig::internal {
 
 struct StatsigEventInternal {
   std::string event_name;
-  long time{};
+  time_t time{};
   StatsigUser user;
   std::optional<std::string> string_value;
   std::optional<double> double_value;
-  std::optional<std::unordered_map<std::string, std::string>> metadata;
+  std::optional<std::unordered_map<std::string, JsonValue>> metadata;
   std::optional<std::vector<std::unordered_map<std::string, std::string>>>
       secondary_exposures;
 };
@@ -46,8 +46,8 @@ inline StatsigEventInternal InternalizeEvent(StatsigEvent event, const StatsigUs
   }
 
   if (event.metadata.has_value()) {
-    std::unordered_map<std::string, std::string> meta;
-    for (auto [fst, snd] : event.metadata.value()) {
+    std::unordered_map<std::string, JsonValue> meta;
+    for (const auto& [fst, snd] : event.metadata.value()) {
       meta[FromCompat(fst)] = FromCompat(snd);
     }
     result.metadata = meta;
@@ -62,7 +62,7 @@ StatsigEventInternal MakeExposureEvent(
     const StatsigUser &user,
     const std::optional<T> &evaluation,
     const EvaluationDetails &evaluation_details,
-    const std::unordered_map<std::string, std::string> &metadata,
+    const std::unordered_map<std::string, JsonValue> &metadata,
     const std::optional<std::vector<data::SecondaryExposure>> &
     secondary_exposures = std::nullopt
 ) {

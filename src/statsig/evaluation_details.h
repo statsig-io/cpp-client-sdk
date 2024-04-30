@@ -8,8 +8,8 @@ namespace statsig {
 
 struct EvaluationDetails {
   String reason;
-  long lcut;
-  long received_at;
+  time_t lcut;
+  time_t received_at;
 };
 
 }

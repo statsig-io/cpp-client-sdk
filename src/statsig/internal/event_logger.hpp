@@ -17,13 +17,14 @@ class EventLogger {
   explicit EventLogger(
       std::string sdk_key,
       StatsigOptions &options,
-      NetworkService &network)
-      : sdk_key_(std::move(sdk_key)),
-        options_(options),
-        network_(std::make_shared<NetworkService>(network)),
-        is_shutdown_(false),
-        max_buffer_size_(options.logging_max_buffer_size.value_or(constants::kMaxQueuedEvents)),
-        logging_interval_ms_(options.logging_interval_ms.value_or(constants::kLoggingIntervalMs)) {
+      NetworkService &network
+  ) :
+      sdk_key_(std::move(sdk_key)),
+      options_(options),
+      network_(std::make_shared<NetworkService>(network)),
+      is_shutdown_(false),
+      max_buffer_size_(options.logging_max_buffer_size.value_or(constants::kMaxQueuedEvents)),
+      logging_interval_ms_(options.logging_interval_ms.value_or(constants::kLoggingIntervalMs)) {
     RetryFailedEvents();
     StartBackgroundFlusher();
   }
@@ -67,6 +68,7 @@ class EventLogger {
   std::atomic<bool> is_shutdown_;
   int max_buffer_size_;
   int logging_interval_ms_;
+  std::shared_ptr<Diagnostics> diagnostics_ = Diagnostics::Get(sdk_key_);
 
   void SaveFailedEvents(
       std::vector<StatsigEventInternal> events,
@@ -81,7 +83,7 @@ class EventLogger {
       failures = parsed.value.value_or(failures);
     }
 
-    failures.insert(failures.begin(), {attempt, events});
+    failures.insert(failures.begin(), {attempt, std::move(events)});
 
     if (failures.size() > constants::kMaxCachedFailedEventPayloadsCount) {
       failures.pop_back();
@@ -134,6 +136,8 @@ class EventLogger {
   }
 
   void FlushImpl(bool should_run_async) {
+    diagnostics_->AppendEvent(events_);
+
     if (events_.empty()) {
       return;
     }

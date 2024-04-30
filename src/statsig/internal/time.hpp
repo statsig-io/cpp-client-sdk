@@ -9,7 +9,7 @@ class Time {
   using system_clock = std::chrono::system_clock;
 
  public:
-  static long now() {
+  static time_t now() {
     return std::chrono::duration_cast<milliseconds>(
         system_clock::now().time_since_epoch()
     ).count();

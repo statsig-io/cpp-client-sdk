@@ -34,7 +34,7 @@ struct LayerEvaluation : ConfigEvaluation {
 };
 
 struct InitializeResponse {
-  long time = 0;
+  time_t time = 0;
   bool has_updates = false;
 
   std::unordered_map<std::string, GateEvaluation> feature_gates;

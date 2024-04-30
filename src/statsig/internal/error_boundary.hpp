@@ -9,6 +9,7 @@
 #include "statsig_compat/constants/constants.h"
 #include "unordered_map_util.hpp"
 #include "error_boundary_request_args.h"
+#include "log.hpp"
 
 #ifndef STATSIG_UNREAL_PLUGIN
 #ifdef __unix__
@@ -57,7 +58,6 @@ class ErrorBoundary {
     }
     catch (const std::exception &error) {
       try {
-        std::cerr << "[Statsig]: An unexpected exception occurred. " << error.what() << std::endl;
         LogError(tag, error.what());
       }
       catch (std::exception &) {
@@ -136,6 +136,8 @@ class ErrorBoundary {
     if (seen_.find(error) != seen_.end()) {
       return;
     }
+
+    internal::Log::Error("An unexpected exception occurred. " + error);
 
     seen_.insert(error);
 

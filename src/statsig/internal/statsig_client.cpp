@@ -8,6 +8,7 @@
 #include "statsig_compat/async/async_helper.hpp"
 #include "statsig_compat/primitives/string.hpp"
 #include "macros.hpp"
+#include "diagnostics.hpp"
 
 #define INIT_GUARD(result)            \
   do                                  \
@@ -21,8 +22,11 @@
 #define EB_WITH_TAG(tag, task) context_->err_boundary.Capture((tag), (task))
 #define EB(task) EB_WITH_TAG(__func__, task)
 
-
 namespace statsig {
+
+namespace /* private */ {
+using namespace statsig::internal;
+}
 
 StatsigClient &StatsigClient::Shared() {
   static StatsigClient inst;
@@ -47,8 +51,17 @@ StatsigResultCode StatsigClient::InitializeSync(
   }
 
   return EB(([this, &actual_key, &user, &options] {
+    auto diag = Diagnostics::Get(actual_key);
+    diag->Mark(markers::OverallStart());
+
     context_ = std::make_shared<StatsigContext>(actual_key, user, options);
-    return UpdateUserSync(context_->user);
+    auto result = UpdateUserSync(context_->user);
+
+    diag->Mark(markers::OverallEnd(
+        result == Ok,
+        context_->store.GetSourceDetails())
+    );
+    return result;
   }));
 }
 
@@ -64,8 +77,23 @@ void StatsigClient::InitializeAsync(
   }
 
   EB(([this, &actual_key, &user, &options, &callback]() {
+    auto diag = Diagnostics::Get(actual_key);
+    diag->Mark(markers::OverallStart());
+
     context_ = std::make_shared<StatsigContext>(actual_key, user, options);
-    UpdateUserAsync(context_->user, callback);
+
+    std::weak_ptr<StatsigContext> weak_ctx = context_;
+    UpdateUserAsync(context_->user, [callback, diag, weak_ctx](const StatsigResultCode code) {
+      auto shared_ctx = weak_ctx.lock();
+      if (shared_ctx) {
+        diag->Mark(markers::OverallEnd(
+            code == Ok,
+            shared_ctx->store.GetSourceDetails())
+        );
+      }
+
+      callback(code);
+    });
     return Ok;
   }));
 }
@@ -77,6 +105,7 @@ StatsigResultCode StatsigClient::UpdateUserSync(const StatsigUser &user) {
   return EB(([this, &user, tag] {
     context_->user = user;
     context_->store.Reset();
+    Diagnostics::Get(context_->sdk_key)->SetUser(user);
 
     auto result = context_->data_adapter->GetDataSync(context_->user);
     if (result.code == Ok) {
@@ -109,6 +138,7 @@ void StatsigClient::UpdateUserAsync(
   EB(([this, &user, &callback, tag] {
     context_->user = user;
     context_->store.Reset();
+    Diagnostics::Get(context_->sdk_key)->SetUser(user);
 
     auto result = context_->data_adapter->GetDataSync(context_->user);
     if (result.code == Ok) {
@@ -149,6 +179,7 @@ void StatsigClient::Shutdown() {
   INIT_GUARD();
 
   EB(([this]() {
+    Diagnostics::Shutdown(context_->sdk_key);
     context_->logger.Shutdown();
     context_.reset();
 

@@ -21,7 +21,7 @@ enum class ValueSource {
 struct DataAdapterResult {
   ValueSource source;
   std::string data;
-  long long receivedAt;
+  time_t receivedAt;
 };
 
 class EvaluationsDataAdapter {

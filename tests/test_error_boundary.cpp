@@ -33,6 +33,8 @@ class ErrorBoundaryTest : public ::testing::Test {
   StatsigResultCode Run() {
     StatsigClient client;
 
+    options_.output_logger_level = LogLevel::None;
+
     auto result = Ok;
     RunBlocking(1000, [&](auto done) {
       client.InitializeAsync(
