@@ -58,7 +58,8 @@ class Diagnostics {
 
     auto local_markers = std::move(markers_);
     auto metadata = std::unordered_map<string, JsonValue>{
-        {"markers", local_markers}
+        {"markers", local_markers},
+        {"context", "initialize"}
     };
 
     auto event = StatsigEventInternal{

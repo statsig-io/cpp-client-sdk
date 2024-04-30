@@ -193,6 +193,7 @@ class NetworkService {
         diagnostics_->Mark(markers::NetworkEnd(
             attempt,
             response.status,
+            response.text,
             response.sdk_region,
             response.error
         ));
