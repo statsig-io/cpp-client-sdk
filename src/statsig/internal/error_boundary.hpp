@@ -2,6 +2,7 @@
 
 #include <set>
 #include <unordered_map>
+#include <utility>
 
 #include "json_parser.hpp"
 #include "constants.h"
@@ -9,6 +10,7 @@
 #include "statsig_compat/constants/constants.h"
 #include "unordered_map_util.hpp"
 #include "error_boundary_request_args.h"
+#include "shareable.hpp"
 #include "statsig_compat/output_logger/log.hpp"
 
 #ifndef STATSIG_UNREAL_PLUGIN
@@ -28,10 +30,25 @@ class ErrorBoundary {
  public:
   using string = std::string;
 
-  explicit ErrorBoundary(string &sdk_key)
+  explicit ErrorBoundary(const string &sdk_key)
       : sdk_key_(sdk_key) {}
 
   inline static string eb_api = constants::kDefaultApi;
+
+  static std::shared_ptr<ErrorBoundary> Get(const string &sdk_key) {
+    auto instance = shareable_.Get(sdk_key);
+    if (instance != nullptr) {
+      return instance;
+    }
+
+    std::shared_ptr<ErrorBoundary> new_instance(new ErrorBoundary(sdk_key));
+    shareable_.Add(sdk_key, new_instance);
+    return new_instance;
+  }
+
+  static void Shutdown(const string &sdk_key) {
+    shareable_.Remove(sdk_key);
+  }
 
   bool HandleBadResult(
       const string &tag,
@@ -83,6 +100,8 @@ class ErrorBoundary {
   }
 
  private:
+  static Shareable<ErrorBoundary> shareable_;
+
   string sdk_key_;
   std::set<string> seen_;
 
@@ -167,5 +186,7 @@ class ErrorBoundary {
 #endif
   }
 };
+
+Shareable<ErrorBoundary> ErrorBoundary::shareable_ = Shareable<ErrorBoundary>();
 
 }

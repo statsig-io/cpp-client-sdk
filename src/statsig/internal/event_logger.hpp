@@ -13,6 +13,7 @@
 namespace statsig::internal {
 
 class EventLogger {
+  using AsyncHelper = statsig_compatibility::AsyncHelper;
   using Log = statsig_compatibility::Log;
 
  public:
@@ -96,7 +97,16 @@ class EventLogger {
 
     auto serialized = Json::Serialize(failures);
     if (serialized.code == Ok && serialized.value.has_value()) {
-      File::WriteToCache(key, serialized.value.value());
+      const auto sdk_key = sdk_key_;
+      File::WriteToCache(key, serialized.value.value(), [sdk_key](bool success) {
+        if (success) {
+          return;
+        }
+
+        if (const auto eb = ErrorBoundary::Get(sdk_key)) {
+          eb->HandleBadResult(kWriteTag, FileFailureRetryableEventPayload, std::nullopt);
+        }
+      });
     }
   }
 

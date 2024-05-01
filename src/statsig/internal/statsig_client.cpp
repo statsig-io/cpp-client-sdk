@@ -27,6 +27,7 @@ namespace statsig {
 
 namespace /* private */ {
 using namespace statsig::internal;
+using AsyncHelper = statsig_compatibility::AsyncHelper;
 }
 
 StatsigClient &StatsigClient::Shared() {
@@ -180,8 +181,10 @@ void StatsigClient::Shutdown() {
   INIT_GUARD();
 
   EB(context_, ([this]() {
-    Diagnostics::Shutdown(context_->sdk_key);
     context_->logger.Shutdown();
+    Diagnostics::Shutdown(context_->sdk_key);
+    ErrorBoundary::Shutdown(context_->sdk_key);
+
     context_.reset();
 
     return Ok;

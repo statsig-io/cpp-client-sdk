@@ -6,6 +6,7 @@
 #include <fstream>
 
 #include "statsig/internal/constants.h"
+#include "../async/async_helper.hpp"
 
 namespace statsig_compatibility {
 
@@ -19,24 +20,31 @@ class FileHelper {
     return kCacheDirectory;
   }
 
-  static void WriteStringToFile(
-      const std::string &content,
-      const std::string &path
-  ) {
-    auto actual_path = fs::path(path);
-
-    std::ofstream file(actual_path);
-    file << content;
-    file.close();
-  }
-
   static std::string CombinePath(const std::string &left,
                                  const std::string &right) {
     auto path = fs::path(left) / fs::path(right);
     return path.string();
   }
 
-  static std::optional<std::string> ReadStringToFile(const std::string &path) {
+  static void WriteStringToFile(
+      const std::string &content,
+      const std::string &path,
+      const std::function<void(bool)> &callback
+  ) {
+    AsyncHelper::RunInBackground([content, path, callback] {
+      auto actual_path = fs::path(path);
+
+      std::ofstream file(actual_path);
+      file << content;
+      file.close();
+
+      callback(true);
+    });
+  }
+
+  static std::optional<std::string> ReadStringToFile(
+      const std::string &path
+  ) {
     auto actual_path = fs::path(path);
     if (!fs::exists(path)) {
       return std::nullopt;
@@ -61,7 +69,7 @@ class FileHelper {
     fs::remove(actual_path);
   }
 
-  static std::vector<std::string> GetCachePathsSortedYoungestFirst(std::string prefix) {
+  static std::vector<std::string> GetCachePathsSortedYoungestFirst(const std::string &prefix) {
     std::vector<fs::path> paths;
 
     for (const auto &entry : fs::directory_iterator(kCacheDirectory)) {

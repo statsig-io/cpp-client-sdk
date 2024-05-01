@@ -12,6 +12,8 @@
 
 namespace statsig::internal {
 
+namespace /* private */ {
+
 StatsigResult<DataAdapterResult>
 ReadFromCacheFile(const std::string &cache_key) {
   auto data = File::ReadFromCache(cache_key);
@@ -27,16 +29,21 @@ ReadFromCacheFile(const std::string &cache_key) {
   return result;
 }
 
-void WriteToCacheFile(const std::string &cache_key,
-                      const DataAdapterResult &result) {
+void WriteToCacheFile(
+    const std::string &cache_key,
+    const DataAdapterResult &result,
+    const std::function<void(StatsigResultCode)> &callback
+) {
   File::RunCacheEviction(constants::kCachedEvaluationsPrefix);
 
   auto serialized = Json::Serialize(result);
   if (serialized.code == Ok && serialized.value.has_value()) {
-    File::WriteToCache(cache_key, serialized.value.value());
+    File::WriteToCache(cache_key, serialized.value.value(), [callback](bool success) {
+      callback(success ? Ok : FileFailureDataAdapterResult);
+    });
   }
+}
 
-//  return serialized.code;
 }
 
 class StatsigEvaluationsDataAdapter : public EvaluationsDataAdapter {
@@ -79,6 +86,7 @@ class StatsigEvaluationsDataAdapter : public EvaluationsDataAdapter {
     FetchLatest(user, cache, [this, callback, user]
         (StatsigResult<DataAdapterResult> latest) {
       const auto cache_key = GetCacheKey(user);
+      const auto sdk_key = GetSdkKey();
 
       if (!latest.value.has_value()) {
         callback({latest.code, std::nullopt, latest.extra});
@@ -88,11 +96,17 @@ class StatsigEvaluationsDataAdapter : public EvaluationsDataAdapter {
       AddToInMemoryCache(cache_key, latest.value.value());
 
       if (latest.value->source == ValueSource::Network) {
-        WriteToCacheFile(cache_key, latest.value.value());
+        WriteToCacheFile(
+            cache_key,
+            latest.value.value(),
+            [latest, callback, sdk_key](StatsigResultCode result) {
+              Diagnostics::Get(sdk_key)->Mark(markers::ProcessEnd(result == Ok));
+              callback(latest);
+            });
+      } else {
+        Diagnostics::Get(sdk_key)->Mark(markers::ProcessEnd(true));
+        callback(latest);
       }
-
-      Diagnostics::Get(GetSdkKey())->Mark(markers::ProcessEnd(true));
-      callback(latest);
     });
 
   }
