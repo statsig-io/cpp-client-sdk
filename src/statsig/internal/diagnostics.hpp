@@ -7,6 +7,7 @@
 
 #include "diagnostic_markers.hpp"
 #include "macros.hpp"
+#include "shareable.hpp"
 
 namespace statsig::internal {
 
@@ -15,25 +16,20 @@ using string = std::string;
 }
 
 class Diagnostics {
-  using string = std::string;
-
  public:
   static std::shared_ptr<Diagnostics> Get(const string &sdk_key) {
-    LOCK(static_mutex_);
-
-    auto it = instances_.find(sdk_key);
-    if (it != instances_.end()) {
-      return it->second;
+    auto instance = shareable_.Get(sdk_key);
+    if (instance != nullptr) {
+      return instance;
     }
 
-    std::shared_ptr<Diagnostics> inst(new Diagnostics());
-    instances_[sdk_key] = inst;
-    return inst;
+    std::shared_ptr<Diagnostics> new_instance(new Diagnostics());
+    shareable_.Add(sdk_key, new_instance);
+    return new_instance;
   }
 
   static void Shutdown(const string &sdk_key) {
-    LOCK(static_mutex_);
-    instances_.erase(sdk_key);
+    shareable_.Remove(sdk_key);
   }
 
   void SetUser(StatsigUser user) {
@@ -63,12 +59,12 @@ class Diagnostics {
     };
 
     auto event = StatsigEventInternal{
-      "statsig::diagnostics",
-      Time::now(),
-      user_,
-      std::nullopt,
-      std::nullopt,
-      metadata
+        "statsig::diagnostics",
+        Time::now(),
+        user_,
+        std::nullopt,
+        std::nullopt,
+        metadata
     };
 
     events.push_back(event);
@@ -78,8 +74,7 @@ class Diagnostics {
   Diagnostics &operator=(const Diagnostics &) = delete;
 
  private:
-  static std::unordered_map<string, std::shared_ptr<Diagnostics>> instances_;
-  static std::mutex static_mutex_;
+  static Shareable<Diagnostics> shareable_;
 
   std::vector<JsonValue> markers_;
   std::mutex mutex_;
@@ -88,7 +83,6 @@ class Diagnostics {
   explicit Diagnostics() {}
 };
 
-std::unordered_map<std::string, std::shared_ptr<Diagnostics>> Diagnostics::instances_;
-std::mutex Diagnostics::static_mutex_;
+Shareable Diagnostics::shareable_ = Shareable<Diagnostics>();
 
 }
