@@ -8,26 +8,28 @@
 #include "statsig_event_internal.hpp"
 #include "macros.hpp"
 #include "constants.h"
-#include "log.hpp"
+#include "statsig_compat/output_logger/log.hpp"
 
 namespace statsig::internal {
 
 class EventLogger {
-public:
+  using Log = statsig_compatibility::Log;
+
+ public:
   explicit EventLogger(
       std::string sdk_key,
-      StatsigOptions& options,
-      NetworkService& network
-      )
-    : sdk_key_(std::move(sdk_key)),
-      options_(options),
-      network_(std::make_shared<NetworkService>(network)),
-      has_been_shutdown_(false),
-      max_buffer_size_(
-          options.logging_max_buffer_size.value_or(
-              constants::kMaxQueuedEvents)),
-      logging_interval_ms_(
-          options.logging_interval_ms.value_or(constants::kLoggingIntervalMs)) {
+      StatsigOptions &options,
+      NetworkService &network
+  )
+      : sdk_key_(std::move(sdk_key)),
+        options_(options),
+        network_(std::make_shared<NetworkService>(network)),
+        has_been_shutdown_(false),
+        max_buffer_size_(
+            options.logging_max_buffer_size.value_or(
+                constants::kMaxQueuedEvents)),
+        logging_interval_ms_(
+            options.logging_interval_ms.value_or(constants::kLoggingIntervalMs)) {
     RetryFailedEvents();
     StartBackgroundFlusher();
   }
@@ -36,7 +38,7 @@ public:
     has_been_shutdown_.store(true);
   }
 
-  void Enqueue(const StatsigEventInternal& event) {
+  void Enqueue(const StatsigEventInternal &event) {
     WRITE_LOCK(rw_lock_);
     events_.push_back(event);
 
@@ -62,9 +64,9 @@ public:
     FlushImpl(true);
   }
 
-private:
+ private:
   std::string sdk_key_;
-  StatsigOptions& options_;
+  StatsigOptions &options_;
   std::shared_ptr<NetworkService> network_;
   std::shared_mutex rw_lock_;
   std::vector<StatsigEventInternal> events_;
@@ -76,7 +78,7 @@ private:
   void SaveFailedEvents(
       std::vector<StatsigEventInternal> events,
       const int attempt
-      ) {
+  ) {
     std::vector<RetryableEventPayload> failures;
     const auto key = GetFailedEventCacheKey();
     const auto cache = File::ReadFromCache(key);
@@ -108,7 +110,7 @@ private:
       }
 
       const auto failures = Json::Deserialize<std::vector<
-        RetryableEventPayload>>(
+          RetryableEventPayload>>(
           cache.value());
 
       File::DeleteFromCache(key);
@@ -117,14 +119,14 @@ private:
         return;
       }
 
-      for (const auto& failure : failures.value.value()) {
+      for (const auto &failure : failures.value.value()) {
         const auto events = failure.events;
         const auto attempt = failure.attempts + 1;
         USE_REF(weak_net, shared_net);
 
         shared_net->SendEvents(
             events,
-            [&, events, attempt](const NetworkResult<bool>& result) {
+            [&, events, attempt](const NetworkResult<bool> &result) {
               if (!result.value && attempt <=
                   constants::kFailedEventPayloadRetryCount) {
                 SaveFailedEvents(events, attempt);
@@ -151,7 +153,7 @@ private:
     if (!should_run_async) {
       network_->SendEvents(
           local_events,
-          [&, local_events](const NetworkResult<bool>& result) {
+          [&, local_events](const NetworkResult<bool> &result) {
             if (!result.value) {
               SaveFailedEvents(local_events, 1);
             }
@@ -165,7 +167,7 @@ private:
 
       shared_net->SendEvents(
           local_events,
-          [&, local_events](const NetworkResult<bool>& result) {
+          [&, local_events](const NetworkResult<bool> &result) {
             if (!result.value) {
               SaveFailedEvents(local_events, 1);
             }
