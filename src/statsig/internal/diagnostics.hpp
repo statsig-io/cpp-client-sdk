@@ -83,6 +83,6 @@ class Diagnostics {
   explicit Diagnostics() {}
 };
 
-Shareable Diagnostics::shareable_ = Shareable<Diagnostics>();
+Shareable<Diagnostics> Diagnostics::shareable_ = Shareable<Diagnostics>();
 
 }

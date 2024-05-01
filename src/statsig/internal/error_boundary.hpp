@@ -46,6 +46,10 @@ class ErrorBoundary {
     return new_instance;
   }
 
+  static void Shutdown(const string &sdk_key) {
+    shareable_.Remove(sdk_key);
+  }
+
   void ReportBadResult(
       const string &tag,
       const StatsigResultCode &code,
@@ -170,6 +174,6 @@ class ErrorBoundary {
   }
 };
 
-Shareable ErrorBoundary::shareable_ = Shareable<ErrorBoundary>();
+Shareable<ErrorBoundary> ErrorBoundary::shareable_ = Shareable<ErrorBoundary>();
 
 }

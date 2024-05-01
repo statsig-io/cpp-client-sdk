@@ -31,7 +31,7 @@ class FileHelper {
       const std::string &path,
       const std::function<void(bool)> &callback
   ) {
-    AsyncHelper::RunInBackground([&, callback] {
+    AsyncHelper::RunInBackground([content, path, callback] {
       auto actual_path = fs::path(path);
 
       std::ofstream file(actual_path);

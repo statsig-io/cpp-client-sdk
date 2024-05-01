@@ -93,8 +93,15 @@ class EventLogger {
 
     auto serialized = Json::Serialize(failures);
     if (serialized.code == Ok && serialized.value.has_value()) {
-      File::WriteToCache(key, serialized.value.value(), [](bool success) {
-        // todo: log to eb
+      const auto sdk_key = sdk_key_;
+      File::WriteToCache(key, serialized.value.value(), [sdk_key](bool success) {
+        if (success) {
+          return;
+        }
+
+        if (const auto eb = ErrorBoundary::Get(sdk_key)) {
+          eb->ReportBadResult(kWriteTag, FileFailureRetryableEventPayload);
+        }
       });
     }
   }

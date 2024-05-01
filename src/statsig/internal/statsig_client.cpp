@@ -180,8 +180,10 @@ void StatsigClient::Shutdown() {
   INIT_GUARD();
 
   EB(([this]() {
-    Diagnostics::Shutdown(context_->sdk_key);
     context_->logger.Shutdown();
+    Diagnostics::Shutdown(context_->sdk_key);
+    ErrorBoundary::Shutdown(context_->sdk_key);
+
     context_.reset();
 
     return Ok;
