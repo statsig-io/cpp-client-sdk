@@ -4,56 +4,45 @@
 
 namespace statsig::internal::markers {
 
-namespace /* private */ {
-using string = std::string;
 
-inline std::string Snippet(const std::string& str) {
-  if (str.length() > 100) {
-    return str.substr(0, 100);
-  } else {
-    return str;
-  }
-}
+struct Base {
+  using string = std::string;
 
-}
-
-struct Base : public JsonObject {
   explicit Base(
       const string& action,
       const string& key,
       const std::optional<string>& step = std::nullopt
       ) {
-    AddValue("action", action);
-    AddValue("key", key);
-    AddNumValue("timestamp", Time::now());
+    data_ = EmptyJsonObject();
+    AddValue("action", StringToJsonValue(action));
+    AddValue("key", StringToJsonValue(key));
+    AddValue("timestamp", TimeToJsonValue(Time::now()));
 
     if (step.has_value()) {
-      AddValue("step", step.value());
+      AddValue("step", StringToJsonValue(step.value()));
     }
   }
 
   virtual ~Base() = default;
 
+  JsonValue GetData() const {
+    return JsonObjectToJsonValue(data_);
+  }
+
 protected:
-#ifdef STATSIG_UNREAL_PLUGIN
-  void AddValue(std::string key, std::string value) {
-    Get()->SetStringField(FString(key.c_str()), FString(value.c_str()));
+  JsonObject data_;
+
+  void AddValue(const std::string& key, const JsonValue& value)  {
+    AddToJsonObject(data_, key, value);
   }
 
-  void AddBoolValue(std::string key, bool value) {
-    Get()->SetBoolField(FString(key.c_str()), value);
-  }
+  static std::string Snippet(const std::string& str) {
+    if (str.length() > 100) {
+      return str.substr(0, 100);
+    }
 
-  void AddNumValue(std::string key, long value) {
-    Get()->SetNumberField(FString(key.c_str()), value);
+    return str;
   }
-
-  void AddValue(std::string key, std::unordered_map<string, JsonValue>) {}
-#else
-  void AddValue(std::string key, JsonValue value) {
-      emplace(key, value);
-  }
-#endif
 };
 
 /**
@@ -67,14 +56,14 @@ struct OverallStart : public Base {
 
 struct OverallEnd : public Base {
   explicit OverallEnd(
-      StatsigResultCode result_code,
-      EvaluationDetails evaluation_details
+      const StatsigResultCode result_code,
+      const EvaluationDetails& evaluation_details
       )
     : Base{"end", "overall"} {
-    AddBoolValue("success", result_code == Ok);
+    AddValue("success", BoolToJsonValue(result_code == Ok));
 
     std::unordered_map<string, JsonValue> details{
-        {"reason", ToJsonValue(evaluation_details.reason)},
+        {"reason", CompatStringToJsonValue(evaluation_details.reason)},
     };
 
     if (evaluation_details.reason != "NoValues") {
@@ -83,14 +72,15 @@ struct OverallEnd : public Base {
           evaluation_details.received_at);
     }
 
-    AddValue("evaluationDetails", details);
+    AddValue("evaluationDetails", JsonValueMapToJsonValue(details));
 
     if (result_code != Ok) {
-      const auto err = StdStrToJsonValue(ResultCodeToString(result_code));
-      AddValue("error", std::unordered_map<string, JsonValue>{
-                   {"name", err},
-                   {"message", err},
-               });
+      const auto err = StringToJsonValue(ResultCodeToString(result_code));
+      const std::unordered_map<string, JsonValue> err_data{
+          {"name", err},
+          {"message", err},
+      };
+      AddValue("error", JsonValueMapToJsonValue(err_data));
     }
   }
 };
@@ -102,25 +92,26 @@ struct OverallEnd : public Base {
 struct NetworkBase : public Base {
   explicit NetworkBase(
       const string& action,
-      int attempt,
+      const int attempt,
       const string& key
       )
     : Base{action, key, "network_request"} {
-    AddNumValue("attempt", attempt);
+    AddValue("attempt", IntToJsonValue(attempt));
   }
 };
 
 struct NetworkStart : public NetworkBase {
   explicit NetworkStart(
-      int attempt, const string& key = "initialize"
+      const int attempt,
+      const string& key = "initialize"
       )
     : NetworkBase{"start", attempt, key} {}
 };
 
 struct NetworkEnd : public NetworkBase {
   explicit NetworkEnd(
-      int attempt,
-      int status,
+      const int attempt,
+      const int status,
       const string& response_text,
       const string& sdk_region,
       const std::optional<string>& error,
@@ -128,28 +119,30 @@ struct NetworkEnd : public NetworkBase {
       )
     : NetworkBase{"end", attempt, key} {
     const auto is_success = status >= 200 && status < 300;
-    AddBoolValue("success", status >= 200 && status < 300);
+    AddValue("success", BoolToJsonValue(status >= 200 && status < 300));
 
     if (status > 0) {
-      AddNumValue("statusCode", status);
+      AddValue("statusCode", IntToJsonValue(status));
     }
 
     if (!sdk_region.empty()) {
-      AddValue("sdkRegion", sdk_region);
+      AddValue("sdkRegion", StringToJsonValue(sdk_region));
     }
 
     if (error.has_value()) {
-      const auto err = StdStrToJsonValue(error.value());
-      AddValue("error", std::unordered_map<string, JsonValue>{
-                   {"name", err},
-                   {"message", err},
-               });
+      const auto err = StringToJsonValue(error.value());
+      const std::unordered_map<string, JsonValue> err_data{
+          {"name", err},
+          {"message", err},
+      };
+      AddValue("error", JsonValueMapToJsonValue(err_data));
     } else if (!is_success) {
-      const auto start = StdStrToJsonValue(Snippet(response_text));
-      AddValue("error", std::unordered_map<string, JsonValue>{
-                   {"name", start},
-                   {"message", start},
-               });
+      const auto snippet = StringToJsonValue(Snippet(response_text));
+      const std::unordered_map<string, JsonValue> err_data{
+          {"name", snippet},
+          {"message", snippet},
+      };
+      AddValue("error", JsonValueMapToJsonValue(err_data));
     }
   }
 };
@@ -169,9 +162,9 @@ struct ProcessStart : public ProcessBase {
 };
 
 struct ProcessEnd : public ProcessBase {
-  explicit ProcessEnd(bool is_successful)
+  explicit ProcessEnd(const bool is_successful)
     : ProcessBase{"end"} {
-    AddBoolValue("success", is_successful);
+    AddValue("success", BoolToJsonValue(is_successful));
   }
 
 };

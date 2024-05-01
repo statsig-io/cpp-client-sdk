@@ -33,24 +33,29 @@ class ErrorBoundary {
 
   inline static string eb_api = constants::kDefaultApi;
 
-  void ReportBadResult(
+  bool HandleBadResult(
       const string &tag,
       const StatsigResultCode &code,
-      const std::optional<std::unordered_map<std::string, std::string>> &extra) {
+      const std::optional<std::unordered_map<std::string, std::string>> &extra
+  ) {
     if (code == Ok || code == ClientUninitialized || code == InvalidSdkKey) {
-      return;
+      return false;
     }
 
     if (code == NetworkFailureBadStatusCode && !MapGetOrNull(extra, constants::kBadNetworkErr).has_value()) {
-      return;
+      return false;
     }
 
     LogError(tag, ErrorFromResultCode(code, extra));
+
+    return true;
   }
 
   StatsigResultCode Capture(
       const string &tag,
-      const std::function<StatsigResultCode()> &task) {
+      const std::function<StatsigResultCode()> &task,
+      const std::optional<std::function<void(StatsigResultCode)>> &recover = std::nullopt
+  ) {
     StatsigResultCode code;
 #ifndef STATSIG_UNREAL_PLUGIN
     try {
@@ -63,17 +68,22 @@ class ErrorBoundary {
       catch (std::exception &) {
         // noop
       }
+      if (recover.has_value()) {
+        recover.value()(UnexpectedError);
+      }
       return UnexpectedError;
     }
 #else
     code = task();
 #endif
-    ReportBadResult(tag, code, std::nullopt);
+    if (HandleBadResult(tag, code, std::nullopt) && recover.has_value()) {
+      recover.value()(code);
+    }
     return code;
   }
 
  private:
-  string &sdk_key_;
+  string sdk_key_;
   std::set<string> seen_;
 
   static std::vector<string> GetStackTrace() {
@@ -115,7 +125,10 @@ class ErrorBoundary {
 
   void LogError(
       const string &tag,
-      const string &error) {
+      const string &error
+  ) {
+    const auto st = sdk_key_;
+    const auto ss = seen_;
     if (seen_.find(error) != seen_.end()) {
       return;
     }
