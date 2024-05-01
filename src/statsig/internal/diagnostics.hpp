@@ -7,6 +7,7 @@
 
 #include "diagnostic_markers.hpp"
 #include "macros.hpp"
+#include "statsig_compat/output_logger/log.hpp"
 
 namespace statsig::internal {
 
@@ -39,7 +40,7 @@ class Diagnostics {
   void Mark(const markers::Base &marker) {
     LOCK(mutex_);
     if (markers_.size() > constants::kMaxDiagnosticsMarkers) {
-      Log::Warn("Diagnostics max reached, unable to add more markers");
+      statsig_compatibility::Log::Warn("Diagnostics max reached, unable to add more markers");
       return;
     }
     markers_.push_back(marker.GetData());
@@ -70,7 +71,7 @@ class Diagnostics {
 
     events.push_back(event);
 
-    Log::Debug("Appended statsig::diagnostics");
+    statsig_compatibility::Log::Debug("Appended statsig::diagnostics");
   }
 
   Diagnostics(const Diagnostics &) = delete;

@@ -9,7 +9,7 @@
 #include "statsig_compat/constants/constants.h"
 #include "unordered_map_util.hpp"
 #include "error_boundary_request_args.h"
-#include "log.hpp"
+#include "statsig_compat/output_logger/log.hpp"
 
 #ifndef STATSIG_UNREAL_PLUGIN
 #ifdef __unix__
@@ -133,7 +133,7 @@ class ErrorBoundary {
       return;
     }
 
-    internal::Log::Error("An unexpected exception occurred. " + error);
+    statsig_compatibility::Log::Error("An unexpected exception occurred. " + error);
 
     seen_.insert(error);
 

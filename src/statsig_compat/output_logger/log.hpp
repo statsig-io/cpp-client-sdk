@@ -2,9 +2,11 @@
 
 #include <string>
 #include <iostream>
-#include "../log_level.h"
+#include "statsig/log_level.h"
 
-namespace statsig::internal {
+namespace statsig_compatibility {
+
+using LogLevel = statsig::LogLevel;
 
 class Log {
   inline static const char* RED = "\033[31m";
