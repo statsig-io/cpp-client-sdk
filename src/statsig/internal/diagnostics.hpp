@@ -17,8 +17,8 @@ using string = std::string;
 class Diagnostics {
   using string = std::string;
 
- public:
-  static std::shared_ptr<Diagnostics> Get(const string &sdk_key) {
+public:
+  static std::shared_ptr<Diagnostics> Get(const string& sdk_key) {
     LOCK(static_mutex_);
 
     auto it = instances_.find(sdk_key);
@@ -31,7 +31,7 @@ class Diagnostics {
     return inst;
   }
 
-  static void Shutdown(const string &sdk_key) {
+  static void Shutdown(const string& sdk_key) {
     LOCK(static_mutex_);
     instances_.erase(sdk_key);
   }
@@ -40,44 +40,43 @@ class Diagnostics {
     user_ = std::move(user);
   }
 
-  void Mark(const markers::Base &marker) {
+  void Mark(const markers::Base& marker) {
     LOCK(mutex_);
     if (markers_.size() > constants::kMaxDiagnosticsMarkers) {
       Log::Warn("Diagnostics max reached, unable to add more markers");
       return;
     }
-    markers_.push_back(marker.get<JsonValue>());
+    markers_.push_back(JsonObjectToJsonValue(marker));
   }
 
-  void AppendEvent(std::vector<StatsigEventInternal> &events) {
+  void AppendEvent(std::vector<StatsigEventInternal>& events) {
     LOCK(mutex_);
 
     if (markers_.empty()) {
       return;
     }
 
-    auto local_markers = std::move(markers_);
     auto metadata = std::unordered_map<string, JsonValue>{
-        {"markers", local_markers},
-        {"context", "initialize"}
+        {"markers", JsonArrayToJsonValue(markers_)},
+        {"context", ToJsonValue("initialize")}
     };
 
-    auto event = StatsigEventInternal{
-      "statsig::diagnostics",
-      Time::now(),
-      user_,
-      std::nullopt,
-      std::nullopt,
-      metadata
+    const auto event = StatsigEventInternal{
+        "statsig::diagnostics",
+        Time::now(),
+        user_,
+        std::nullopt,
+        std::nullopt,
+        metadata
     };
 
     events.push_back(event);
   }
 
-  Diagnostics(const Diagnostics &) = delete;
-  Diagnostics &operator=(const Diagnostics &) = delete;
+  Diagnostics(const Diagnostics&) = delete;
+  Diagnostics& operator=(const Diagnostics&) = delete;
 
- private:
+private:
   static std::unordered_map<string, std::shared_ptr<Diagnostics>> instances_;
   static std::mutex static_mutex_;
 
@@ -88,7 +87,8 @@ class Diagnostics {
   explicit Diagnostics() {}
 };
 
-std::unordered_map<std::string, std::shared_ptr<Diagnostics>> Diagnostics::instances_;
+std::unordered_map<std::string, std::shared_ptr<Diagnostics>>
+Diagnostics::instances_;
 std::mutex Diagnostics::static_mutex_;
 
 }

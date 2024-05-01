@@ -17,11 +17,11 @@ struct StatsigEventInternal {
   std::optional<double> double_value;
   std::optional<std::unordered_map<std::string, JsonValue>> metadata;
   std::optional<std::vector<std::unordered_map<std::string, std::string>>>
-      secondary_exposures;
+  secondary_exposures;
 };
 
 struct LogEventRequestArgs {
-  const std::vector<StatsigEventInternal> &events;
+  const std::vector<StatsigEventInternal>& events;
   std::unordered_map<std::string, std::string> statsig_metadata;
 };
 
@@ -34,7 +34,8 @@ struct RetryableEventPayload {
   std::vector<StatsigEventInternal> events;
 };
 
-inline StatsigEventInternal InternalizeEvent(StatsigEvent event, const StatsigUser &user) {
+inline StatsigEventInternal InternalizeEvent(StatsigEvent event,
+                                             const StatsigUser& user) {
   StatsigEventInternal result;
   result.event_name = FromCompat(event.event_name);
   result.time = event.time.has_value() ? event.time.value() : Time::now();
@@ -48,7 +49,7 @@ inline StatsigEventInternal InternalizeEvent(StatsigEvent event, const StatsigUs
   if (event.metadata.has_value()) {
     std::unordered_map<std::string, JsonValue> meta;
     for (const auto& [fst, snd] : event.metadata.value()) {
-      meta[FromCompat(fst)] = FromCompat(snd);
+      meta[FromCompat(fst)] = ToJsonValue(snd);
     }
     result.metadata = meta;
   }
@@ -56,16 +57,16 @@ inline StatsigEventInternal InternalizeEvent(StatsigEvent event, const StatsigUs
   return result;
 }
 
-template<typename T>
+template <typename T>
 StatsigEventInternal MakeExposureEvent(
-    const std::string &event_name,
-    const StatsigUser &user,
-    const std::optional<T> &evaluation,
-    const EvaluationDetails &evaluation_details,
-    const std::unordered_map<std::string, JsonValue> &metadata,
-    const std::optional<std::vector<data::SecondaryExposure>> &
-    secondary_exposures = std::nullopt
-) {
+    const std::string& event_name,
+    const StatsigUser& user,
+    const std::optional<T>& evaluation,
+    const EvaluationDetails& evaluation_details,
+    const std::unordered_map<std::string, JsonValue>& metadata,
+    const std::optional<std::vector<data::SecondaryExposure>>&
+        secondary_exposures = std::nullopt
+    ) {
   StatsigEventInternal result;
 
   result.event_name = event_name;
@@ -79,21 +80,21 @@ StatsigEventInternal MakeExposureEvent(
   }
 
   std::unordered_map final_metadata(metadata);
-  final_metadata["reason"] = FromCompat(evaluation_details.reason);
-  final_metadata["lcut"] = std::to_string(evaluation_details.lcut);
-  final_metadata["receivedAt"] = std::to_string(evaluation_details.received_at);
+  final_metadata["reason"] = ToJsonValue(evaluation_details.reason);
+  final_metadata["lcut"] = JsonValueFromNumber(evaluation_details.lcut);
+  final_metadata["receivedAt"] = JsonValueFromNumber(evaluation_details.received_at);
 
   result.metadata = final_metadata;
   return result;
 }
 
 StatsigEventInternal MakeGateExposure(
-    const std::string &gate_name,
-    const StatsigUser &user,
-    const DetailedEvaluation<data::GateEvaluation> &detailed_evaluation
-) {
+    const std::string& gate_name,
+    const StatsigUser& user,
+    const DetailedEvaluation<data::GateEvaluation>& detailed_evaluation
+    ) {
   auto evaluation = detailed_evaluation.evaluation;
-  auto value = UNWRAP(evaluation, value);
+  const auto value = UNWRAP(evaluation, value);
   auto rule_id = UNWRAP(evaluation, rule_id);
 
   return MakeExposureEvent(
@@ -101,19 +102,19 @@ StatsigEventInternal MakeGateExposure(
       user,
       evaluation,
       detailed_evaluation.details,
-      {
+      StringMapToJsonValueMap({
           {"gate", gate_name},
           {"gateValue", value ? "true" : "false"},
           {"ruleID", rule_id}
-      }
-  );
+      })
+      );
 }
 
 StatsigEventInternal MakeConfigExposure(
-    const std::string &config_name,
-    const StatsigUser &user,
-    const DetailedEvaluation<data::ConfigEvaluation> &detailed_evaluation
-) {
+    const std::string& config_name,
+    const StatsigUser& user,
+    const DetailedEvaluation<data::ConfigEvaluation>& detailed_evaluation
+    ) {
   auto evaluation = detailed_evaluation.evaluation;
   auto rule_id = UNWRAP(evaluation, rule_id);
 
@@ -122,19 +123,19 @@ StatsigEventInternal MakeConfigExposure(
       user,
       evaluation,
       detailed_evaluation.details,
-      {
+      StringMapToJsonValueMap({
           {"config", config_name},
           {"ruleID", rule_id},
-      }
-  );
+      })
+      );
 }
 
 StatsigEventInternal MakeLayerParamExposure(
-    const std::string &layer_name,
-    const std::string &param_name,
-    const StatsigUser &user,
-    const DetailedEvaluation<data::LayerEvaluation> &detailed_evaluation
-) {
+    const std::string& layer_name,
+    const std::string& param_name,
+    const StatsigUser& user,
+    const DetailedEvaluation<data::LayerEvaluation>& detailed_evaluation
+    ) {
   auto evaluation = detailed_evaluation.evaluation;
   auto rule_id = UNWRAP(evaluation, rule_id);
   auto explicit_params = UNWRAP(evaluation, explicit_parameters);
@@ -154,15 +155,15 @@ StatsigEventInternal MakeLayerParamExposure(
       user,
       evaluation,
       detailed_evaluation.details,
-      {
+      StringMapToJsonValueMap({
           {"config", layer_name},
           {"ruleID", rule_id},
           {"parameterName", param_name},
           {"isExplicitParameter", is_explicit ? "true" : "false"},
           {"allocatedExperiment", UNWRAP_OR(allocated, "")}
-      },
+      }),
       exposures
-  );
+      );
 }
 
 }
