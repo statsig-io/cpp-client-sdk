@@ -4,16 +4,16 @@
 
 namespace statsig::internal::markers {
 
-
 struct Base {
   using string = std::string;
 
   explicit Base(
-      const string& action,
-      const string& key,
-      const std::optional<string>& step = std::nullopt
-      ) {
+      const string &action,
+      const string &key,
+      const std::optional<string> &step = std::nullopt
+  ) {
     data_ = EmptyJsonObject();
+
     AddValue("action", StringToJsonValue(action));
     AddValue("key", StringToJsonValue(key));
     AddValue("timestamp", TimeToJsonValue(Time::now()));
@@ -29,18 +29,17 @@ struct Base {
     return JsonObjectToJsonValue(data_);
   }
 
-protected:
+ protected:
   JsonObject data_;
 
-  void AddValue(const std::string& key, const JsonValue& value)  {
+  void AddValue(const std::string &key, const JsonValue &value) {
     AddToJsonObject(data_, key, value);
   }
 
-  static std::string Snippet(const std::string& str) {
+  static std::string Snippet(const std::string &str) {
     if (str.length() > 100) {
       return str.substr(0, 100);
     }
-
     return str;
   }
 };
@@ -51,15 +50,15 @@ protected:
 
 struct OverallStart : public Base {
   explicit OverallStart()
-    : Base{"start", "overall"} {}
+      : Base{"start", "overall"} {}
 };
 
 struct OverallEnd : public Base {
   explicit OverallEnd(
       const StatsigResultCode result_code,
-      const EvaluationDetails& evaluation_details
-      )
-    : Base{"end", "overall"} {
+      const EvaluationDetails &evaluation_details
+  )
+      : Base{"end", "overall"} {
     AddValue("success", BoolToJsonValue(result_code == Ok));
 
     std::unordered_map<string, JsonValue> details{
@@ -91,11 +90,11 @@ struct OverallEnd : public Base {
 
 struct NetworkBase : public Base {
   explicit NetworkBase(
-      const string& action,
+      const string &action,
       const int attempt,
-      const string& key
-      )
-    : Base{action, key, "network_request"} {
+      const string &key
+  )
+      : Base{action, key, "network_request"} {
     AddValue("attempt", IntToJsonValue(attempt));
   }
 };
@@ -103,21 +102,21 @@ struct NetworkBase : public Base {
 struct NetworkStart : public NetworkBase {
   explicit NetworkStart(
       const int attempt,
-      const string& key = "initialize"
-      )
-    : NetworkBase{"start", attempt, key} {}
+      const string &key = "initialize"
+  )
+      : NetworkBase{"start", attempt, key} {}
 };
 
 struct NetworkEnd : public NetworkBase {
   explicit NetworkEnd(
       const int attempt,
       const int status,
-      const string& response_text,
-      const string& sdk_region,
-      const std::optional<string>& error,
-      const string& key = "initialize"
-      )
-    : NetworkBase{"end", attempt, key} {
+      const string &response_text,
+      const string &sdk_region,
+      const std::optional<string> &error,
+      const string &key = "initialize"
+  )
+      : NetworkBase{"end", attempt, key} {
     const auto is_success = status >= 200 && status < 300;
     AddValue("success", BoolToJsonValue(status >= 200 && status < 300));
 
@@ -152,18 +151,18 @@ struct NetworkEnd : public NetworkBase {
  */
 
 struct ProcessBase : public Base {
-  explicit ProcessBase(const string& action, const string& key = "initialize")
-    : Base{action, key, "process"} {}
+  explicit ProcessBase(const string &action, const string &key = "initialize")
+      : Base{action, key, "process"} {}
 };
 
 struct ProcessStart : public ProcessBase {
   explicit ProcessStart()
-    : ProcessBase{"start"} {}
+      : ProcessBase{"start"} {}
 };
 
 struct ProcessEnd : public ProcessBase {
   explicit ProcessEnd(const bool is_successful)
-    : ProcessBase{"end"} {
+      : ProcessBase{"end"} {
     AddValue("success", BoolToJsonValue(is_successful));
   }
 
