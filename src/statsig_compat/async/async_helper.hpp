@@ -1,6 +1,8 @@
 #pragma once
 
-namespace statsig {
+#include <thread>
+
+namespace statsig_compatibility {
 
 class AsyncHelper {
  public:

@@ -19,7 +19,9 @@ class StableID {
     }
 
     auto id = UUID::v4();
-    File::WriteToCache(constants::kStableIdKey, id);
+    File::WriteToCache(constants::kStableIdKey, id, [](bool success){
+      // todo: log to eb
+    });
     stable_id_ = id;
     return id;
   }

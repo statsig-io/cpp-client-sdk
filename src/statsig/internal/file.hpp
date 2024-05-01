@@ -9,11 +9,15 @@ class File {
   using string = std::string;
   using FileHelper = statsig_compatibility::FileHelper;
 
-  static void WriteToCache(const string &key, const string &content) {
+  static void WriteToCache(
+      const string &key,
+      const string &content,
+      const std::function<void(bool)> &callback
+  ) {
     FileHelper::EnsureCacheDirectoryExists();
 
     auto path = FileHelper::CombinePath(FileHelper::GetCacheDir(), key);
-    FileHelper::WriteStringToFile(content, path);
+    FileHelper::WriteStringToFile(content, path, callback);
   }
 
   static void DeleteFromCache(const string &key) {
@@ -29,7 +33,7 @@ class File {
     return FileHelper::ReadStringToFile(path);
   }
 
-  static void RunCacheEviction(std::string prefix) {
+  static void RunCacheEviction(const std::string &prefix) {
     auto paths = FileHelper::GetCachePathsSortedYoungestFirst(prefix);
 
     if (paths.size() < constants::kMaxCachedEvaluationsCount) {

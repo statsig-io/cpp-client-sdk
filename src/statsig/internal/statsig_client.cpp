@@ -26,6 +26,7 @@ namespace statsig {
 
 namespace /* private */ {
 using namespace statsig::internal;
+using AsyncHelper = statsig_compatibility::AsyncHelper;
 }
 
 StatsigClient &StatsigClient::Shared() {

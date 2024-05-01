@@ -22,6 +22,7 @@ enum StatsigResultCode {
   JsonFailureNoSerializerFound,
   NetworkFailureBadStatusCode,
   ClientUninitialized,
+  FileFailureDataAdapterResult,
 };
 
 inline StatsigResultCode operator|(StatsigResultCode a, StatsigResultCode b) {
@@ -48,6 +49,7 @@ inline std::string ResultCodeToString(StatsigResultCode code) {
     case ClientUninitialized:return "ClientUninitialized";
     case JsonFailureNoSerializerFound:return "JsonFailureNoSerializerFound";
     case JsonFailureLogEventRequestArgs:return "JsonFailureLogEventRequestArgs";
+    case FileFailureDataAdapterResult:return "FileFailureDataAdapterResult";
   }
 
   return std::to_string(code);

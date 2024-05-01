@@ -13,6 +13,8 @@
 namespace statsig::internal {
 
 class EventLogger {
+  using AsyncHelper = statsig_compatibility::AsyncHelper;
+
  public:
   explicit EventLogger(
       std::string sdk_key,
@@ -91,7 +93,9 @@ class EventLogger {
 
     auto serialized = Json::Serialize(failures);
     if (serialized.code == Ok && serialized.value.has_value()) {
-      File::WriteToCache(key, serialized.value.value());
+      File::WriteToCache(key, serialized.value.value(), [](bool success) {
+        // todo: log to eb
+      });
     }
   }
 
