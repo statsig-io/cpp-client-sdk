@@ -10,3 +10,4 @@
 #include "statsig_options.h"
 #include "evaluation_details.h"
 #include "statsig_client.h"
+#include "log_level.h"
