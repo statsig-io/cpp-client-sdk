@@ -10,10 +10,6 @@
 
 namespace statsig::internal {
 
-namespace /* private */ {
-using string = std::string;
-}
-
 class Diagnostics {
   using string = std::string;
 
@@ -46,7 +42,7 @@ public:
       Log::Warn("Diagnostics max reached, unable to add more markers");
       return;
     }
-    markers_.push_back(JsonObjectToJsonValue(marker));
+    markers_.push_back(marker.GetData());
   }
 
   void AppendEvent(std::vector<StatsigEventInternal>& events) {
@@ -56,9 +52,11 @@ public:
       return;
     }
 
+    const auto local_markers = std::move(markers_);
+
     auto metadata = std::unordered_map<string, JsonValue>{
-        {"markers", JsonArrayToJsonValue(markers_)},
-        {"context", ToJsonValue("initialize")}
+        {"markers", JsonArrayToJsonValue(local_markers)},
+        {"context", StringToJsonValue("initialize")}
     };
 
     const auto event = StatsigEventInternal{
@@ -71,6 +69,8 @@ public:
     };
 
     events.push_back(event);
+
+    Log::Debug("Appended statsig::diagnostics");
   }
 
   Diagnostics(const Diagnostics&) = delete;
