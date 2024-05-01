@@ -19,8 +19,9 @@
     }                                 \
   } while (0)
 
-#define EB_WITH_TAG(tag, task) context_->err_boundary.Capture((tag), (task))
-#define EB(task) EB_WITH_TAG(__func__, task)
+#define EB_WITH_TAG(tag, context, task, recover) context->err_boundary.Capture((tag), (task), (recover))
+#define EB(context, task) EB_WITH_TAG(__func__, context, task, std::nullopt)
+#define EBR(context, recover, task) EB_WITH_TAG(__func__, context, task, recover)
 
 namespace statsig {
 
@@ -50,11 +51,12 @@ StatsigResultCode StatsigClient::InitializeSync(
     return InvalidSdkKey;
   }
 
-  return EB(([this, &actual_key, &user, &options] {
+  context_ = std::make_shared<StatsigContext>(actual_key, user, options);
+
+  return EB(context_, ([this, &actual_key, &user, &options] {
     auto diag = Diagnostics::Get(actual_key);
     diag->Mark(markers::OverallStart());
 
-    context_ = std::make_shared<StatsigContext>(actual_key, user, options);
     auto result = UpdateUserSync(context_->user);
 
     diag->Mark(markers::OverallEnd(
@@ -75,12 +77,11 @@ void StatsigClient::InitializeAsync(
     callback(InvalidSdkKey);
     return;
   }
+  context_ = std::make_shared<StatsigContext>(actual_key, user, options);
 
-  EB(([this, &actual_key, &user, &options, &callback]() {
+  EBR(context_, callback, ([this, &actual_key,  &callback]() {
     auto diag = Diagnostics::Get(actual_key);
     diag->Mark(markers::OverallStart());
-
-    context_ = std::make_shared<StatsigContext>(actual_key, user, options);
 
     std::weak_ptr<StatsigContext> weak_ctx = context_;
     UpdateUserAsync(context_->user, [callback, diag, weak_ctx](const StatsigResultCode code) {
@@ -102,7 +103,7 @@ StatsigResultCode StatsigClient::UpdateUserSync(const StatsigUser &user) {
   INIT_GUARD(ClientUninitialized);
 
   const auto tag = __func__;
-  return EB(([this, &user, tag] {
+  return EB(context_, ([this, &user, tag] {
     context_->user = user;
     context_->store.Reset();
     Diagnostics::Get(context_->sdk_key)->SetUser(user);
@@ -113,7 +114,7 @@ StatsigResultCode StatsigClient::UpdateUserSync(const StatsigUser &user) {
     }
     context_->store.Finalize();
 
-    context_->err_boundary.ReportBadResult(tag, result.code, result.extra);
+    context_->err_boundary.HandleBadResult(tag, result.code, result.extra);
 
     std::weak_ptr<StatsigContext> weak_ctx = context_;
     AsyncHelper::RunInBackground([weak_ctx, result]() {
@@ -135,7 +136,7 @@ void StatsigClient::UpdateUserAsync(
     const std::function<void(StatsigResultCode)> &callback) {
   INIT_GUARD();
   const auto tag = __func__;
-  EB(([this, &user, &callback, tag] {
+  EBR(context_, callback, ([this, &user, &callback, tag] {
     context_->user = user;
     context_->store.Reset();
     Diagnostics::Get(context_->sdk_key)->SetUser(user);
@@ -160,7 +161,7 @@ void StatsigClient::UpdateUserAsync(
             }
 
             shared_ctx->store.Finalize();
-            shared_ctx->err_boundary.ReportBadResult(tag, result.code, result.extra);
+            shared_ctx->err_boundary.HandleBadResult(tag, result.code, result.extra);
             callback(result.code);
           };
 
@@ -178,7 +179,7 @@ void StatsigClient::UpdateUserAsync(
 void StatsigClient::Shutdown() {
   INIT_GUARD();
 
-  EB(([this]() {
+  EB(context_, ([this]() {
     Diagnostics::Shutdown(context_->sdk_key);
     context_->logger.Shutdown();
     context_.reset();
@@ -190,7 +191,7 @@ void StatsigClient::Shutdown() {
 void StatsigClient::Flush() {
   INIT_GUARD();
 
-  EB(([this]() {
+  EB(context_, ([this]() {
     context_->logger.Flush();
 
     return Ok;
@@ -200,7 +201,7 @@ void StatsigClient::Flush() {
 void StatsigClient::LogEvent(const StatsigEvent &event) {
   INIT_GUARD();
 
-  EB(([this, &event]() {
+  EB(context_, ([this, &event]() {
     context_->logger.Enqueue(internal::InternalizeEvent(event, context_->user));
 
     return Ok;
@@ -218,7 +219,7 @@ FeatureGate StatsigClient::GetFeatureGate(const String &gate_name) {
   FeatureGate result(gate_name, internal::evaluation_details::Uninitialized());
   INIT_GUARD(result);
 
-  EB(([this, &gate_name, &result]() {
+  EB(context_, ([this, &gate_name, &result]() {
     const auto gate_name_actual = FromCompat(gate_name);
     const auto gate = context_->store.GetGate(gate_name_actual);
 
@@ -248,7 +249,7 @@ DynamicConfig StatsigClient::GetDynamicConfig(const String &config_name) {
                        internal::evaluation_details::Uninitialized());
   INIT_GUARD(result);
 
-  EB(([this, &config_name, &result] {
+  EB(context_, ([this, &config_name, &result] {
     const auto config_name_actual = FromCompat(config_name);
     const auto config = context_->store.GetConfig(config_name_actual);
 
@@ -278,7 +279,7 @@ Experiment StatsigClient::GetExperiment(const String &experiment_name) {
                     internal::evaluation_details::Uninitialized());
   INIT_GUARD(result);
 
-  EB(([this, &experiment_name, &result]() {
+  EB(context_, ([this, &experiment_name, &result]() {
     const auto exp_name_actual = FromCompat(experiment_name);
     auto experiment = context_->store.GetConfig(exp_name_actual);
     context_->logger.Enqueue(
@@ -306,7 +307,7 @@ Layer StatsigClient::GetLayer(const String &layer_name) {
   Layer result(layer_name, internal::evaluation_details::Uninitialized());
   INIT_GUARD(result);
 
-  EB(([this, &layer_name, &result] {
+  EB(context_, ([this, &layer_name, &result] {
     auto logger = &context_->logger;
     auto user = context_->user;
 

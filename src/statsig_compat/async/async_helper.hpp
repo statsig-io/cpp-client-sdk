@@ -9,6 +9,10 @@ class AsyncHelper {
       task();
     }).detach();
   }
+
+  static void Sleep(const long milliseconds) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(milliseconds));
+  }
 };
 
 }

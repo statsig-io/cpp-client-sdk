@@ -8,29 +8,34 @@
 #include "statsig_event_internal.hpp"
 #include "macros.hpp"
 #include "constants.h"
-#include "log.hpp"
+#include "statsig_compat/output_logger/log.hpp"
 
 namespace statsig::internal {
 
 class EventLogger {
+  using Log = statsig_compatibility::Log;
+
  public:
   explicit EventLogger(
       std::string sdk_key,
       StatsigOptions &options,
       NetworkService &network
-  ) :
-      sdk_key_(std::move(sdk_key)),
-      options_(options),
-      network_(std::make_shared<NetworkService>(network)),
-      is_shutdown_(false),
-      max_buffer_size_(options.logging_max_buffer_size.value_or(constants::kMaxQueuedEvents)),
-      logging_interval_ms_(options.logging_interval_ms.value_or(constants::kLoggingIntervalMs)) {
+  )
+      : sdk_key_(std::move(sdk_key)),
+        options_(options),
+        network_(std::make_shared<NetworkService>(network)),
+        has_been_shutdown_(false),
+        max_buffer_size_(
+            options.logging_max_buffer_size.value_or(
+                constants::kMaxQueuedEvents)),
+        logging_interval_ms_(
+            options.logging_interval_ms.value_or(constants::kLoggingIntervalMs)) {
     RetryFailedEvents();
     StartBackgroundFlusher();
   }
 
   ~EventLogger() {
-    is_shutdown_.store(true);
+    has_been_shutdown_.store(true);
   }
 
   void Enqueue(const StatsigEventInternal &event) {
@@ -48,7 +53,7 @@ class EventLogger {
 
   void Shutdown() {
     Log::Debug("Shutting down EventLogger");
-    is_shutdown_.store(true);
+    has_been_shutdown_.store(true);
 
     WRITE_LOCK(rw_lock_);
     FlushImpl(false);
@@ -65,7 +70,7 @@ class EventLogger {
   std::shared_ptr<NetworkService> network_;
   std::shared_mutex rw_lock_;
   std::vector<StatsigEventInternal> events_;
-  std::atomic<bool> is_shutdown_;
+  std::atomic<bool> has_been_shutdown_;
   int max_buffer_size_;
   int logging_interval_ms_;
   std::shared_ptr<Diagnostics> diagnostics_ = Diagnostics::Get(sdk_key_);
@@ -173,9 +178,10 @@ class EventLogger {
   void StartBackgroundFlusher() {
     std::weak_ptr<NetworkService> weak_net = network_;
     AsyncHelper::RunInBackground([this, weak_net] {
-      while (!is_shutdown_.load()) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(logging_interval_ms_));
-        if (is_shutdown_.load()) {
+      while (!has_been_shutdown_.load()) {
+        AsyncHelper::Sleep(logging_interval_ms_);
+
+        if (has_been_shutdown_.load()) {
           break;
         }
         USE_REF(weak_net, shared_net);
