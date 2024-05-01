@@ -8,14 +8,13 @@
 #include "diagnostic_markers.hpp"
 #include "macros.hpp"
 #include "shareable.hpp"
+#include "statsig_compat/output_logger/log.hpp"
 
 namespace statsig::internal {
 
-namespace /* private */ {
-using string = std::string;
-}
-
 class Diagnostics {
+  using string = std::string;
+  
  public:
   static std::shared_ptr<Diagnostics> Get(const string &sdk_key) {
     auto instance = shareable_.Get(sdk_key);
@@ -39,10 +38,10 @@ class Diagnostics {
   void Mark(const markers::Base &marker) {
     LOCK(mutex_);
     if (markers_.size() > constants::kMaxDiagnosticsMarkers) {
-      Log::Warn("Diagnostics max reached, unable to add more markers");
+      statsig_compatibility::Log::Warn("Diagnostics max reached, unable to add more markers");
       return;
     }
-    markers_.push_back(marker.get<JsonValue>());
+    markers_.push_back(marker.GetData());
   }
 
   void AppendEvent(std::vector<StatsigEventInternal> &events) {
@@ -52,13 +51,14 @@ class Diagnostics {
       return;
     }
 
-    auto local_markers = std::move(markers_);
+    const auto local_markers = std::move(markers_);
+
     auto metadata = std::unordered_map<string, JsonValue>{
-        {"markers", local_markers},
-        {"context", "initialize"}
+        {"markers", JsonArrayToJsonValue(local_markers)},
+        {"context", StringToJsonValue("initialize")}
     };
 
-    auto event = StatsigEventInternal{
+    const auto event = StatsigEventInternal{
         "statsig::diagnostics",
         Time::now(),
         user_,
@@ -68,6 +68,8 @@ class Diagnostics {
     };
 
     events.push_back(event);
+
+    statsig_compatibility::Log::Debug("Appended statsig::diagnostics");
   }
 
   Diagnostics(const Diagnostics &) = delete;

@@ -27,7 +27,7 @@ class StatsigContext {
   ) : sdk_key(std::move(sdk_key)),
       user(user.value_or(StatsigUser())),
       options(options.value_or(StatsigOptions())),
-      err_boundary(this->sdk_key),
+      err_boundary(ErrorBoundary(this->sdk_key)),
       network(NetworkService(this->sdk_key, this->options)),
       store(EvaluationStore()),
       logger(EventLogger(this->sdk_key, this->options, this->network)),
@@ -38,7 +38,7 @@ class StatsigContext {
     data_adapter->Attach(this->sdk_key, this->options);
 
     if (this->options.output_logger_level.has_value()) {
-      statsig::internal::Log::level = this->options.output_logger_level.value();
+      statsig_compatibility::Log::level = this->options.output_logger_level.value();
     }
   }
 

@@ -35,7 +35,7 @@ class StableID {
       }
 
       if (const auto eb = ErrorBoundary::Get(key)) {
-        eb->ReportBadResult(kWriteTag, FileFailureStableID);
+        eb->HandleBadResult(kWriteTag, FileFailureStableID, std::nullopt);
       }
     });
     stable_id_ = id;
