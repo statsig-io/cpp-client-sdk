@@ -11,6 +11,18 @@ namespace statsig::data_types::statsig_user {
 #define OPT_STR_FROM_JSON(jsonObj, fieldName, target) do { if (jsonObj.contains(fieldName)) { target = jsonObj[fieldName].get<std::string>(); } } while(0)
 #define OPT_STR_MAP_FROM_JSON(jsonObj, fieldName, target) do { if (jsonObj.contains(fieldName)) { target = jsonObj[fieldName].get<std::unordered_map<std::string, std::string>>(); } } while(0)
 
+nlohmann::json EnvToJson(const StatsigEnvironment &e) {
+  auto j = nlohmann::json{};
+  OPT_TO_JSON(j, tier, e.tier);
+  return j;
+}
+
+StatsigEnvironment EnvFromJson(const nlohmann::json &j) {
+  StatsigEnvironment u;
+  OPT_STR_FROM_JSON(j, "tier", u.tier);
+  return u;
+}
+
 nlohmann::json ToJson(const StatsigUser &u) {
   auto j = nlohmann::json{};
 
@@ -28,6 +40,10 @@ nlohmann::json ToJson(const StatsigUser &u) {
   OPT_TO_JSON(j, custom, u.custom);
   OPT_TO_JSON(j, privateAttributes, u.private_attributes);
 
+  if (u.statsig_environment.has_value()) {
+    j["statsigEnvironment"] = EnvToJson(u.statsig_environment.value());
+  }
+
   return j;
 }
 
@@ -44,6 +60,10 @@ StatsigUser FromJson(const nlohmann::json &j) {
   OPT_STR_FROM_JSON(j, "appVersion", u.app_version);
   OPT_STR_MAP_FROM_JSON(j, "custom", u.custom);
   OPT_STR_MAP_FROM_JSON(j, "privateAttributes", u.private_attributes);
+
+  if (j.contains("statsigEnvironment")) {
+    u.statsig_environment = EnvFromJson(j.at("statsigEnvironment"));
+  }
 
   return u;
 }

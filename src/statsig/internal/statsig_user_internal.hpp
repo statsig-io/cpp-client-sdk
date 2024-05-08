@@ -6,6 +6,27 @@
 
 namespace statsig::internal {
 
+inline StatsigUser NormalizeUser(
+    const StatsigUser &user,
+    const StatsigOptions &options
+) {
+  StatsigUser copy = {
+      user.user_id,
+      user.custom_ids,
+      user.email,
+      user.ip,
+      user.user_agent,
+      user.country,
+      user.locale,
+      user.app_version,
+      user.custom,
+      user.private_attributes,
+      options.environment
+  };
+
+  return copy;
+}
+
 inline std::string MakeCacheKey(
     const std::string &sdk_key,
     const StatsigUser &user) {

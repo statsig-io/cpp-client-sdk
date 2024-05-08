@@ -6,6 +6,9 @@
 #include "statsig/statsig.h"
 #include "test_helpers.hpp"
 
+#define EXPECT_CONTAINS(text, substring) \
+    EXPECT_PRED2([](const std::string& s, const std::string& sub) { return s.find(sub) != std::string::npos; }, text, substring)
+
 using namespace statsig;
 using namespace statsig::internal;
 using namespace statsig::data;
@@ -78,6 +81,21 @@ TEST(JsonParsingTest, StatsigUserParseInvalidJson) {
 
   EXPECT_EQ(result.value, std::nullopt);
   EXPECT_EQ(result.code, JsonFailureStatsigUser);
+}
+
+TEST(JsonParsingTest, StatsigUserWithEnvSerialize) {
+  StatsigOptions opts;
+  opts.environment = {"dev"};
+  auto user = internal::NormalizeUser(StatsigUser{"a-user", {{"employeeID", "an-employee"}}}, opts);
+
+  auto result = Json::Serialize(user);
+  EXPECT_CONTAINS(result.value.value(), R"("statsigEnvironment":{"tier":"dev"})");
+}
+
+TEST(JsonParsingTest, StatsigUserWithEnvDeserialize) {
+  const std::string input = R"({"userID":"a-user", "statsigEnvironment":{"tier":"dev"}})";
+  auto result = Json::Deserialize<StatsigUser>(input);
+  EXPECT_EQ(result.value->statsig_environment->tier, "dev");
 }
 
 /**

@@ -3,12 +3,14 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include "statsig_environment.h"
 
 #include "statsig_compat/primitives/string.hpp"
 #include "statsig_compat/primitives/map.hpp"
 
 namespace statsig {
 
+typedef std::string String;
 typedef std::optional<String> OptString;
 
 struct StatsigUser {
@@ -23,6 +25,8 @@ struct StatsigUser {
   OptString app_version;
   std::optional<StringMap> custom;
   std::optional<StringMap> private_attributes;
+
+  std::optional<StatsigEnvironment> statsig_environment;
 };
 
 }

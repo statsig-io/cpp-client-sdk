@@ -105,7 +105,7 @@ StatsigResultCode StatsigClient::UpdateUserSync(const StatsigUser &user) {
 
   const auto tag = __func__;
   return EB(context_, ([this, &user, tag] {
-    context_->user = user;
+    context_->user = internal::NormalizeUser(user, context_->options);
     context_->store.Reset();
     Diagnostics::Get(context_->sdk_key)->SetUser(user);
 
@@ -138,7 +138,7 @@ void StatsigClient::UpdateUserAsync(
   INIT_GUARD();
   const auto tag = __func__;
   EBR(context_, callback, ([this, &user, &callback, tag] {
-    context_->user = user;
+    context_->user = internal::NormalizeUser(user, context_->options);
     context_->store.Reset();
     Diagnostics::Get(context_->sdk_key)->SetUser(user);
 
