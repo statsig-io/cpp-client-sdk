@@ -31,7 +31,7 @@ class StatsigClient {
       const std::function<void(StatsigResultCode)> &callback
   );
 
-  void Shutdown();
+  StatsigResultCode Shutdown(time_t timeout_ms = 3000);
 
   void Flush();
 

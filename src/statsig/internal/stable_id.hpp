@@ -29,7 +29,7 @@ class StableID {
 
     auto key = sdk_key_;
     auto id = UUID::v4();
-    File::WriteToCache(constants::kStableIdKey, id, [key](bool success) {
+    File::WriteToCache(sdk_key_, constants::kStableIdKey, id, [key](bool success) {
       if (success) {
         return;
       }

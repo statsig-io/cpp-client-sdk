@@ -66,7 +66,7 @@ TEST_F(StatsigResultTest, AsynchronousSuccess) {
   };
 
   auto result = InvalidSdkKey;
-  RunBlocking(10000, [&](auto done) {
+  RunBlocking(1000, [&](auto done) {
     client_.InitializeAsync(
         sdk_key_,
         [&, done](auto new_result) {
@@ -88,7 +88,7 @@ TEST_F(StatsigResultTest, AsynchronousNetworkFailure) {
   };
 
   auto result = Ok;
-  RunBlocking(10000, [&](auto done) {
+  RunBlocking(1000, [&](auto done) {
     client_.InitializeAsync(
         sdk_key_,
         [&, done](auto new_result) {

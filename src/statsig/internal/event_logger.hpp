@@ -48,7 +48,7 @@ class EventLogger {
     if (events_.size() > max_buffer_size_) {
       Log::Debug("Max buffer size reached, flushing...");
 
-      FlushImpl(true);
+      FlushImpl();
     }
   }
 
@@ -57,12 +57,12 @@ class EventLogger {
     has_been_shutdown_.store(true);
 
     WRITE_LOCK(rw_lock_);
-    FlushImpl(false);
+    FlushImpl();
   }
 
   void Flush() {
     WRITE_LOCK(rw_lock_);
-    FlushImpl(true);
+    FlushImpl();
   }
 
  private:
@@ -75,6 +75,7 @@ class EventLogger {
   int max_buffer_size_;
   int logging_interval_ms_;
   std::shared_ptr<Diagnostics> diagnostics_ = Diagnostics::Get(sdk_key_);
+  std::shared_ptr<AsyncHelper> async_helper_ = AsyncHelper::Get(sdk_key_);
 
   void SaveFailedEvents(
       std::vector<StatsigEventInternal> events,
@@ -98,7 +99,7 @@ class EventLogger {
     auto serialized = Json::Serialize(failures);
     if (serialized.code == Ok && serialized.value.has_value()) {
       const auto sdk_key = sdk_key_;
-      File::WriteToCache(key, serialized.value.value(), [sdk_key](bool success) {
+      File::WriteToCache(sdk_key_, key, serialized.value.value(), [sdk_key](bool success) {
         if (success) {
           return;
         }
@@ -112,7 +113,7 @@ class EventLogger {
 
   void RetryFailedEvents() {
     std::weak_ptr<NetworkService> weak_net = network_;
-    AsyncHelper::RunInBackground([&, weak_net] {
+    async_helper_->RunInBackground([&, weak_net] {
       const auto key = GetFailedEventCacheKey();
       const auto cache = File::ReadFromCache(key);
       if (!cache.has_value()) {
@@ -150,7 +151,7 @@ class EventLogger {
     return constants::kCachedFailedEventPayloadPrefix + hashing::DJB2(sdk_key_);
   }
 
-  void FlushImpl(bool should_run_async) {
+  void FlushImpl() {
     diagnostics_->AppendEvent(events_);
 
     if (events_.empty()) {
@@ -158,48 +159,55 @@ class EventLogger {
     }
 
     auto local_events = std::move(events_);
-    Log::Debug("Flushing Events " + std::to_string(local_events.size()));
-
-    if (!should_run_async) {
-      network_->SendEvents(
-          local_events,
-          [&, local_events](const NetworkResult<bool> &result) {
-            if (!result.value) {
-              SaveFailedEvents(local_events, 1);
-            }
-          });
-      return;
-    }
+    Log::Debug("Flushing " + std::to_string(local_events.size()) + " event(s)");
 
     std::weak_ptr<NetworkService> weak_net = network_;
-    AsyncHelper::RunInBackground([this, weak_net, local_events]() {
+    async_helper_->RunInBackground([this, weak_net, local_events]() {
       USE_REF(weak_net, shared_net);
-
-      shared_net->SendEvents(
-          local_events,
-          [&, local_events](const NetworkResult<bool> &result) {
-            if (!result.value) {
-              SaveFailedEvents(local_events, 1);
-            }
-          });
+      SendEvents(shared_net, local_events);
     });
   }
 
   void StartBackgroundFlusher() {
     std::weak_ptr<NetworkService> weak_net = network_;
-    AsyncHelper::RunInBackground([this, weak_net] {
+
+    async_helper_->RunInBackground([this, weak_net] {
+      time_t last_attempt = Time::now();
+
       while (!has_been_shutdown_.load()) {
-        AsyncHelper::Sleep(logging_interval_ms_);
+        if (Time::now() - last_attempt < logging_interval_ms_) {
+          AsyncHelper::Sleep(5);
+          continue;
+        }
 
         if (has_been_shutdown_.load()) {
           break;
         }
-        USE_REF(weak_net, shared_net);
+        last_attempt = Time::now();
 
+        USE_REF(weak_net, shared_net);
         Log::Debug("Attempting background flush...");
         Flush();
       }
     });
+  }
+
+  void SendEvents(
+      const std::shared_ptr<NetworkService> &network,
+      const std::vector<StatsigEventInternal> &events
+  ) {
+    network->SendEvents(
+        events,
+        [&, events](const NetworkResult<bool> &result) {
+
+          if (!result.value) {
+            Log::Debug("Events failed to send " + std::to_string(events.size())
+                           + " event(s). Will try again next session.");
+            SaveFailedEvents(events, 1);
+          } else {
+            Log::Debug(std::to_string(events.size()) + " event(s) successfully sent");
+          }
+        });
   }
 };
 

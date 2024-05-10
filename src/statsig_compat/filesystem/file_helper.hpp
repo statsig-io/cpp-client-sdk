@@ -27,11 +27,12 @@ class FileHelper {
   }
 
   static void WriteStringToFile(
+      const std::string &sdk_key,
       const std::string &content,
       const std::string &path,
       const std::function<void(bool)> &callback
   ) {
-    AsyncHelper::RunInBackground([content, path, callback] {
+    AsyncHelper::Get(sdk_key)->RunInBackground([content, path, callback]() {
       auto actual_path = fs::path(path);
 
       std::ofstream file(actual_path);

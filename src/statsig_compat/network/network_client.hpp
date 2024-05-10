@@ -85,6 +85,12 @@ class NetworkClient {
     return instance;
   }
 
+  static void Reset() {
+    GetInstance()._test_func_ = [&](const auto) {
+      return HttpResponse{"{}", 200};
+    };
+  }
+
   std::function<HttpResponse(HttpRequest)> _test_func_;
 
  private:

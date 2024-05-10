@@ -7,6 +7,7 @@
 #include "evaluation_details_internal.hpp"
 #include "statsig_compat/async/async_helper.hpp"
 #include "statsig_compat/primitives/string.hpp"
+#include "statsig_compat/output_logger/log.hpp"
 #include "macros.hpp"
 #include "diagnostics.hpp"
 
@@ -28,6 +29,7 @@ namespace statsig {
 namespace /* private */ {
 using namespace statsig::internal;
 using AsyncHelper = statsig_compatibility::AsyncHelper;
+using Log = statsig_compatibility::Log;
 }
 
 StatsigClient &StatsigClient::Shared() {
@@ -55,6 +57,8 @@ StatsigResultCode StatsigClient::InitializeSync(
   context_ = std::make_shared<StatsigContext>(actual_key, user, options);
 
   return EB(context_, ([this, &actual_key, &user, &options] {
+    AsyncHelper::Get(actual_key)->Start();
+
     auto diag = Diagnostics::Get(actual_key);
     diag->Mark(markers::OverallStart());
 
@@ -80,7 +84,9 @@ void StatsigClient::InitializeAsync(
   }
   context_ = std::make_shared<StatsigContext>(actual_key, user, options);
 
-  EBR(context_, callback, ([this, &actual_key,  &callback]() {
+  EBR(context_, callback, ([this, &actual_key, &callback]() {
+    AsyncHelper::Get(actual_key)->Start();
+
     auto diag = Diagnostics::Get(actual_key);
     diag->Mark(markers::OverallStart());
 
@@ -118,7 +124,7 @@ StatsigResultCode StatsigClient::UpdateUserSync(const StatsigUser &user) {
     context_->err_boundary.HandleBadResult(tag, result.code, result.extra);
 
     std::weak_ptr<StatsigContext> weak_ctx = context_;
-    AsyncHelper::RunInBackground([weak_ctx, result]() {
+    AsyncHelper::Get(context_->sdk_key)->RunInBackground([weak_ctx, result]() {
       USE_REF(weak_ctx, shared_ctx);
 
       shared_ctx->data_adapter->GetDataAsync(
@@ -149,7 +155,7 @@ void StatsigClient::UpdateUserAsync(
 
     const auto initiator = context_->user;
     std::weak_ptr<StatsigContext> weak_ctx = context_;
-    AsyncHelper::RunInBackground([weak_ctx, tag, initiator, result, callback]() {
+    AsyncHelper::Get(context_->sdk_key)->RunInBackground([weak_ctx, tag, initiator, result, callback]() {
       USE_REF(weak_ctx, shared_ctx);
 
       const auto inner_callback =
@@ -177,18 +183,36 @@ void StatsigClient::UpdateUserAsync(
   }));
 }
 
-void StatsigClient::Shutdown() {
-  INIT_GUARD();
+StatsigResultCode StatsigClient::Shutdown(const time_t timeout_ms) {
+  INIT_GUARD(ClientUninitialized);
 
-  EB(context_, ([this]() {
+  Log::Debug("Shutting down StatsigClient with timeout_ms: " + std::to_string(timeout_ms));
+  const auto start = Time::now();
+  const auto tag = __func__;
+  const auto result = EB(context_, ([this, timeout_ms, start, tag]() {
     context_->logger.Shutdown();
     Diagnostics::Shutdown(context_->sdk_key);
     ErrorBoundary::Shutdown(context_->sdk_key);
+    const auto thread_shutdown = AsyncHelper::Get(context_->sdk_key)->Shutdown(timeout_ms);
 
-    context_.reset();
+    const auto end = Time::now();
+    const auto duration = end - start;
+    const auto duration_str = std::to_string(duration);
+    Log::Debug("StatsigClient shutdown in " + duration_str + "ms");
 
-    return Ok;
+    if (!thread_shutdown && duration > constants::kShutdownTimeoutErrorThresholdMs) {
+      context_->err_boundary.HandleBadResult(
+          tag,
+          ShutdownFailureDanglingThreads,
+          std::unordered_map<std::string, std::string>{{constants::kShutdownTimeoutExtra, duration_str}}
+      );
+    }
+
+    return thread_shutdown ? Ok : ShutdownFailureDanglingThreads;
   }));
+
+  context_.reset();
+  return result;
 }
 
 void StatsigClient::Flush() {

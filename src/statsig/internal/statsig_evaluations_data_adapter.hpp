@@ -30,6 +30,7 @@ ReadFromCacheFile(const std::string &cache_key) {
 }
 
 void WriteToCacheFile(
+    const std::string &sdk_key,
     const std::string &cache_key,
     const DataAdapterResult &result,
     const std::function<void(StatsigResultCode)> &callback
@@ -38,7 +39,7 @@ void WriteToCacheFile(
 
   auto serialized = Json::Serialize(result);
   if (serialized.code == Ok && serialized.value.has_value()) {
-    File::WriteToCache(cache_key, serialized.value.value(), [callback](bool success) {
+    File::WriteToCache(sdk_key, cache_key, serialized.value.value(), [callback](bool success) {
       callback(success ? Ok : FileFailureDataAdapterResult);
     });
   }
@@ -97,6 +98,7 @@ class StatsigEvaluationsDataAdapter : public EvaluationsDataAdapter {
 
       if (latest.value->source == ValueSource::Network) {
         WriteToCacheFile(
+            sdk_key,
             cache_key,
             latest.value.value(),
             [latest, callback, sdk_key](StatsigResultCode result) {

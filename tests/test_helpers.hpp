@@ -45,3 +45,14 @@ inline std::string Trim(const std::string &in) {
   out.erase(std::remove_if(out.begin(), out.end(), ::isspace), out.end());
   return out;
 }
+
+namespace fs = std::filesystem;
+inline void WipeAllCaching() {
+  const auto dir = "/tmp/statsig_cpp_client";
+  if (fs::exists(dir)) {
+    return;
+  }
+
+  fs::remove_all(dir);
+}
+

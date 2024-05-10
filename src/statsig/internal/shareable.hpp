@@ -35,6 +35,12 @@ class Shareable {
     instances_.erase(sdk_key);
   }
 
+#ifdef STATSIG_TESTS
+  std::unordered_map<string, std::shared_ptr<T>> GetInstances() {
+    return instances_;
+  }
+#endif
+
  private:
   std::unordered_map<string, std::shared_ptr<T>> instances_;
   std::mutex mutex_;

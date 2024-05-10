@@ -35,6 +35,7 @@ class StatsigContext {
           this->options.data_adapter
               .value_or(new StatsigEvaluationsDataAdapter())
       ) {
+
     data_adapter->Attach(this->sdk_key, this->options);
 
     if (this->options.output_logger_level.has_value()) {

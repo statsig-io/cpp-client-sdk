@@ -10,14 +10,15 @@ class File {
   using FileHelper = statsig_compatibility::FileHelper;
 
   static void WriteToCache(
-      const string &key,
+      const string &sdk_key,
+      const string &cache_key,
       const string &content,
       const std::function<void(bool)> &callback
   ) {
     FileHelper::EnsureCacheDirectoryExists();
 
-    auto path = FileHelper::CombinePath(FileHelper::GetCacheDir(), key);
-    FileHelper::WriteStringToFile(content, path, callback);
+    auto path = FileHelper::CombinePath(FileHelper::GetCacheDir(), cache_key);
+    FileHelper::WriteStringToFile(sdk_key, content, path, callback);
   }
 
   static void DeleteFromCache(const string &key) {

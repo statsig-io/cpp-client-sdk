@@ -59,11 +59,15 @@ class ErrorBoundary {
       return false;
     }
 
+    if (code == ShutdownFailureDanglingThreads && !MapGetOrNull(extra, constants::kShutdownTimeoutExtra).has_value()) {
+      return false;
+    }
+
     if (code == NetworkFailureBadStatusCode && !MapGetOrNull(extra, constants::kBadNetworkErr).has_value()) {
       return false;
     }
 
-    LogError(tag, ErrorFromResultCode(code, extra));
+    LogError(tag, ErrorFromResultCode(code, extra), extra);
 
     return true;
   }
@@ -80,7 +84,7 @@ class ErrorBoundary {
     }
     catch (const std::exception &error) {
       try {
-        LogError(tag, error.what());
+        LogError(tag, error.what(), std::nullopt);
       }
       catch (std::exception &) {
         // noop
@@ -144,7 +148,8 @@ class ErrorBoundary {
 
   void LogError(
       const string &tag,
-      const string &error
+      const string &error,
+      const std::optional<std::unordered_map<std::string, std::string>> &extra
   ) {
     const auto st = sdk_key_;
     const auto ss = seen_;
@@ -156,7 +161,7 @@ class ErrorBoundary {
 
     seen_.insert(error);
 
-    ErrorBoundaryRequestArgs body{tag, error, GetStackTrace()};
+    ErrorBoundaryRequestArgs body{tag, error, GetStackTrace(), extra};
 
     std::unordered_map<string, string> headers{
         {"STATSIG-API-KEY", sdk_key_},
@@ -171,13 +176,16 @@ class ErrorBoundary {
         return;
       }
 
-      NetworkClient::Post(
-          {eb_api,
-           "/v1/sdk_exception",
-           headers,
-           serialized.value.value()
-          },
-          [](auto) {});
+      std::thread{[headers, serialized] {
+        NetworkClient::Post(
+            {eb_api,
+             "/v1/sdk_exception",
+             headers,
+             serialized.value.value()
+            },
+            [](auto) {});
+      }}.detach();
+
 #ifndef STATSIG_UNREAL_PLUGIN
     }
     catch (std::exception &) {

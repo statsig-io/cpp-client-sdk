@@ -13,6 +13,10 @@ StatsigResult<std::string> Serialize(const internal::ErrorBoundaryRequestArgs &a
       {"info", args.info},
   };
 
+  if (args.extra.has_value()) {
+    j["extra"] = args.extra.value();
+  }
+
   return {Ok, j.dump()};
 }
 

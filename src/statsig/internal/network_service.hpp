@@ -7,6 +7,7 @@
 #include "initialize_response.hpp"
 #include "json_parser.hpp"
 #include "statsig_compat/network/network_client.hpp"
+#include "statsig_compat/output_logger/log.hpp"
 #include "statsig_compat/constants/constants.h"
 #include "unordered_map_util.hpp"
 #include "diagnostics.hpp"
@@ -34,6 +35,7 @@ std::unordered_map<int, bool> retryable_codes_{
 class NetworkService {
   using string = std::string;
   using InitializeResponse = data::InitializeResponse;
+  using Log = statsig_compatibility::Log;
 
  public:
   explicit NetworkService(
@@ -189,7 +191,11 @@ class NetworkService {
     const auto is_initialize = endpoint == constants::kEndpointInitialize;
     if (is_initialize) { diagnostics_->Mark(markers::NetworkStart(attempt)); }
 
+    const auto start = Time::now();
     Post(endpoint, body, [&, endpoint, body, max_attempts, attempt, callback](HttpResponse response) {
+      const auto end = Time::now();
+      Log::Debug("Request to " + endpoint + " completed. Status " + std::to_string(response.status) + ". Time " + std::to_string(end - start) + "ms");
+
       if (is_initialize) {
         diagnostics_->Mark(markers::NetworkEnd(
             attempt,
@@ -219,8 +225,8 @@ class NetworkService {
       const string &endpoint,
       const std::string &body,
       const std::function<void(HttpResponse)> &callback) {
-    const auto a = options_.api;
     auto api = options_.api.value_or(constants::kDefaultApi);
+    Log::Debug("Making post request to " + api + endpoint);
 
     NetworkClient::Post(
         {

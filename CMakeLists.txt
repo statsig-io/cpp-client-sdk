@@ -30,3 +30,4 @@ target_link_libraries(${PROJECT_NAME} PUBLIC ${ZLIB_LIBRARIES})
 # Json
 include(cmake/json.cmake)
 target_link_libraries(${PROJECT_NAME} PUBLIC nlohmann_json::nlohmann_json)
+

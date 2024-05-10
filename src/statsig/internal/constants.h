@@ -31,5 +31,7 @@ const int kMaxDiagnosticsMarkers = 30;
 
 // Error Reporting
 const std::string kBadNetworkErr = "NetworkError_";
+const std::string kShutdownTimeoutExtra = "ShutdownTimeout";
+const int kShutdownTimeoutErrorThresholdMs = 2000;
 
 }

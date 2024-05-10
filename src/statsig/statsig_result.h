@@ -25,6 +25,7 @@ enum StatsigResultCode {
   FileFailureDataAdapterResult,
   FileFailureStableID,
   FileFailureRetryableEventPayload,
+  ShutdownFailureDanglingThreads,
 };
 
 inline StatsigResultCode operator|(StatsigResultCode a, StatsigResultCode b) {
@@ -54,6 +55,7 @@ inline std::string ResultCodeToString(StatsigResultCode code) {
     case FileFailureDataAdapterResult:return "FileFailureDataAdapterResult";
     case FileFailureStableID: return "FileFailureStableID";
     case FileFailureRetryableEventPayload: return "FileFailureRetryableEventPayload";
+    case ShutdownFailureDanglingThreads: return "ShutdownFailureDanglingThreads";
   }
 
   return std::to_string(code);
