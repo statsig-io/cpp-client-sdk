@@ -10,7 +10,6 @@
 
 namespace statsig {
 
-typedef std::string String;
 typedef std::optional<String> OptString;
 
 struct StatsigUser {

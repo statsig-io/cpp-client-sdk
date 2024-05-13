@@ -3,6 +3,7 @@
 #include "hashing.hpp"
 #include "../statsig_user.h"
 #include "statsig_compat/primitives/string.hpp"
+#include <numeric>
 
 namespace statsig::internal {
 

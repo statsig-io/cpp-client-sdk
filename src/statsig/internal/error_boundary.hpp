@@ -11,6 +11,7 @@
 #include "unordered_map_util.hpp"
 #include "error_boundary_request_args.h"
 #include "shareable.hpp"
+#include "statsig_compat/async/async_helper.hpp"
 #include "statsig_compat/output_logger/log.hpp"
 
 #ifndef STATSIG_UNREAL_PLUGIN
@@ -59,11 +60,13 @@ class ErrorBoundary {
       return false;
     }
 
-    if (code == ShutdownFailureDanglingThreads && !MapGetOrNull(extra, constants::kShutdownTimeoutExtra).has_value()) {
+    if (code == ShutdownFailureDanglingThreads && !MapGetOrNull(
+        extra, constants::kShutdownTimeoutExtra).has_value()) {
       return false;
     }
 
-    if (code == NetworkFailureBadStatusCode && !MapGetOrNull(extra, constants::kBadNetworkErr).has_value()) {
+    if (code == NetworkFailureBadStatusCode && !MapGetOrNull(
+        extra, constants::kBadNetworkErr).has_value()) {
       return false;
     }
 
@@ -75,7 +78,8 @@ class ErrorBoundary {
   StatsigResultCode Capture(
       const string &tag,
       const std::function<StatsigResultCode()> &task,
-      const std::optional<std::function<void(StatsigResultCode)>> &recover = std::nullopt
+      const std::optional<std::function<void(StatsigResultCode)>> &recover =
+      std::nullopt
   ) {
     StatsigResultCode code;
 #ifndef STATSIG_UNREAL_PLUGIN
@@ -137,7 +141,8 @@ class ErrorBoundary {
 
   static std::string ErrorFromResultCode(
       StatsigResultCode code,
-      const std::optional<std::unordered_map<std::string, std::string>> &extra) {
+      const std::optional<std::unordered_map<std::string, std::string>> &
+      extra) {
     auto custom = MapGetOrNull(extra, constants::kBadNetworkErr);
     if (custom.has_value()) {
       return custom.value();
@@ -157,7 +162,8 @@ class ErrorBoundary {
       return;
     }
 
-    statsig_compatibility::Log::Error("An unexpected exception occurred. " + error);
+    statsig_compatibility::Log::Error(
+        "An unexpected exception occurred. " + error);
 
     seen_.insert(error);
 
@@ -176,15 +182,16 @@ class ErrorBoundary {
         return;
       }
 
-      std::thread{[headers, serialized] {
-        NetworkClient::Post(
-            {eb_api,
-             "/v1/sdk_exception",
-             headers,
-             serialized.value.value()
-            },
-            [](auto) {});
-      }}.detach();
+      statsig_compatibility::AsyncHelper::Get(sdk_key_)->RunInBackground(
+          [headers, serialized]() {
+            NetworkClient::Post(
+                {eb_api,
+                 "/v1/sdk_exception",
+                 headers,
+                 serialized.value.value()
+                },
+                [](auto) {});
+          });
 
 #ifndef STATSIG_UNREAL_PLUGIN
     }

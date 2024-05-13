@@ -194,7 +194,8 @@ class NetworkService {
     const auto start = Time::now();
     Post(endpoint, body, [&, endpoint, body, max_attempts, attempt, callback](HttpResponse response) {
       const auto end = Time::now();
-      Log::Debug("Request to " + endpoint + " completed. Status " + std::to_string(response.status) + ". Time " + std::to_string(end - start) + "ms");
+      Log::Debug("Request to " + endpoint + " completed. Status " + std::to_string(response.status) + ". Time "
+                     + std::to_string(end - start) + "ms");
 
       if (is_initialize) {
         diagnostics_->Mark(markers::NetworkEnd(
@@ -225,7 +226,7 @@ class NetworkService {
       const string &endpoint,
       const std::string &body,
       const std::function<void(HttpResponse)> &callback) {
-    auto api = options_.api.value_or(constants::kDefaultApi);
+    std::string api = FromCompat(options_.api.value_or(constants::kDefaultApi));
     Log::Debug("Making post request to " + api + endpoint);
 
     NetworkClient::Post(
