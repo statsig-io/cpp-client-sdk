@@ -156,8 +156,6 @@ class ErrorBoundary {
       const string &error,
       const std::optional<std::unordered_map<std::string, std::string>> &extra
   ) {
-    const auto st = sdk_key_;
-    const auto ss = seen_;
     if (seen_.find(error) != seen_.end()) {
       return;
     }

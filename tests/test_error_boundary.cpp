@@ -3,14 +3,15 @@
 #include "gtest/gtest.h"
 #include "nlohmann/json.hpp"
 
-#include "statsig_compat/network/network_client.hpp"
 #include "statsig/statsig.h"
 #include "test_helpers.hpp"
+
+#include "statsig_compat/network/network_client.hpp"
 
 using namespace statsig;
 using namespace statsig::internal;
 
- class ErrorBoundaryTest : public ::testing::Test {
+class ErrorBoundaryTest : public ::testing::Test {
  protected:
   StatsigOptions options_;
   std::string sdk_key_ = "client-key";
@@ -90,7 +91,6 @@ TEST_F(ErrorBoundaryTest, YesErrorBoundary5xx) {
   auto result = this->Run();
 
   EXPECT_EQ(result, NetworkFailureBadStatusCode);
-
 
   EXPECT_EQ(requests_[0]["path"], "/v1/sdk_exception");
   EXPECT_EQ(requests_[0]["body"]["exception"], "NetworkError_590");
