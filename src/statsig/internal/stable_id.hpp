@@ -15,29 +15,33 @@ class StableID {
   using string = std::string;
 
  public:
-  explicit StableID(string sdk_key) : sdk_key_(std::move(sdk_key)) {}
+  explicit StableID(string sdk_key, StatsigOptions &options) :
+      sdk_key_(std::move(sdk_key)),
+      options_(options) {}
 
   string Get() {
     if (stable_id_.has_value()) {
       return stable_id_.value();
     }
 
-    stable_id_ = File::ReadFromCache(constants::kStableIdKey);
+    stable_id_ = File::ReadFromCache(options_, constants::kStableIdKey);
     if (stable_id_.has_value()) {
       return stable_id_.value();
     }
 
     auto key = sdk_key_;
     auto id = UUID::v4();
-    File::WriteToCache(sdk_key_, constants::kStableIdKey, id, [key](bool success) {
-      if (success) {
-        return;
-      }
+    File::WriteToCache(
+        sdk_key_, options_, constants::kStableIdKey, id,
+        [key](bool success) {
+          if (success) {
+            return;
+          }
 
-      if (const auto eb = ErrorBoundary::Get(key)) {
-        eb->HandleBadResult(kWriteTag, FileFailureStableID, std::nullopt);
-      }
-    });
+          if (const auto eb = ErrorBoundary::Get(key)) {
+            eb->HandleBadResult(kWriteTag, FileFailureStableID, std::nullopt);
+          }
+        });
     stable_id_ = id;
     return id;
   }
@@ -45,6 +49,7 @@ class StableID {
  private:
   std::optional<std::string> stable_id_;
   std::string sdk_key_;
+  StatsigOptions &options_;
 };
 
 }

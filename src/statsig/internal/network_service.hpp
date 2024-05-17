@@ -47,7 +47,7 @@ class NetworkService {
         diagnostics_(Diagnostics::Get(sdk_key)),
         err_boundary_(ErrorBoundary(sdk_key)),
         session_id_(UUID::v4()),
-        stable_id_(sdk_key) {}
+        stable_id_(sdk_key, options) {}
 
   void FetchValues(
       const StatsigUser &user,

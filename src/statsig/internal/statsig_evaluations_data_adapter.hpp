@@ -15,8 +15,11 @@ namespace statsig::internal {
 namespace /* private */ {
 
 StatsigResult<DataAdapterResult>
-ReadFromCacheFile(const std::string &cache_key) {
-  auto data = File::ReadFromCache(cache_key);
+ReadFromCacheFile(
+    const StatsigOptions &options,
+    const std::string &cache_key
+) {
+  auto data = File::ReadFromCache(options, cache_key);
   if (!data.has_value()) {
     return {Ok, std::nullopt};
   }
@@ -31,15 +34,16 @@ ReadFromCacheFile(const std::string &cache_key) {
 
 void WriteToCacheFile(
     const std::string &sdk_key,
+    const StatsigOptions &options,
     const std::string &cache_key,
     const DataAdapterResult &result,
     const std::function<void(StatsigResultCode)> &callback
 ) {
-  File::RunCacheEviction(constants::kCachedEvaluationsPrefix);
+  File::RunCacheEviction(options, constants::kCachedEvaluationsPrefix);
 
   auto serialized = Json::Serialize(result);
   if (serialized.code == Ok && serialized.value.has_value()) {
-    File::WriteToCache(sdk_key, cache_key, serialized.value.value(), [callback](bool success) {
+    File::WriteToCache(sdk_key, options, cache_key, serialized.value.value(), [callback](bool success) {
       callback(success ? Ok : FileFailureDataAdapterResult);
     });
   }
@@ -56,6 +60,7 @@ class StatsigEvaluationsDataAdapter : public EvaluationsDataAdapter {
       StatsigOptions &options
   ) override {
     sdk_key_ = sdk_key;
+    options_ = options;
     network_ = new NetworkService(sdk_key, options);
   }
 
@@ -69,7 +74,7 @@ class StatsigEvaluationsDataAdapter : public EvaluationsDataAdapter {
       return {Ok, result};
     }
 
-    auto cache = ReadFromCacheFile(cache_key);
+    auto cache = ReadFromCacheFile(GetStatsigOptions(), cache_key);
     if (cache.code == Ok && cache.value.has_value()) {
       AddToInMemoryCache(cache_key, cache.value.value());
       return {Ok, cache.value};
@@ -99,6 +104,7 @@ class StatsigEvaluationsDataAdapter : public EvaluationsDataAdapter {
       if (latest.value->source == ValueSource::Network) {
         WriteToCacheFile(
             sdk_key,
+            GetStatsigOptions(),
             cache_key,
             latest.value.value(),
             [latest, callback, sdk_key](StatsigResultCode result) {
@@ -129,6 +135,8 @@ class StatsigEvaluationsDataAdapter : public EvaluationsDataAdapter {
 
  private:
   std::optional<std::string> sdk_key_;
+  std::optional<StatsigOptions> options_;
+
   std::unordered_map<std::string, DataAdapterResult> in_memory_cache_ = {};
   NetworkService *network_;
 
@@ -144,6 +152,10 @@ class StatsigEvaluationsDataAdapter : public EvaluationsDataAdapter {
 
     std::cerr << "[Statsig]: StatsigEvaluationsDataAdapter is not attached to a Client. " << std::endl;
     return "";
+  }
+
+  StatsigOptions GetStatsigOptions() {
+    return options_.value_or(StatsigOptions());
   }
 
   void AddToInMemoryCache(const std::string &cache_key,

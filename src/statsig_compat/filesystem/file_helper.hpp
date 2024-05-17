@@ -6,7 +6,9 @@
 #include <fstream>
 
 #include "statsig/internal/constants.h"
+#include "statsig/statsig_options.h"
 #include "../async/async_helper.hpp"
+#include "../primitives/file_path.hpp"
 
 namespace statsig_compatibility {
 
@@ -16,26 +18,26 @@ using namespace statsig::constants;
 
 class FileHelper {
  public:
-  static std::string GetCacheDir() {
-    return kCacheDirectory;
+  static statsig::FilePath GetCacheDir(const statsig::StatsigOptions &options) {
+    return options.cache_directory.value_or(kCacheDirectory);
   }
 
-  static std::string CombinePath(const std::string &left,
-                                 const std::string &right) {
-    auto path = fs::path(left) / fs::path(right);
-    return path.string();
+  static statsig::FilePath CombinePath(
+      const statsig::FilePath &left,
+      const statsig::FilePath &right
+  ) {
+    auto path = left / right;
+    return path;
   }
 
   static void WriteStringToFile(
       const std::string &sdk_key,
       const std::string &content,
-      const std::string &path,
+      const statsig::FilePath &path,
       const std::function<void(bool)> &callback
   ) {
     AsyncHelper::Get(sdk_key)->RunInBackground([content, path, callback]() {
-      auto actual_path = fs::path(path);
-
-      std::ofstream file(actual_path);
+      std::ofstream file(path);
       file << content;
       file.close();
 
@@ -44,9 +46,8 @@ class FileHelper {
   }
 
   static std::optional<std::string> ReadStringToFile(
-      const std::string &path
+      const statsig::FilePath &path
   ) {
-    auto actual_path = fs::path(path);
     if (!fs::exists(path)) {
       return std::nullopt;
     }
@@ -58,22 +59,26 @@ class FileHelper {
     return content;
   }
 
-  static void EnsureCacheDirectoryExists() {
-    if (fs::exists(kCacheDirectory)) {
+  static void EnsureCacheDirectoryExists(
+      const statsig::StatsigOptions &options
+  ) {
+    if (fs::exists(GetCacheDir(options))) {
       return;
     }
-    fs::create_directory(kCacheDirectory);
+    fs::create_directories(GetCacheDir(options));
   }
 
-  static void DeleteFile(const std::string &path) {
-    auto actual_path = fs::path(path);
-    fs::remove(actual_path);
+  static void DeleteFile(const statsig::FilePath &path) {
+    fs::remove(path);
   }
 
-  static std::vector<std::string> GetCachePathsSortedYoungestFirst(const std::string &prefix) {
+  static std::vector<statsig::FilePath> GetCachePathsSortedYoungestFirst(
+      const statsig::StatsigOptions &options,
+      const std::string &prefix
+  ) {
     std::vector<fs::path> paths;
 
-    for (const auto &entry : fs::directory_iterator(kCacheDirectory)) {
+    for (const auto &entry : fs::directory_iterator(GetCacheDir(options))) {
       if (!entry.is_regular_file()) {
         continue;
       }
@@ -90,18 +95,7 @@ class FileHelper {
            return fs::last_write_time(left) > fs::last_write_time(right);
          });
 
-    std::vector<std::string> result;
-    result.reserve(paths.size());
-
-    std::transform(
-        paths.begin(),
-        paths.end(),
-        std::back_inserter(result),
-        [](const fs::path &p) -> std::string {
-          return p.string();
-        });
-
-    return result;
+    return paths;
   }
 };
 

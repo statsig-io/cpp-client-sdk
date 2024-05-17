@@ -1,6 +1,7 @@
 #pragma once
 
 #include "statsig_compat/filesystem/file_helper.hpp"
+#include "statsig/statsig_options.h"
 
 namespace statsig::internal {
 
@@ -11,31 +12,42 @@ class File {
 
   static void WriteToCache(
       const string &sdk_key,
+      const StatsigOptions &options,
       const string &cache_key,
       const string &content,
       const std::function<void(bool)> &callback
   ) {
-    FileHelper::EnsureCacheDirectoryExists();
+    FileHelper::EnsureCacheDirectoryExists(options);
 
-    auto path = FileHelper::CombinePath(FileHelper::GetCacheDir(), cache_key);
+    auto path = FileHelper::CombinePath(FileHelper::GetCacheDir(options),  cache_key);
     FileHelper::WriteStringToFile(sdk_key, content, path, callback);
   }
 
-  static void DeleteFromCache(const string &key) {
-    FileHelper::EnsureCacheDirectoryExists();
-    auto path = FileHelper::CombinePath(FileHelper::GetCacheDir(), key);
+  static void DeleteFromCache(
+      const StatsigOptions &options,
+      const string &cache_key
+  ) {
+    FileHelper::EnsureCacheDirectoryExists(options);
+
+    auto path = FileHelper::CombinePath(FileHelper::GetCacheDir(options), cache_key);
     FileHelper::DeleteFile(path);
   }
 
-  static std::optional<string> ReadFromCache(const string &key) {
-    FileHelper::EnsureCacheDirectoryExists();
+  static std::optional<string> ReadFromCache(
+      const StatsigOptions &options,
+      const string &cache_key
+  ) {
+    FileHelper::EnsureCacheDirectoryExists(options);
 
-    auto path = FileHelper::CombinePath(FileHelper::GetCacheDir(), key);
+    auto path = FileHelper::CombinePath(FileHelper::GetCacheDir(options), cache_key);
     return FileHelper::ReadStringToFile(path);
   }
 
-  static void RunCacheEviction(const std::string &prefix) {
-    auto paths = FileHelper::GetCachePathsSortedYoungestFirst(prefix);
+  static void RunCacheEviction(
+      const StatsigOptions &options,
+      const std::string &prefix
+  ) {
+    auto paths = FileHelper::GetCachePathsSortedYoungestFirst(options, prefix);
 
     if (paths.size() < constants::kMaxCachedEvaluationsCount) {
       return;

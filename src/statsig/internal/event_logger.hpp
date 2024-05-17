@@ -83,7 +83,7 @@ class EventLogger {
   ) {
     std::vector<RetryableEventPayload> failures;
     const auto key = GetFailedEventCacheKey();
-    const auto cache = File::ReadFromCache(key);
+    const auto cache = File::ReadFromCache(options_, key);
     if (cache.has_value()) {
       auto parsed = Json::Deserialize<std::vector<RetryableEventPayload>>(
           cache.value());
@@ -99,7 +99,7 @@ class EventLogger {
     auto serialized = Json::Serialize(failures);
     if (serialized.code == Ok && serialized.value.has_value()) {
       const auto sdk_key = sdk_key_;
-      File::WriteToCache(sdk_key_, key, serialized.value.value(), [sdk_key](bool success) {
+      File::WriteToCache(sdk_key_, options_, key, serialized.value.value(), [sdk_key](bool success) {
         if (success) {
           return;
         }
@@ -115,7 +115,7 @@ class EventLogger {
     std::weak_ptr<NetworkService> weak_net = network_;
     async_helper_->RunInBackground([&, weak_net] {
       const auto key = GetFailedEventCacheKey();
-      const auto cache = File::ReadFromCache(key);
+      const auto cache = File::ReadFromCache(options_, key);
       if (!cache.has_value()) {
         return;
       }
@@ -124,7 +124,7 @@ class EventLogger {
           RetryableEventPayload>>(
           cache.value());
 
-      File::DeleteFromCache(key);
+      File::DeleteFromCache(options_, key);
 
       if (failures.code != Ok || !failures.value.has_value()) {
         return;

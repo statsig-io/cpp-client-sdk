@@ -4,6 +4,7 @@
 #include <optional>
 
 #include "statsig_compat/primitives/string.hpp"
+#include "statsig_compat/primitives/file_path.hpp"
 
 #include "evaluations_data_adapter.h"
 #include "log_level.h"
@@ -22,6 +23,8 @@ struct StatsigOptions {
   std::optional<int> logging_max_buffer_size{};
 
   std::optional<StatsigEnvironment> environment{};
+
+  std::optional<FilePath> cache_directory;
 };
 
 }
