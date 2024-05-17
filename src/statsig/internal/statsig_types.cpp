@@ -26,9 +26,18 @@ JsonObject Experiment::GetValues() {
   return GetSafeJsonObject(value_);
 }
 
+std::optional<String> Experiment::GetGroupName() {
+  return group_name_;
+}
+
 std::optional<JsonValue> Layer::GetValue(const std::string &parameter_name) {
   log_param_exposure_(parameter_name);
   return GetJsonValueFromJsonObject(parameter_name, value_);
 }
+
+std::optional<String> Layer::GetGroupName() {
+  return group_name_;
+}
+
 
 }

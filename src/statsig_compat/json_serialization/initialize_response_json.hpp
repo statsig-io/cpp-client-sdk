@@ -33,6 +33,11 @@ statsig::data::ConfigEvaluation FromJson(const nlohmann::json &j) {
   j.at("rule_id").get_to(e.rule_id);
   j.at("secondary_exposures").get_to(e.secondary_exposures);
   e.value = JsonValue(j["value"]);
+
+  if (j.contains("group_name")) {
+    e.group_name = j["group_name"].get<std::string>();
+  }
+
   return e;
 }
 
@@ -49,6 +54,10 @@ statsig::data::LayerEvaluation FromJson(const nlohmann::json &j) {
   e.value = JsonValue(j["value"]);
   j.at("explicit_parameters").get_to(e.explicit_parameters);
   j.at("undelegated_secondary_exposures").get_to(e.undelegated_secondary_exposures);
+
+  if (j.contains("group_name")) {
+    e.group_name = j["group_name"].get<std::string>();
+  }
 
   if (j.contains("allocated_experiment_name")) {
     e.allocated_experiment_name = j["allocated_experiment_name"].get<std::string>();

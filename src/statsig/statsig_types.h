@@ -42,10 +42,12 @@ class EvaluatedSpec : public BaseSpec {
   EvaluatedSpec(
       String name,
       String rule_id,
+      std::optional<String> group_name,
       EvaluationDetails evaluation_details,
       T value)
       : BaseSpec(name, rule_id, evaluation_details),
-        value_(std::move(value)) {}
+        value_(std::move(value)),
+        group_name_(group_name) {}
 
   EvaluatedSpec(
       String name,
@@ -53,6 +55,7 @@ class EvaluatedSpec : public BaseSpec {
 
  protected:
   T value_;
+  std::optional<String> group_name_;
 };
 
 class FeatureGate : public EvaluatedSpec<bool> {
@@ -73,6 +76,8 @@ class Experiment : public EvaluatedSpec<JsonObject> {
  public:
   JsonObject GetValues();
 
+  std::optional<String> GetGroupName();
+
   using EvaluatedSpec::EvaluatedSpec;
 };
 
@@ -83,13 +88,16 @@ class Layer : public EvaluatedSpec<JsonObject> {
   Layer(
       const String &name,
       const String &rule_id,
+      const std::optional<String> &group_name,
       const EvaluationDetails &evaluation_details,
       const JsonObject &value,
       const std::function<void(const std::string &)> &log_param_exposure)
-      : EvaluatedSpec(name, rule_id, evaluation_details, value),
+      : EvaluatedSpec(name, rule_id, group_name, evaluation_details, value),
         log_param_exposure_(log_param_exposure) {
   }
   using EvaluatedSpec::EvaluatedSpec;
+
+  std::optional<String> GetGroupName();
 
   std::optional<JsonValue> GetValue(const std::string &parameter_name);
 

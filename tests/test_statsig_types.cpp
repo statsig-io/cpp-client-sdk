@@ -12,7 +12,7 @@ TEST(EvaluatedSpecTest, ConstructorWithBoolValue) {
   EvaluationDetails evaluation_details{"reason_1", 123, 456};
   bool value = true;
 
-  FeatureGate feature_gate(name, rule_id, evaluation_details, value);
+  FeatureGate feature_gate(name, rule_id, std::nullopt, evaluation_details, value);
 
   EXPECT_EQ(feature_gate.GetName(), name);
   EXPECT_EQ(feature_gate.GetRuleId(), rule_id);
@@ -29,7 +29,7 @@ TEST(EvaluatedSpecTest, ConstructorWithJsonValue) {
   std::string rule_id = "rule_1";
   EvaluationDetails evaluation_details{"reason_2", 789, 101112};
   auto value = JsonValue({{"key1", "value1"}, {"key2", 2}});
-  DynamicConfig dynamic_config(name, rule_id, evaluation_details, value);
+  DynamicConfig dynamic_config(name, rule_id, std::nullopt, evaluation_details, value);
 
   EXPECT_EQ(dynamic_config.GetName(), name);
   EXPECT_EQ(dynamic_config.GetRuleId(), rule_id);
@@ -49,13 +49,15 @@ TEST(EvaluatedSpecTest, ConstructorWithJsonValue) {
 TEST(EvaluatedSpecTest, ConstructorWithJsonObjValue) {
   std::string name = "test_spec";
   std::string rule_id = "rule_1";
+  std::string group_name = "TEST GROUP";
   EvaluationDetails evaluation_details{"reason_3", 131415, 161718};
   auto value = JsonValue({{"key1", "value1"}, {"key2", 2}});
 
-  Experiment experiment(name, rule_id, evaluation_details, value);
+  Experiment experiment(name, rule_id, group_name, evaluation_details, value);
 
   EXPECT_EQ(experiment.GetName(), name);
   EXPECT_EQ(experiment.GetRuleId(), rule_id);
+  EXPECT_EQ(experiment.GetGroupName(), group_name);
   EXPECT_EQ(experiment.GetEvaluationDetails().reason,
             evaluation_details.reason);
   EXPECT_EQ(experiment.GetEvaluationDetails().lcut, evaluation_details.lcut);
@@ -84,7 +86,7 @@ TEST(EvaluatedSpecTest, GetValueFromLayer) {
     }
   };
 
-  Layer layer(name, rule_id, evaluation_details, value, log_param_exposure);
+  Layer layer(name, rule_id, std::nullopt, evaluation_details, value, log_param_exposure);
   auto retrieved_value = layer.GetValue(parameter_name);
 
   EXPECT_EQ(retrieved_value, value[parameter_name]);

@@ -30,6 +30,19 @@ namespace /* private */ {
 using namespace statsig::internal;
 using AsyncHelper = statsig_compatibility::AsyncHelper;
 using Log = statsig_compatibility::Log;
+
+template<typename T>
+std::optional<String> GetCompatGroupName(T evaluation) {
+  const auto group_name_actual = UNWRAP(evaluation, group_name);
+  std::optional<String> group_name = std::nullopt;
+  if (group_name_actual.has_value()) {
+    group_name = ToCompat(group_name_actual.value());
+  }
+
+  return group_name;
+}
+
+
 }
 
 StatsigClient &StatsigClient::Shared() {
@@ -261,6 +274,7 @@ FeatureGate StatsigClient::GetFeatureGate(const String &gate_name) {
     result = FeatureGate(
         gate_name,
         ToCompat(UNWRAP(gate.evaluation, rule_id)),
+        std::nullopt,
         gate.details,
         UNWRAP(gate.evaluation, value)
     );
@@ -291,6 +305,7 @@ DynamicConfig StatsigClient::GetDynamicConfig(const String &config_name) {
     result = DynamicConfig(
         config_name,
         ToCompat(UNWRAP(config.evaluation, rule_id)),
+        std::nullopt,
         config.details,
         UNWRAP(config.evaluation, value)
     );
@@ -320,6 +335,7 @@ Experiment StatsigClient::GetExperiment(const String &experiment_name) {
     result = Experiment(
         experiment_name,
         ToCompat(UNWRAP(experiment.evaluation, rule_id)),
+        GetCompatGroupName(experiment.evaluation),
         experiment.details,
         UNWRAP(experiment.evaluation, value)
     );
@@ -341,9 +357,9 @@ Layer StatsigClient::GetLayer(const String &layer_name) {
     const auto layer_name_actual = FromCompat(layer_name);
     const auto layer = context_->store.GetLayer(layer_name_actual);
 
-    auto log_exposure = [layer_name_actual, layer, user, logger](const std::
-    string &
-    param_name) {
+    auto log_exposure = [layer_name_actual, layer, user, logger](
+        const std::string &param_name
+    ) {
       auto expo = internal::MakeLayerParamExposure(
           layer_name_actual,
           param_name,
@@ -356,6 +372,7 @@ Layer StatsigClient::GetLayer(const String &layer_name) {
     result = Layer(
         layer_name,
         ToCompat(UNWRAP(layer.evaluation, rule_id)),
+        GetCompatGroupName(layer.evaluation),
         layer.details,
         UNWRAP(layer.evaluation, value),
         log_exposure
