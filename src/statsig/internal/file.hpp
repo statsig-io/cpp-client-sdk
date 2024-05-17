@@ -1,7 +1,7 @@
 #pragma once
 
 #include "statsig_compat/filesystem/file_helper.hpp"
-#include "statsig/statsig_options.h"
+#include "../statsig_options.h"
 
 namespace statsig::internal {
 
@@ -19,7 +19,7 @@ class File {
   ) {
     FileHelper::EnsureCacheDirectoryExists(options);
 
-    auto path = FileHelper::CombinePath(FileHelper::GetCacheDir(options),  cache_key);
+    auto path = FileHelper::CombinePath(FileHelper::GetCacheDir(options),  ToCompat(cache_key));
     FileHelper::WriteStringToFile(sdk_key, content, path, callback);
   }
 
@@ -29,7 +29,7 @@ class File {
   ) {
     FileHelper::EnsureCacheDirectoryExists(options);
 
-    auto path = FileHelper::CombinePath(FileHelper::GetCacheDir(options), cache_key);
+    auto path = FileHelper::CombinePath(FileHelper::GetCacheDir(options), ToCompat(cache_key));
     FileHelper::DeleteFile(path);
   }
 
@@ -39,7 +39,7 @@ class File {
   ) {
     FileHelper::EnsureCacheDirectoryExists(options);
 
-    auto path = FileHelper::CombinePath(FileHelper::GetCacheDir(options), cache_key);
+    auto path = FileHelper::CombinePath(FileHelper::GetCacheDir(options), ToCompat(cache_key));
     return FileHelper::ReadStringToFile(path);
   }
 
