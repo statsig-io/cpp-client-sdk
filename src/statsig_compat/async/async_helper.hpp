@@ -185,7 +185,11 @@ class AsyncHelper {
 
       while (!shutdown_condition->load()) {
         if (statsig::internal::Time::now() - last_attempt < timer_interval_ms) {
-          std::this_thread::sleep_for(std::chrono::milliseconds(timer_interval_ms));
+          // Allow a fast wakeup during shutdown by sleeping in increments.
+          const time_t sleep_start = statsig::internal::Time::now();
+          do {
+            std::this_thread::sleep_for(std::chrono::milliseconds(max_interval_sleep_time_ms));
+          } while (!shutdown_condition->load() && statsig::internal::Time::now() - sleep_start < timer_interval_ms);
           continue;
         }
 
@@ -220,6 +224,7 @@ class AsyncHelper {
 #endif
 
  private:
+  static constexpr int max_interval_sleep_time_ms = 10;
   static statsig::internal::Shareable<AsyncHelper> shareable_;
   ThreadPool thread_pool_{};
 };
