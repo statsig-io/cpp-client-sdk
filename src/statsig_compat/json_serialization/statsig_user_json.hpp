@@ -11,19 +11,19 @@ namespace statsig::data_types::statsig_user {
 #define OPT_STR_FROM_JSON(jsonObj, fieldName, target) do { if (jsonObj.contains(fieldName)) { target = jsonObj[fieldName].get<std::string>(); } } while(0)
 #define OPT_STR_MAP_FROM_JSON(jsonObj, fieldName, target) do { if (jsonObj.contains(fieldName)) { target = jsonObj[fieldName].get<std::unordered_map<std::string, std::string>>(); } } while(0)
 
-nlohmann::json EnvToJson(const StatsigEnvironment &e) {
+inline nlohmann::json EnvToJson(const StatsigEnvironment &e) {
   auto j = nlohmann::json{};
   OPT_TO_JSON(j, tier, e.tier);
   return j;
 }
 
-StatsigEnvironment EnvFromJson(const nlohmann::json &j) {
+inline StatsigEnvironment EnvFromJson(const nlohmann::json &j) {
   StatsigEnvironment u;
   OPT_STR_FROM_JSON(j, "tier", u.tier);
   return u;
 }
 
-nlohmann::json ToJson(const StatsigUser &u) {
+inline nlohmann::json ToJson(const StatsigUser &u) {
   auto j = nlohmann::json{};
 
   if (!u.custom_ids.empty()) {
@@ -47,7 +47,7 @@ nlohmann::json ToJson(const StatsigUser &u) {
   return j;
 }
 
-StatsigUser FromJson(const nlohmann::json &j) {
+inline StatsigUser FromJson(const nlohmann::json &j) {
   StatsigUser u;
   u.user_id = j.value("userID", "");
   u.custom_ids = j.value("customIDs", std::unordered_map<std::string, std::string>());
@@ -68,11 +68,11 @@ StatsigUser FromJson(const nlohmann::json &j) {
   return u;
 }
 
-StatsigResult<std::string> Serialize(const StatsigUser &user) {
+inline StatsigResult<std::string> Serialize(const StatsigUser &user) {
   return {Ok, ToJson(user).dump()};
 }
 
-StatsigResult<StatsigUser> Deserialize(const std::string &input) {
+inline StatsigResult<StatsigUser> Deserialize(const std::string &input) {
   try {
     auto j = nlohmann::json::parse(input);
     auto user = FromJson(j);
