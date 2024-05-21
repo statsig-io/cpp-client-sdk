@@ -2,11 +2,8 @@
 
 #include <functional>
 
-#include "internal/shareable.hpp"
+#include "statsig/internal/shareable.hpp"
 #include "statsig_compat/defines/module_definitions.h"
-
-#include "Misc/CoreDelegates.h"
-#include "Templates/Function.h"
 
 namespace statsig_compatibility {
 

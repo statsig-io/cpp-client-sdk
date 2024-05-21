@@ -1,11 +1,12 @@
 #pragma once
 
-#include <functional>
 #include <atomic>
-#include <thread>
-#include <queue>
-#include <mutex>
 #include <condition_variable>
+#include <functional>
+#include <mutex>
+#include <optional>
+#include <queue>
+#include <thread>
 #include <vector>
 
 #include "../output_logger/log.hpp"
@@ -222,7 +223,5 @@ class AsyncHelper {
   static statsig::internal::Shareable<AsyncHelper> shareable_;
   ThreadPool thread_pool_{};
 };
-
-statsig::internal::Shareable<AsyncHelper> AsyncHelper::shareable_ = statsig::internal::Shareable<AsyncHelper>();
 
 }

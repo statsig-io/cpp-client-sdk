@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../evaluation_details.h"
-#include "evaluations_data_adapter.h"
+#include "../evaluations_data_adapter.h"
 #include "statsig_compat/primitives/string.hpp"
 
 namespace statsig::internal::evaluation_details {
