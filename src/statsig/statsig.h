@@ -1,7 +1,5 @@
 #pragma once
 
-#include <optional>
-
 #include "statsig_result.h"
 #include "statsig_user.h"
 #include "statsig_types.h"

@@ -11,6 +11,7 @@
 #include "../output_logger/log.hpp"
 #include "../primitives/string.hpp"
 #include "statsig/internal/shareable.hpp"
+#include "statsig/internal/time.hpp"
 
 namespace statsig_compatibility {
 
@@ -121,6 +122,43 @@ class ThreadPool {
   }
 };
 
+class BackgroundTimerHandle final {
+public:
+  BackgroundTimerHandle() = default;
+
+  BackgroundTimerHandle(const BackgroundTimerHandle&) = delete;
+  BackgroundTimerHandle& operator=(const BackgroundTimerHandle&) = delete;
+
+  BackgroundTimerHandle(BackgroundTimerHandle&& Other) {
+    shutdown_condition = std::move(Other.shutdown_condition);
+    Other.shutdown_condition = nullptr;
+  }
+
+  BackgroundTimerHandle& operator=(BackgroundTimerHandle&& Other) {
+    shutdown_condition = std::move(Other.shutdown_condition);
+    Other.shutdown_condition = nullptr;
+    return *this;
+  }
+
+  BackgroundTimerHandle(const std::shared_ptr<std::atomic<bool>>& in_shutdown_condition)
+    : shutdown_condition(in_shutdown_condition) {
+  }
+
+  ~BackgroundTimerHandle() {
+    Reset();
+  }
+
+  void Reset() {
+    if (shutdown_condition) {
+      shutdown_condition->store(true);
+      shutdown_condition = nullptr;
+    }
+  }
+
+private:
+  std::shared_ptr<std::atomic<bool>> shutdown_condition;
+};
+
 class AsyncHelper {
  public:
   static std::shared_ptr<AsyncHelper> Get(const std::string &sdk_key) {
@@ -134,12 +172,34 @@ class AsyncHelper {
     return new_instance;
   }
 
-  static void Sleep(const time_t duration_ms) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(duration_ms));
-  }
-
   void RunInBackground(const std::function<void()> &task) {
     thread_pool_.Add(task);
+  }
+
+  BackgroundTimerHandle StartBackgroundTimer(const std::function<void()>& task, int timer_interval_ms) {
+    std::shared_ptr<std::atomic<bool>> shutdown_condition = std::make_shared<std::atomic<bool>>(false);
+
+    thread_pool_.Add([task, shutdown_condition, timer_interval_ms](){
+      time_t last_attempt = statsig::internal::Time::now();
+
+      while (!shutdown_condition->load()) {
+        if (statsig::internal::Time::now() - last_attempt < timer_interval_ms) {
+          std::this_thread::sleep_for(std::chrono::milliseconds(timer_interval_ms));
+          continue;
+        }
+
+        if (shutdown_condition->load()) {
+          break;
+        }
+        last_attempt = statsig::internal::Time::now();
+
+        if (task) {
+          task();
+        }
+      }
+    });
+
+    return BackgroundTimerHandle(shutdown_condition);
   }
 
   void Start() {

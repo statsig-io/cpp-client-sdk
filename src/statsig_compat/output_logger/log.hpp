@@ -36,6 +36,4 @@ public:
   }
 };
 
-LogLevel Log::level = LogLevel::Error;
-
 }

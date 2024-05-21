@@ -1,8 +1,10 @@
 #pragma once
 
-#include <utility>
+#include <optional>
 #include <unordered_map>
+#include <utility>
 
+#include "statsig_compat/primitives/map.hpp"
 #include "statsig_compat/primitives/string.hpp"
 
 namespace statsig {

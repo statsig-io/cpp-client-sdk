@@ -1,37 +1,41 @@
 #pragma once
 
+#include <string>
+
+#include "statsig_compat/defines/module_definitions.h"
+
 namespace statsig::constants {
 
 // Statsig Metadata
-inline const char *kSdkVersion = "0.0.5";
+static const char *kSdkVersion = "0.0.5";
 
 // HTTP Endpoints
-inline const char *kEndpointInitialize = "/v1/initialize";
-inline const char *kEndpointLogEvent = "/v1/rgstr";
+static const char *kEndpointInitialize = "/v1/initialize";
+static const char *kEndpointLogEvent = "/v1/rgstr";
 
 // HTTP Misc
-inline const char *kContentTypeJson = "application/json";
-inline const char *kDefaultApi = "https://statsigapi.net";
-inline const int kInitializeRetryCount = 3;
-inline const int kLogEventRetryCount = 2;
+static const char *kContentTypeJson = "application/json";
+static const char *kDefaultApi = "https://statsigapi.net";
+static const int kInitializeRetryCount = 3;
+static const int kLogEventRetryCount = 2;
 
 // Caching
-inline const char *kCachedEvaluationsPrefix = "statsig.cached.evaluations.";
-inline const char *kStableIdKey = "stable_id";
-inline const int kMaxCachedEvaluationsCount = 10;
-inline const char *kCacheDirectory = "/tmp/statsig_cpp_client";
+static const char *kCachedEvaluationsPrefix = "statsig.cached.evaluations.";
+static const char *kStableIdKey = "stable_id";
+static const int kMaxCachedEvaluationsCount = 10;
+static const char *kCacheDirectory = "/tmp/statsig_cpp_client";
 
 // Logging
-inline const char *kCachedFailedEventPayloadPrefix = "statsig.failed_events.";
-inline const int kFailedEventPayloadRetryCount = 3;
-inline const int kMaxCachedFailedEventPayloadsCount = 5;
-inline const int kLoggingIntervalMs = 10000;
-inline const int kMaxQueuedEvents = 50;
-inline const int kMaxDiagnosticsMarkers = 30;
+static const char *kCachedFailedEventPayloadPrefix = "statsig.failed_events.";
+static const int kFailedEventPayloadRetryCount = 3;
+static const int kMaxCachedFailedEventPayloadsCount = 5;
+static const int kLoggingIntervalMs = 10000;
+static const int kMaxQueuedEvents = 50;
+static const int kMaxDiagnosticsMarkers = 30;
 
 // Error Reporting
-const std::string kBadNetworkErr = "NetworkError_";
-const std::string kShutdownTimeoutExtra = "ShutdownTimeout";
-inline const int kShutdownTimeoutErrorThresholdMs = 2000;
+STATSIG_EXPORT extern const std::string kBadNetworkErr;
+STATSIG_EXPORT extern const std::string kShutdownTimeoutExtra;
+static const int kShutdownTimeoutErrorThresholdMs = 2000;
 
 }

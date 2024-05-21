@@ -11,7 +11,7 @@ typedef nlohmann::json JsonValue;
 typedef nlohmann::ordered_json JsonObject;
 
 inline JsonValue GetJsonValueFromJsonObject(
-    const std::string &key,
+    const String &key,
     const JsonObject &object) {
   if (object.is_object()) {
     return object[key];

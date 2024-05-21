@@ -1,6 +1,8 @@
 #pragma once
 
 #include <string>
+#include <unordered_map>
+
 #include "../statsig_user.h"
 
 namespace statsig::internal {

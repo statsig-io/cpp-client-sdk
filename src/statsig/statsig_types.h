@@ -4,12 +4,13 @@
 #include <functional>
 
 #include "evaluation_details.h"
+#include "statsig_compat/defines/module_definitions.h"
 #include "statsig_compat/primitives/json_value.hpp"
 #include "statsig_compat/primitives/string.hpp"
 
 namespace statsig {
 
-class BaseSpec {
+class STATSIG_EXPORT BaseSpec {
  public:
   String GetName();
 
@@ -58,21 +59,21 @@ class EvaluatedSpec : public BaseSpec {
   std::optional<String> group_name_;
 };
 
-class FeatureGate : public EvaluatedSpec<bool> {
+class STATSIG_EXPORT FeatureGate : public EvaluatedSpec<bool> {
  public:
   bool GetValue();
 
   using EvaluatedSpec::EvaluatedSpec;
 };
 
-class DynamicConfig : public EvaluatedSpec<JsonObject> {
+class STATSIG_EXPORT DynamicConfig : public EvaluatedSpec<JsonObject> {
  public:
   JsonObject GetValues();
 
   using EvaluatedSpec::EvaluatedSpec;
 };
 
-class Experiment : public EvaluatedSpec<JsonObject> {
+class STATSIG_EXPORT Experiment : public EvaluatedSpec<JsonObject> {
  public:
   JsonObject GetValues();
 
@@ -81,7 +82,7 @@ class Experiment : public EvaluatedSpec<JsonObject> {
   using EvaluatedSpec::EvaluatedSpec;
 };
 
-class Layer : public EvaluatedSpec<JsonObject> {
+class STATSIG_EXPORT Layer : public EvaluatedSpec<JsonObject> {
   friend class StatsigClient;
 
  public:

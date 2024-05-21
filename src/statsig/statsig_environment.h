@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include "statsig_compat/primitives/string.hpp"
 
 namespace statsig {

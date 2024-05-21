@@ -1,10 +1,12 @@
 #pragma once
 
 #include "../evaluation_details.h"
+#include "evaluations_data_adapter.h"
+#include "statsig_compat/primitives/string.hpp"
 
 namespace statsig::internal::evaluation_details {
 
-String GetValueSourceString(const ValueSource &source) {
+inline String GetValueSourceString(const ValueSource &source) {
   switch (source) {
     case ValueSource::Uninitialized:return "Uninitialized";
     case ValueSource::Loading:return "Loading";
@@ -24,11 +26,11 @@ struct SourceInfo {
   time_t received_at;
 };
 
-EvaluationDetails Uninitialized() {
+inline EvaluationDetails Uninitialized() {
   return {"Uninitialized", 0, 0};
 }
 
-EvaluationDetails UnrecognizedFromSourceInfo(SourceInfo info) {
+inline EvaluationDetails UnrecognizedFromSourceInfo(SourceInfo info) {
   auto result = GetValueSourceString(info.source);
 
   if (info.source == ValueSource::Uninitialized || info.source == ValueSource::NoValues) {
@@ -38,7 +40,7 @@ EvaluationDetails UnrecognizedFromSourceInfo(SourceInfo info) {
   return {result + ":Unrecognized", info.lcut, info.received_at};
 }
 
-EvaluationDetails RecognizedFromSourceInfo(SourceInfo info) {
+inline EvaluationDetails RecognizedFromSourceInfo(SourceInfo info) {
   auto result = GetValueSourceString(info.source);
   return {result + ":Recognized", info.lcut, info.received_at};
 }

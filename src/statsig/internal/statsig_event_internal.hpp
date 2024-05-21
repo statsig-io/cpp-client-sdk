@@ -1,10 +1,12 @@
 #pragma once
 
 #include <string>
-#include "statsig_user_internal.hpp"
+
+#include "../statsig_event.h"
+#include "detailed_evaluation.h"
 #include "initialize_response.hpp"
 #include "macros.hpp"
-#include "detailed_evaluation.h"
+#include "statsig_user_internal.hpp"
 #include "time.hpp"
 
 namespace statsig::internal {
@@ -34,7 +36,7 @@ struct RetryableEventPayload {
   std::vector<StatsigEventInternal> events;
 };
 
-inline StatsigEventInternal InternalizeEvent(StatsigEvent event,
+inline StatsigEventInternal InternalizeEvent(const StatsigEvent &event,
                                              const StatsigUser &user) {
   StatsigEventInternal result;
   result.event_name = FromCompat(event.event_name);

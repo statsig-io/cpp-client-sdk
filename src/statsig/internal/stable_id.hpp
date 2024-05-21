@@ -4,6 +4,7 @@
 
 #include "file.hpp"
 #include "error_boundary.hpp"
+#include "uuid.hpp"
 
 namespace statsig::internal {
 
@@ -49,7 +50,7 @@ class StableID {
  private:
   std::optional<std::string> stable_id_;
   std::string sdk_key_;
-  StatsigOptions &options_;
+  StatsigOptions options_;
 };
 
 }

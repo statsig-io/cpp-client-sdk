@@ -4,15 +4,16 @@
 #include <unordered_map>
 #include <utility>
 
-#include "json_parser.hpp"
 #include "constants.h"
-#include "statsig_compat/network/network_client.hpp"
-#include "statsig_compat/constants/constants.h"
-#include "unordered_map_util.hpp"
 #include "error_boundary_request_args.h"
+#include "json_parser.hpp"
 #include "shareable.hpp"
 #include "statsig_compat/async/async_helper.hpp"
+#include "statsig_compat/constants/constants.h"
+#include "statsig_compat/defines/module_definitions.h"
+#include "statsig_compat/network/network_client.hpp"
 #include "statsig_compat/output_logger/log.hpp"
+#include "unordered_map_util.hpp"
 
 #ifndef STATSIG_UNREAL_PLUGIN
 #ifdef __unix__
@@ -108,7 +109,7 @@ class ErrorBoundary {
   }
 
  private:
-  static Shareable<ErrorBoundary> shareable_;
+  STATSIG_EXPORT static Shareable<ErrorBoundary> shareable_;
 
   string sdk_key_;
   std::set<string> seen_;
@@ -199,7 +200,5 @@ class ErrorBoundary {
 #endif
   }
 };
-
-Shareable<ErrorBoundary> ErrorBoundary::shareable_ = Shareable<ErrorBoundary>();
 
 }
