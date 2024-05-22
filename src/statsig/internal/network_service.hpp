@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+#include <unordered_map>
 #include <utility>
 
 #include "statsig_internal.h"
@@ -110,7 +112,7 @@ class NetworkService {
 
  private:
   string sdk_key_;
-  StatsigOptions &options_;
+  StatsigOptions options_;
   std::shared_ptr<Diagnostics> diagnostics_;
   ErrorBoundary err_boundary_;
   string session_id_;
@@ -131,13 +133,14 @@ class NetworkService {
   }
 
   std::unordered_map<string, string> GetHeaders() {
-    return {
+    std::unordered_map<string, string> headers(GetDefaultPlatformHeaders());
+    headers.merge(std::unordered_map<string, string>{
         {"STATSIG-API-KEY", sdk_key_},
         {"STATSIG-CLIENT-TIME", std::to_string(Time::now())},
         {"STATSIG-SERVER-SESSION-ID", session_id_},
         {"STATSIG-SDK-TYPE", statsig_compatibility::constants::kSdkType},
-        {"STATSIG-SDK-VERSION", constants::kSdkVersion},
-        {"Accept-Encoding", "gzip"}};
+        {"STATSIG-SDK-VERSION", constants::kSdkVersion}});
+    return headers;
   }
 
   std::unordered_map<string, string> GetStatsigMetadata() {

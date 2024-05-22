@@ -2,12 +2,17 @@
 
 #include <functional>
 #include <optional>
-#include <utility>
+#include <string>
+#include <unordered_map>
 
 #include "httplib.h"
 #include "statsig/internal/constants.h"
 
 namespace statsig::internal {
+
+inline std::unordered_map<std::string, std::string> GetDefaultPlatformHeaders() {
+  return {{"Accept-Encoding", "gzip"}};
+}
 
 struct HttpResponse {
   const std::string text;

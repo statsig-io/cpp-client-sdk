@@ -6,7 +6,6 @@
 #include "statsig_compat/primitives/string.hpp"
 #include "statsig_compat/primitives/file_path.hpp"
 
-#include "evaluations_data_adapter.h"
 #include "log_level.h"
 #include "statsig_environment.h"
 

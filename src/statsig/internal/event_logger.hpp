@@ -4,16 +4,20 @@
 #include <utility>
 
 #include "statsig_compat/async/async_helper.hpp"
-
+#include "statsig_compat/output_logger/log.hpp"
+#include "statsig_compat/platform/platform_events_helper.hpp"
 #include "statsig_event_internal.hpp"
 #include "macros.hpp"
+#include "network_service.hpp"
 #include "constants.h"
-#include "statsig_compat/output_logger/log.hpp"
 
 namespace statsig::internal {
 
 class EventLogger {
   using AsyncHelper = statsig_compatibility::AsyncHelper;
+  using BackgroundTimerHandle = statsig_compatibility::BackgroundTimerHandle;
+  using PlatformEventsHelper = statsig_compatibility::PlatformEventsHelper;
+  using PlatformEventRegistrationHandle = statsig_compatibility::PlatformEventRegistrationHandle;
   using Log = statsig_compatibility::Log;
 
  public:
@@ -25,7 +29,6 @@ class EventLogger {
       : sdk_key_(std::move(sdk_key)),
         options_(options),
         network_(std::make_shared<NetworkService>(network)),
-        has_been_shutdown_(false),
         max_buffer_size_(
             options.logging_max_buffer_size.value_or(
                 constants::kMaxQueuedEvents)),
@@ -33,10 +36,10 @@ class EventLogger {
             options.logging_interval_ms.value_or(constants::kLoggingIntervalMs)) {
     RetryFailedEvents();
     StartBackgroundFlusher();
+    RegisterPlatformEventHandlers();
   }
 
   ~EventLogger() {
-    has_been_shutdown_.store(true);
   }
 
   void Enqueue(const StatsigEventInternal &event) {
@@ -54,7 +57,9 @@ class EventLogger {
 
   void Shutdown() {
     Log::Debug("Shutting down EventLogger");
-    has_been_shutdown_.store(true);
+    background_flusher_handle_.Reset();
+    application_will_deactivate_handle_.Reset();
+    application_will_enter_background_handle_.Reset();
 
     WRITE_LOCK(rw_lock_);
     FlushImpl();
@@ -71,11 +76,14 @@ class EventLogger {
   std::shared_ptr<NetworkService> network_;
   std::shared_mutex rw_lock_;
   std::vector<StatsigEventInternal> events_;
-  std::atomic<bool> has_been_shutdown_;
   int max_buffer_size_;
   int logging_interval_ms_;
   std::shared_ptr<Diagnostics> diagnostics_ = Diagnostics::Get(sdk_key_);
   std::shared_ptr<AsyncHelper> async_helper_ = AsyncHelper::Get(sdk_key_);
+  std::shared_ptr<PlatformEventsHelper> platform_events_helper_ = PlatformEventsHelper::Get(sdk_key_);
+  BackgroundTimerHandle background_flusher_handle_;
+  PlatformEventRegistrationHandle application_will_deactivate_handle_;
+  PlatformEventRegistrationHandle application_will_enter_background_handle_;
 
   void SaveFailedEvents(
       std::vector<StatsigEventInternal> events,
@@ -171,24 +179,26 @@ class EventLogger {
   void StartBackgroundFlusher() {
     std::weak_ptr<NetworkService> weak_net = network_;
 
-    async_helper_->RunInBackground([this, weak_net] {
-      time_t last_attempt = Time::now();
+    background_flusher_handle_ = async_helper_->StartBackgroundTimer([this, weak_net] {
+      USE_REF(weak_net, shared_net);
+      Log::Debug("Attempting background flush...");
+      Flush();
+    }, logging_interval_ms_);
+  }
 
-      while (!has_been_shutdown_.load()) {
-        if (Time::now() - last_attempt < logging_interval_ms_) {
-          AsyncHelper::Sleep(5);
-          continue;
-        }
+  void RegisterPlatformEventHandlers() {
+    std::weak_ptr<NetworkService> weak_net = network_;
 
-        if (has_been_shutdown_.load()) {
-          break;
-        }
-        last_attempt = Time::now();
+    application_will_deactivate_handle_ = platform_events_helper_->RegisterOnApplicationWillDeactivateCallback([this, weak_net] {
+      USE_REF(weak_net, shared_net);
+      Log::Debug("Flushing due to application deactivation...");
+      Flush();
+    });
 
-        USE_REF(weak_net, shared_net);
-        Log::Debug("Attempting background flush...");
-        Flush();
-      }
+    application_will_enter_background_handle_ = platform_events_helper_->RegisterOnApplicationWillEnterBackgroundCallback([this, weak_net] {
+      USE_REF(weak_net, shared_net);
+      Log::Debug("Flushing due to application entering background...");
+      Flush();
     });
   }
 

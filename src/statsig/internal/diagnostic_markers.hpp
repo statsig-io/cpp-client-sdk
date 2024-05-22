@@ -1,6 +1,9 @@
 #pragma once
 
+#include "../evaluation_details.h"
+#include "../statsig_result.h"
 #include "statsig_compat/primitives/json_value.hpp"
+#include "time.hpp"
 
 namespace statsig::internal::markers {
 

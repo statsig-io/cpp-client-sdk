@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <optional>
+#include <unordered_map>
 
 namespace statsig::internal {
 

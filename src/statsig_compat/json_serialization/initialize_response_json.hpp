@@ -8,7 +8,7 @@ namespace statsig::data_types {
 
 namespace gate_evaluation {
 
-statsig::data::GateEvaluation FromJson(const nlohmann::json &j) {
+inline statsig::data::GateEvaluation FromJson(const nlohmann::json &j) {
   statsig::data::GateEvaluation e;
 
   j.at("name").get_to(e.name);
@@ -27,7 +27,7 @@ statsig::data::GateEvaluation FromJson(const nlohmann::json &j) {
 
 namespace config_evaluation {
 
-statsig::data::ConfigEvaluation FromJson(const nlohmann::json &j) {
+inline statsig::data::ConfigEvaluation FromJson(const nlohmann::json &j) {
   statsig::data::ConfigEvaluation e;
   j.at("name").get_to(e.name);
   j.at("rule_id").get_to(e.rule_id);
@@ -45,7 +45,7 @@ statsig::data::ConfigEvaluation FromJson(const nlohmann::json &j) {
 
 namespace layer_evaluation {
 
-statsig::data::LayerEvaluation FromJson(const nlohmann::json &j) {
+inline statsig::data::LayerEvaluation FromJson(const nlohmann::json &j) {
   statsig::data::LayerEvaluation e;
 
   j.at("name").get_to(e.name);
@@ -72,7 +72,7 @@ namespace initialize_response {
 
 using namespace statsig::data;
 
-InitializeResponse FromJson(const nlohmann::json &j) {
+inline InitializeResponse FromJson(const nlohmann::json &j) {
   InitializeResponse response;
 
   using JMap = std::unordered_map<std::string, nlohmann::json>;
@@ -106,7 +106,7 @@ InitializeResponse FromJson(const nlohmann::json &j) {
 //  return ToJson(response).dump();
 //}
 
-StatsigResult<InitializeResponse> Deserialize(const std::string &input) {
+inline StatsigResult<InitializeResponse> Deserialize(const std::string &input) {
   try {
     auto j = nlohmann::json::parse(input);
     return {Ok, FromJson(j)};

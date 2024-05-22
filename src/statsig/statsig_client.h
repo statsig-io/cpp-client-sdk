@@ -1,13 +1,16 @@
 #pragma once
 
+#include <memory>
+
+#include "statsig_compat/defines/module_definitions.h"
 #include "statsig_compat/primitives/string.hpp"
-#include "./statsig.h"
+#include "statsig.h"
 
 namespace statsig {
 
 class StatsigContext;
 
-class StatsigClient {
+class STATSIG_EXPORT StatsigClient {
  public:
   static StatsigClient &Shared();
   StatsigClient();

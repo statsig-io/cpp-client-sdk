@@ -1,9 +1,12 @@
 #pragma once
 
-#include "hashing.hpp"
-#include "../statsig_user.h"
-#include "statsig_compat/primitives/string.hpp"
+#include <algorithm>
 #include <numeric>
+
+#include "../statsig_options.h"
+#include "../statsig_user.h"
+#include "hashing.hpp"
+#include "statsig_compat/primitives/string.hpp"
 
 namespace statsig::internal {
 

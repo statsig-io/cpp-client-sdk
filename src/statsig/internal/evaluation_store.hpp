@@ -3,9 +3,12 @@
 #include <string>
 #include <shared_mutex>
 
-#include "hashing.hpp"
-#include "macros.hpp"
 #include "../evaluations_data_adapter.h"
+#include "detailed_evaluation.h"
+#include "hashing.hpp"
+#include "initialize_response.hpp"
+#include "json_parser.hpp"
+#include "macros.hpp"
 #include "evaluation_details_internal.hpp"
 #include "unordered_map_util.hpp"
 

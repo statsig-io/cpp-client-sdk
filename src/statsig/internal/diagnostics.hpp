@@ -4,11 +4,16 @@
 #include <memory>
 #include <utility>
 #include <optional>
+#include <vector>
 
+#include "../statsig_user.h"
+#include "constants.h"
 #include "diagnostic_markers.hpp"
 #include "macros.hpp"
 #include "shareable.hpp"
+#include "statsig_compat/defines/module_definitions.h"
 #include "statsig_compat/output_logger/log.hpp"
+#include "statsig_event_internal.hpp"
 
 namespace statsig::internal {
 
@@ -76,7 +81,7 @@ class Diagnostics {
   Diagnostics &operator=(const Diagnostics &) = delete;
 
  private:
-  static Shareable<Diagnostics> shareable_;
+  STATSIG_EXPORT static Shareable<Diagnostics> shareable_;
 
   std::vector<JsonValue> markers_;
   std::mutex mutex_;
@@ -84,7 +89,5 @@ class Diagnostics {
 
   explicit Diagnostics() {}
 };
-
-Shareable<Diagnostics> Diagnostics::shareable_ = Shareable<Diagnostics>();
 
 }

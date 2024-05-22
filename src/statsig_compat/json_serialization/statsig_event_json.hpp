@@ -7,7 +7,7 @@ namespace statsig::data_types::statsig_event {
 
 using StatsigEventInternal = internal::StatsigEventInternal;
 
-nlohmann::json ToJson(const StatsigEventInternal &event) {
+inline nlohmann::json ToJson(const StatsigEventInternal &event) {
   auto j = nlohmann::json{
       {"eventName", event.event_name},
       {"time", event.time},
@@ -31,7 +31,7 @@ nlohmann::json ToJson(const StatsigEventInternal &event) {
   return j;
 }
 
-StatsigEventInternal FromJson(const nlohmann::json &json) {
+inline StatsigEventInternal FromJson(const nlohmann::json &json) {
   StatsigEventInternal result;
 
   json.at("eventName").get_to(result.event_name);
