@@ -57,7 +57,7 @@ class EvaluationStore {
 
     values_ = parsed.value;
     source_info_.source = result->source;
-    source_info_.received_at = result->receivedAt;
+    source_info_.received_at = result->received_at;
     source_info_.lcut = values_->time;
 
     return Ok;

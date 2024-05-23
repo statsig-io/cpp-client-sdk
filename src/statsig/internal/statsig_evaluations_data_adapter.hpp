@@ -158,10 +158,15 @@ class StatsigEvaluationsDataAdapter : public EvaluationsDataAdapter {
     return options_.value_or(StatsigOptions());
   }
 
-  void AddToInMemoryCache(const std::string &cache_key,
-                          const DataAdapterResult &result) {
+  void AddToInMemoryCache(
+      const std::string &cache_key,
+      const DataAdapterResult &result
+  ) {
     if (in_memory_cache_.size() < constants::kMaxCachedEvaluationsCount) {
-      in_memory_cache_[cache_key] = result;
+      in_memory_cache_.emplace(
+          cache_key,
+          result
+      );
       return;
     }
 
@@ -169,9 +174,9 @@ class StatsigEvaluationsDataAdapter : public EvaluationsDataAdapter {
     long long oldest_rec_at = MAX_LONG_LONG;
     for (auto it = in_memory_cache_.begin(); it != in_memory_cache_.end(); ++
         it) {
-      if (it->second.receivedAt < oldest_rec_at) {
+      if (it->second.received_at < oldest_rec_at) {
         oldest = it;
-        oldest_rec_at = it->second.receivedAt;
+        oldest_rec_at = it->second.received_at;
       }
     }
 
@@ -179,7 +184,7 @@ class StatsigEvaluationsDataAdapter : public EvaluationsDataAdapter {
       in_memory_cache_.erase(oldest);
     }
 
-    in_memory_cache_[cache_key] = result;
+    in_memory_cache_.emplace(cache_key, result);
   }
 
   void FetchLatest(
@@ -187,29 +192,24 @@ class StatsigEvaluationsDataAdapter : public EvaluationsDataAdapter {
       const std::optional<DataAdapterResult> &current,
       const std::function<void(StatsigResult<DataAdapterResult>)> &callback
   ) {
-    std::optional<std::string> current_data = std::nullopt;
-    if (current.has_value()) {
-      current_data = current->data;
-    }
-
     network_->FetchValues(
         user,
-        current_data,
-        [callback, current_data](
-            NetworkResult<data::InitializeResponse> net_result) {
+        current,
+        [callback, current, user](
+            NetworkResult<data::InitializeResponse> net_result
+        ) {
           if (net_result.code != Ok) {
             callback({net_result.code, std::nullopt, net_result.extra});
             return;
           }
 
-          DataAdapterResult result;
-          result.receivedAt = Time::now();
+          DataAdapterResult result{GetFullUserHash(user), Time::now()};
 
           if (net_result.value->has_updates) {
             result.data = net_result.raw;
             result.source = ValueSource::Network;
           } else {
-            result.data = current_data.value_or("");
+            result.data = current.has_value() ? current->data : "";
             result.source = ValueSource::NetworkNotModified;
           }
 

@@ -3,6 +3,7 @@
 #include <functional>
 #include <optional>
 #include <string>
+#include <utility>
 
 #include "statsig_user.h"
 #include "statsig_options.h"
@@ -23,7 +24,28 @@ enum class ValueSource {
 struct DataAdapterResult {
   ValueSource source;
   std::string data;
-  time_t receivedAt;
+  time_t received_at{};
+  std::string full_user_hash;
+
+  explicit DataAdapterResult(
+      std::string user_hash,
+      time_t received
+  ) : source(ValueSource::Uninitialized),
+      full_user_hash(std::move(user_hash)),
+      received_at(received) {
+  }
+
+  DataAdapterResult(
+      ValueSource src,
+      std::string values_str,
+      time_t received,
+      std::string user_hash
+  ) : source(src),
+      data(values_str),
+      full_user_hash(std::move(user_hash)),
+      received_at(received) {
+  }
+
 };
 
 class EvaluationsDataAdapter {

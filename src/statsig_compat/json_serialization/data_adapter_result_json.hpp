@@ -10,7 +10,8 @@ inline StatsigResult<std::string> Serialize(const DataAdapterResult &res) {
   auto j = nlohmann::json{
       {"source", res.source},
       {"data", res.data},
-      {"receivedAt", res.receivedAt},
+      {"receivedAt", res.received_at},
+      {"fullUserHash", res.full_user_hash}
   };
 
   return {Ok, j.dump()};
@@ -19,10 +20,12 @@ inline StatsigResult<std::string> Serialize(const DataAdapterResult &res) {
 inline StatsigResult<DataAdapterResult> Deserialize(const std::string &input) {
   try {
     auto j = nlohmann::json::parse(input);
-    DataAdapterResult res;
+    DataAdapterResult res{
+        j.at("fullUserHash").get<std::string>(),
+        j.at("receivedAt").get<time_t>()
+    };
     j.at("source").get_to(res.source);
     j.at("data").get_to(res.data);
-    j.at("receivedAt").get_to(res.receivedAt);
     return {Ok, res};
   }
   catch (std::exception &) {

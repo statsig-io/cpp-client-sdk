@@ -53,19 +53,16 @@ class NetworkService {
 
   void FetchValues(
       const StatsigUser &user,
-      const std::optional<std::string> &current,
+      const std::optional<DataAdapterResult> &current,
       const std::function<void(NetworkResult<InitializeResponse>)> &callback) {
     err_boundary_.Capture(__func__, [this, callback, &user, &current]() {
-      auto cache = current.has_value()
-                   ? Json::Deserialize<InitializeResponse>(current.value()).value
-                   : std::nullopt;
-
       auto args = internal::InitializeRequestArgs{
           "djb2",
           user,
           GetStatsigMetadata(),
       };
 
+      const auto cache = DeserializeCacheValueIfValidFor204(user, current);
       if (cache.has_value() && cache->has_updates) {
         args.since_time = cache->time;
       }
@@ -149,6 +146,23 @@ class NetworkService {
         {"sdkVersion", constants::kSdkVersion},
         {"sessionID", session_id_},
         {"stableID", stable_id_.Get()}};
+  }
+
+  static std::optional<InitializeResponse> DeserializeCacheValueIfValidFor204(
+      const StatsigUser &current_user,
+      const std::optional<DataAdapterResult>& cached_result
+  ) {
+    if (!cached_result.has_value()) {
+      return std::nullopt;
+    }
+
+    const auto current_user_hash = GetFullUserHash(current_user);
+    const bool is_match = current_user_hash == cached_result->full_user_hash;
+    if (!is_match) {
+      return std::nullopt;
+    }
+
+    return Json::Deserialize<InitializeResponse>(cached_result->data).value;
   }
 
   static std::function<void(std::optional<HttpResponse> response)>

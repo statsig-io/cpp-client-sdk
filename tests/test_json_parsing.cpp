@@ -102,13 +102,14 @@ TEST(JsonParsingTest, StatsigUserWithEnvDeserialize) {
  * DataAdapterResult
  */
 
-std::string valid_data_adapter_result_json = R"({"data":"{\"foo\":\"bar\"}","receivedAt":1234,"source":4})";
+std::string valid_data_adapter_result_json = R"({"data":"{\"foo\":\"bar\"}","fullUserHash":"8888","receivedAt":1234,"source":4})";
 
 TEST(JsonParsingTest, DataAdapterResultSerialize) {
   auto data_adapter = DataAdapterResult{
       statsig::ValueSource::Network,
       R"({"foo":"bar"})",
-      1234
+      1234,
+      "8888"
   };
 
   auto result = Json::Serialize(data_adapter);

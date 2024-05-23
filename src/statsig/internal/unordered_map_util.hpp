@@ -20,4 +20,25 @@ std::optional<Value> MapGetOrNull(const std::optional<std::unordered_map<Key, Va
   return map.has_value() ? MapGetOrNull(map.value(), key) : std::nullopt;
 }
 
+inline std::string CreateSortedMapString(
+    const std::optional<std::unordered_map<std::string, std::string>> &unordered
+) {
+  if (!unordered.has_value()) {
+    return "";
+  }
+
+  const auto &unwrapped = unordered.value();
+  std::map<std::string, std::string> sorted(
+      unwrapped.begin(),
+      unwrapped.end()
+  );
+
+  std::ostringstream oss;
+  for (const auto &pair : sorted) {
+    oss << pair.first << ":" << pair.second << "|";
+  }
+
+  return oss.str();
+}
+
 }
