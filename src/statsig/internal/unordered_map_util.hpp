@@ -2,6 +2,7 @@
 
 #include <optional>
 #include <unordered_map>
+#include <map>
 
 namespace statsig::internal {
 
@@ -20,19 +21,18 @@ std::optional<Value> MapGetOrNull(const std::optional<std::unordered_map<Key, Va
   return map.has_value() ? MapGetOrNull(map.value(), key) : std::nullopt;
 }
 
-inline std::string CreateSortedMapString(
-    const std::optional<std::unordered_map<std::string, std::string>> &unordered
-) {
+inline std::string CreateSortedMapString(const std::optional<StringMap> &unordered) {
   if (!unordered.has_value()) {
     return "";
   }
 
   const auto &unwrapped = unordered.value();
-  std::map<std::string, std::string> sorted(
-      unwrapped.begin(),
-      unwrapped.end()
-  );
-
+  
+  std::map<std::string, std::string> sorted;
+  for (const auto &[fst, snd] : unwrapped) {
+    sorted.emplace(FromCompat(fst), FromCompat(snd));
+  }
+  
   std::ostringstream oss;
   for (const auto &pair : sorted) {
     oss << pair.first << ":" << pair.second << "|";

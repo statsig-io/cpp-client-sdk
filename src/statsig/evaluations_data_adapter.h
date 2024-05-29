@@ -30,21 +30,20 @@ struct DataAdapterResult {
   explicit DataAdapterResult(
       std::string user_hash,
       time_t received
-  ) : source(ValueSource::Uninitialized),
-      full_user_hash(std::move(user_hash)),
-      received_at(received) {
-  }
+  )
+      : source(ValueSource::Uninitialized),
+        received_at(received),
+        full_user_hash(std::move(user_hash)) {}
 
   DataAdapterResult(
       ValueSource src,
       std::string values_str,
       time_t received,
-      std::string user_hash
-  ) : source(src),
-      data(values_str),
-      full_user_hash(std::move(user_hash)),
-      received_at(received) {
-  }
+      std::string user_hash)
+      : source(src),
+        data(std::move(values_str)),
+        received_at(received),
+        full_user_hash(std::move(user_hash)) {}
 
 };
 
@@ -77,4 +76,3 @@ class EvaluationsDataAdapter {
 };
 
 }
-

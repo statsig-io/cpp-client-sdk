@@ -198,14 +198,15 @@ class StatsigEvaluationsDataAdapter : public EvaluationsDataAdapter {
         [callback, current, user](
             NetworkResult<data::InitializeResponse> net_result
         ) {
-          if (net_result.code != Ok) {
+          if (net_result.code != Ok || !net_result.value.has_value()) {
             callback({net_result.code, std::nullopt, net_result.extra});
             return;
           }
 
           DataAdapterResult result{GetFullUserHash(user), Time::now()};
+          const data::InitializeResponse data = net_result.value.value();
 
-          if (net_result.value->has_updates) {
+          if (data.has_updates) {
             result.data = net_result.raw;
             result.source = ValueSource::Network;
           } else {

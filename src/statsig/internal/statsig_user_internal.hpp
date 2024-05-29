@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <numeric>
 #include <sstream>
+#include <unordered_map>
 
 #include "../statsig_options.h"
 #include "../statsig_user.h"
@@ -10,10 +11,11 @@
 #include "unordered_map_util.hpp"
 #include "statsig_compat/primitives/string.hpp"
 
-#define UNWRAP_STR(opt) ((opt).has_value() ? (opt).value() : (""))
-
 namespace statsig::internal {
 
+inline std::string UnwrapString(const std::optional<String>& input) {
+  return FromCompat(input.value_or(""));
+}
 
 inline StatsigUser NormalizeUser(
     const StatsigUser &user,
@@ -38,21 +40,21 @@ inline StatsigUser NormalizeUser(
 
 inline std::string GetFullUserHash(const StatsigUser &user) {
   std::unordered_map<std::string, std::string> pairs{
-      {"u", UNWRAP_STR(user.user_id)},
+      {"u", UnwrapString(user.user_id)},
       {"ci", CreateSortedMapString(user.custom_ids)},
-      {"e", UNWRAP_STR(user.email)},
-      {"ip", UNWRAP_STR(user.ip)},
-      {"ua", UNWRAP_STR(user.user_agent)},
-      {"ct", UNWRAP_STR(user.country)},
-      {"lc", UNWRAP_STR(user.locale)},
-      {"av", UNWRAP_STR(user.app_version)},
+      {"e", UnwrapString(user.email)},
+      {"ip", UnwrapString(user.ip)},
+      {"ua", UnwrapString(user.user_agent)},
+      {"ct", UnwrapString(user.country)},
+      {"lc", UnwrapString(user.locale)},
+      {"av", UnwrapString(user.app_version)},
       {"cst", CreateSortedMapString(user.custom)},
       {"pa", CreateSortedMapString(user.private_attributes)},
       {"tr", ""}
   };
 
   if (user.statsig_environment.has_value()) {
-    pairs["tr"] = user.statsig_environment.value().tier.value_or("");
+    pairs["tr"] = FromCompat(user.statsig_environment.value().tier.value_or(""));
   }
 
   std::ostringstream oss;

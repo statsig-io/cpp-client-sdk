@@ -180,7 +180,7 @@ class NetworkService {
       diagnostics->Mark(markers::ProcessStart()); // ended in StatsigEvaluationsDataAdapter
 
       if (response->status == 204) {
-        callback({{Ok, {}}});
+        callback({{Ok, InitializeResponse{}}});
         return;
       }
 

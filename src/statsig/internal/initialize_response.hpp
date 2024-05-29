@@ -7,7 +7,7 @@ namespace statsig::data {
 
 typedef std::unordered_map<std::string, std::string> SecondaryExposure;
 
-template<typename T>
+template <typename T>
 struct Evaluation {
   std::string name;
   std::string rule_id;
@@ -34,12 +34,19 @@ struct LayerEvaluation : ConfigEvaluation {
 };
 
 struct InitializeResponse {
-  time_t time = 0;
-  bool has_updates = false;
+  time_t time;
+  bool has_updates;
 
   std::unordered_map<std::string, GateEvaluation> feature_gates;
   std::unordered_map<std::string, ConfigEvaluation> dynamic_configs;
   std::unordered_map<std::string, LayerEvaluation> layer_configs;
+
+  explicit InitializeResponse()
+    : time(0),
+      has_updates(false),
+      feature_gates({}),
+      dynamic_configs({}),
+      layer_configs({}) {}
 };
 
 }

@@ -20,7 +20,7 @@ class File {
   ) {
     FileHelper::EnsureCacheDirectoryExists(options);
 
-    auto path = FileHelper::CombinePath(FileHelper::GetCacheDir(options),  ToCompat(cache_key));
+    const auto path = FileHelper::CombinePath(FileHelper::GetCacheDir(options),  ToCompat(cache_key));
     FileHelper::WriteStringToFile(sdk_key, content, path, callback);
   }
 
