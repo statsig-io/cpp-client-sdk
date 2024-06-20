@@ -51,9 +51,11 @@ void WriteToCacheFile(
 
 }
 
-class StatsigEvaluationsDataAdapter : public EvaluationsDataAdapter {
+class StatsigEvaluationsDataAdapter : public EvaluationsDataAdapter, public std::enable_shared_from_this<StatsigEvaluationsDataAdapter> {
  public:
-  virtual ~StatsigEvaluationsDataAdapter() = default;
+  static std::shared_ptr<StatsigEvaluationsDataAdapter> Create() {
+    return std::shared_ptr<StatsigEvaluationsDataAdapter>(new StatsigEvaluationsDataAdapter());
+  }
 
   void Attach(
       std::string &sdk_key,
@@ -61,7 +63,7 @@ class StatsigEvaluationsDataAdapter : public EvaluationsDataAdapter {
   ) override {
     sdk_key_ = sdk_key;
     options_ = options;
-    network_ = new NetworkService(sdk_key, options);
+    network_ = NetworkService::Create(sdk_key, options);
   }
 
   StatsigResult<DataAdapterResult> GetDataSync(
@@ -89,22 +91,31 @@ class StatsigEvaluationsDataAdapter : public EvaluationsDataAdapter {
       const std::function<void(StatsigResult<DataAdapterResult>)> &callback
   ) override {
     const auto cache = current.has_value() ? current : GetDataSync(user).value;
-    FetchLatest(user, cache, [this, callback, user]
+    const auto weak_self = weak_from_this();
+
+    FetchLatest(user, cache, [weak_self, callback, user]
         (StatsigResult<DataAdapterResult> latest) {
-      const auto cache_key = GetCacheKey(user);
-      const auto sdk_key = GetSdkKey();
+      const auto shared_self = weak_self.lock();
+
+      if (!shared_self) {
+        callback({SharedPointerLost, std::nullopt});
+        return;
+      }
+
+      const auto cache_key = shared_self->GetCacheKey(user);
+      const auto sdk_key = shared_self->GetSdkKey();
 
       if (!latest.value.has_value()) {
         callback({latest.code, std::nullopt, latest.extra});
         return;
       }
 
-      AddToInMemoryCache(cache_key, latest.value.value());
+      shared_self->AddToInMemoryCache(cache_key, latest.value.value());
 
       if (latest.value->source == ValueSource::Network) {
         WriteToCacheFile(
             sdk_key,
-            GetStatsigOptions(),
+            shared_self->GetStatsigOptions(),
             cache_key,
             latest.value.value(),
             [latest, callback, sdk_key](StatsigResultCode result) {
@@ -138,7 +149,9 @@ class StatsigEvaluationsDataAdapter : public EvaluationsDataAdapter {
   std::optional<StatsigOptions> options_;
 
   std::unordered_map<std::string, DataAdapterResult> in_memory_cache_ = {};
-  NetworkService *network_;
+  std::shared_ptr<NetworkService> network_;
+
+  explicit StatsigEvaluationsDataAdapter() {}
 
   std::string GetCacheKey(const StatsigUser &user) {
     const auto key = MakeCacheKey(GetSdkKey(), user);

@@ -57,7 +57,7 @@ class ErrorBoundary {
       const StatsigResultCode &code,
       const std::optional<std::unordered_map<std::string, std::string>> &extra
   ) {
-    if (code == Ok || code == ClientUninitialized || code == InvalidSdkKey) {
+    if (code == Ok || code == ClientUninitialized || code == InvalidSdkKey || code == SharedPointerLost) {
       return false;
     }
 

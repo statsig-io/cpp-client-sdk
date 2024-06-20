@@ -5,6 +5,7 @@
 #define READ_LOCK(rw_lock_) std::shared_lock<std::shared_mutex> lock(rw_lock_)
 #define LOCK(guard_lock_) std::lock_guard<std::mutex> lock(guard_lock_)
 #define USE_REF(weak_ctx, shared_ctx) auto shared_ctx = weak_ctx.lock(); if (!shared_ctx) return
+#define USE_REF_WITH_RETURN(weak_ctx, shared_ctx, rt_value) auto shared_ctx = weak_ctx.lock(); if (!shared_ctx) return rt_value
 
 
 // Optionals

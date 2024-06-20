@@ -21,8 +21,8 @@ class CacheDirTest : public ::testing::Test {
     DeleteDirectory(kTestCacheDir);
     WipeAllCaching();
 
-    NetworkClient::GetInstance()._test_func_ = [&](const auto) {
-      return HttpResponse{};
+    NetworkClient::GetInstance()._test_func_ = [&](const auto, const auto cb) {
+      cb(HttpResponse{});
     };
   }
 

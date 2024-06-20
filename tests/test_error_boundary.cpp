@@ -22,7 +22,7 @@ class ErrorBoundaryTest : public ::testing::Test {
     requests_ = {};
     response_.emplace(HttpResponse{"{}", 200});
 
-    NetworkClient::GetInstance()._test_func_ = [&](const HttpRequest request) {
+    NetworkClient::GetInstance()._test_func_ = [&](const HttpRequest request, const auto cb) {
       if (request.path == "/v1/sdk_exception") {
         requests_.emplace_back(nlohmann::json{
             {"api", request.api},
@@ -32,7 +32,7 @@ class ErrorBoundaryTest : public ::testing::Test {
         });
       }
 
-      return response_.value();
+      cb(response_.value());
     };
   }
 

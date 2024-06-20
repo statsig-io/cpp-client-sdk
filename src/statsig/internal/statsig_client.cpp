@@ -42,7 +42,6 @@ std::optional<String> GetCompatGroupName(T evaluation) {
   return group_name;
 }
 
-
 }
 
 StatsigClient &StatsigClient::Shared() {
@@ -121,23 +120,25 @@ void StatsigClient::InitializeAsync(
 
 StatsigResultCode StatsigClient::UpdateUserSync(const StatsigUser &user) {
   INIT_GUARD(ClientUninitialized);
+  std::weak_ptr<StatsigContext> weak_ctx = context_;
 
   const auto tag = __func__;
-  return EB(context_, ([this, &user, tag] {
-    context_->user = internal::NormalizeUser(user, context_->options);
-    context_->store.Reset();
-    Diagnostics::Get(context_->sdk_key)->SetUser(user);
+  return EB(context_, ([weak_ctx, &user, tag] {
+    USE_REF_WITH_RETURN(weak_ctx, shared_ctx, SharedPointerLost);
 
-    auto result = context_->data_adapter->GetDataSync(context_->user);
+    shared_ctx->user = internal::NormalizeUser(user, shared_ctx->options);
+    shared_ctx->store.Reset();
+    Diagnostics::Get(shared_ctx->sdk_key)->SetUser(user);
+
+    auto result = shared_ctx->data_adapter->GetDataSync(shared_ctx->user);
     if (result.code == Ok) {
-      context_->store.SetValuesFromDataAdapterResult(result.value);
+      shared_ctx->store.SetValuesFromDataAdapterResult(result.value);
     }
-    context_->store.Finalize();
+    shared_ctx->store.Finalize();
 
-    context_->err_boundary.HandleBadResult(tag, result.code, result.extra);
+    shared_ctx->err_boundary.HandleBadResult(tag, result.code, result.extra);
 
-    std::weak_ptr<StatsigContext> weak_ctx = context_;
-    AsyncHelper::Get(context_->sdk_key)->RunInBackground([weak_ctx, result]() {
+    AsyncHelper::Get(shared_ctx->sdk_key)->RunInBackground([weak_ctx, result]() {
       USE_REF(weak_ctx, shared_ctx);
 
       shared_ctx->data_adapter->GetDataAsync(
@@ -153,22 +154,26 @@ StatsigResultCode StatsigClient::UpdateUserSync(const StatsigUser &user) {
 
 void StatsigClient::UpdateUserAsync(
     const StatsigUser &user,
-    const std::function<void(StatsigResultCode)> &callback) {
+    const std::function<void(StatsigResultCode)> &callback
+) {
   INIT_GUARD();
   const auto tag = __func__;
-  EBR(context_, callback, ([this, &user, &callback, tag] {
-    context_->user = internal::NormalizeUser(user, context_->options);
-    context_->store.Reset();
-    Diagnostics::Get(context_->sdk_key)->SetUser(user);
+  std::weak_ptr<StatsigContext> weak_ctx = context_;
 
-    auto result = context_->data_adapter->GetDataSync(context_->user);
+  EBR(context_, callback, ([weak_ctx, &user, &callback, tag] {
+    USE_REF_WITH_RETURN(weak_ctx, shared_ctx, SharedPointerLost);
+
+    shared_ctx->user = internal::NormalizeUser(user, shared_ctx->options);
+    shared_ctx->store.Reset();
+    Diagnostics::Get(shared_ctx->sdk_key)->SetUser(user);
+
+    auto result = shared_ctx->data_adapter->GetDataSync(shared_ctx->user);
     if (result.code == Ok) {
-      context_->store.SetValuesFromDataAdapterResult(result.value);
+      shared_ctx->store.SetValuesFromDataAdapterResult(result.value);
     }
 
-    const auto initiator = context_->user;
-    std::weak_ptr<StatsigContext> weak_ctx = context_;
-    AsyncHelper::Get(context_->sdk_key)->RunInBackground([weak_ctx, tag, initiator, result, callback]() {
+    const auto initiator = shared_ctx->user;
+    AsyncHelper::Get(shared_ctx->sdk_key)->RunInBackground([weak_ctx, tag, initiator, result, callback]() {
       USE_REF(weak_ctx, shared_ctx);
 
       const auto inner_callback =
@@ -202,11 +207,17 @@ StatsigResultCode StatsigClient::Shutdown(const time_t timeout_ms) {
   Log::Debug("Shutting down StatsigClient with timeout_ms: " + std::to_string(timeout_ms));
   const auto start = Time::now();
   const auto tag = __func__;
-  const auto result = EB(context_, ([this, timeout_ms, start, tag]() {
-    context_->logger.Shutdown();
-    Diagnostics::Shutdown(context_->sdk_key);
-    ErrorBoundary::Shutdown(context_->sdk_key);
-    const auto thread_shutdown = AsyncHelper::Get(context_->sdk_key)->Shutdown(timeout_ms);
+  std::weak_ptr<StatsigContext> weak_ctx = context_;
+  const auto result = EB(context_, ([weak_ctx, timeout_ms, start, tag]() {
+    USE_REF_WITH_RETURN(weak_ctx, shared_ctx, SharedPointerLost);
+
+    if (shared_ctx->logger) {
+      shared_ctx->logger->Shutdown();
+    }
+
+    Diagnostics::Shutdown(shared_ctx->sdk_key);
+    ErrorBoundary::Shutdown(shared_ctx->sdk_key);
+    const auto thread_shutdown = AsyncHelper::Get(shared_ctx->sdk_key)->Shutdown(timeout_ms);
 
     const auto end = Time::now();
     const auto duration = end - start;
@@ -214,7 +225,7 @@ StatsigResultCode StatsigClient::Shutdown(const time_t timeout_ms) {
     Log::Debug("StatsigClient shutdown in " + duration_str + "ms");
 
     if (!thread_shutdown && duration > constants::kShutdownTimeoutErrorThresholdMs) {
-      context_->err_boundary.HandleBadResult(
+      shared_ctx->err_boundary.HandleBadResult(
           tag,
           ShutdownFailureDanglingThreads,
           std::unordered_map<std::string, std::string>{{constants::kShutdownTimeoutExtra, duration_str}}
@@ -231,9 +242,13 @@ StatsigResultCode StatsigClient::Shutdown(const time_t timeout_ms) {
 void StatsigClient::Flush() {
   INIT_GUARD();
 
-  EB(context_, ([this]() {
-    context_->logger.Flush();
+  std::weak_ptr<StatsigContext> weak_ctx = context_;
 
+  EB(context_, ([weak_ctx]() {
+    USE_REF_WITH_RETURN(weak_ctx, shared_ctx, SharedPointerLost);
+    if (shared_ctx->logger) {
+      shared_ctx->logger->Flush();
+    }
     return Ok;
   }));
 }
@@ -241,8 +256,13 @@ void StatsigClient::Flush() {
 void StatsigClient::LogEvent(const StatsigEvent &event) {
   INIT_GUARD();
 
-  EB(context_, ([this, &event]() {
-    context_->logger.Enqueue(internal::InternalizeEvent(event, context_->user));
+  std::weak_ptr<StatsigContext> weak_ctx = context_;
+  EB(context_, ([weak_ctx, &event]() {
+    USE_REF_WITH_RETURN(weak_ctx, shared_ctx, SharedPointerLost);
+
+    if (shared_ctx->logger) {
+      shared_ctx->logger->Enqueue(internal::InternalizeEvent(event, shared_ctx->user));
+    }
 
     return Ok;
   }));
@@ -259,17 +279,23 @@ FeatureGate StatsigClient::GetFeatureGate(const String &gate_name) {
   FeatureGate result(gate_name, internal::evaluation_details::Uninitialized());
   INIT_GUARD(result);
 
-  EB(context_, ([this, &gate_name, &result]() {
-    const auto gate_name_actual = FromCompat(gate_name);
-    const auto gate = context_->store.GetGate(gate_name_actual);
+  std::weak_ptr<StatsigContext> weak_ctx = context_;
 
-    context_->logger.Enqueue(
-        internal::MakeGateExposure(
-            gate_name_actual,
-            context_->user,
-            gate
-        )
-    );
+  EB(context_, ([weak_ctx, &gate_name, &result]() {
+    USE_REF_WITH_RETURN(weak_ctx, shared_ctx, SharedPointerLost);
+
+    const auto gate_name_actual = FromCompat(gate_name);
+    const auto gate = shared_ctx->store.GetGate(gate_name_actual);
+
+    if (shared_ctx->logger) {
+      shared_ctx->logger->Enqueue(
+          internal::MakeGateExposure(
+              gate_name_actual,
+              shared_ctx->user,
+              gate
+          )
+      );
+    }
 
     result = FeatureGate(
         gate_name,
@@ -290,17 +316,22 @@ DynamicConfig StatsigClient::GetDynamicConfig(const String &config_name) {
                        internal::evaluation_details::Uninitialized());
   INIT_GUARD(result);
 
-  EB(context_, ([this, &config_name, &result] {
-    const auto config_name_actual = FromCompat(config_name);
-    const auto config = context_->store.GetConfig(config_name_actual);
+  std::weak_ptr<StatsigContext> weak_ctx = context_;
+  EB(context_, ([weak_ctx, &config_name, &result] {
+    USE_REF_WITH_RETURN(weak_ctx, shared_ctx, SharedPointerLost);
 
-    context_->logger.Enqueue(
-        internal::MakeConfigExposure(
-            config_name_actual,
-            context_->user,
-            config
-        )
-    );
+    const auto config_name_actual = FromCompat(config_name);
+    const auto config = shared_ctx->store.GetConfig(config_name_actual);
+
+    if (shared_ctx->logger) {
+      shared_ctx->logger->Enqueue(
+          internal::MakeConfigExposure(
+              config_name_actual,
+              shared_ctx->user,
+              config
+          )
+      );
+    }
 
     result = DynamicConfig(
         config_name,
@@ -321,16 +352,21 @@ Experiment StatsigClient::GetExperiment(const String &experiment_name) {
                     internal::evaluation_details::Uninitialized());
   INIT_GUARD(result);
 
-  EB(context_, ([this, &experiment_name, &result]() {
+  std::weak_ptr<StatsigContext> weak_ctx = context_;
+  EB(context_, ([weak_ctx, &experiment_name, &result]() {
+    USE_REF_WITH_RETURN(weak_ctx, shared_ctx, SharedPointerLost);
+
     const auto exp_name_actual = FromCompat(experiment_name);
-    auto experiment = context_->store.GetConfig(exp_name_actual);
-    context_->logger.Enqueue(
-        internal::MakeConfigExposure(
-            exp_name_actual,
-            context_->user,
-            experiment
-        )
-    );
+    auto experiment = shared_ctx->store.GetConfig(exp_name_actual);
+    if (shared_ctx->logger) {
+      shared_ctx->logger->Enqueue(
+          internal::MakeConfigExposure(
+              exp_name_actual,
+              shared_ctx->user,
+              experiment
+          )
+      );
+    }
 
     result = Experiment(
         experiment_name,
@@ -350,23 +386,30 @@ Layer StatsigClient::GetLayer(const String &layer_name) {
   Layer result(layer_name, internal::evaluation_details::Uninitialized());
   INIT_GUARD(result);
 
-  EB(context_, ([this, &layer_name, &result] {
-    auto logger = &context_->logger;
-    auto user = context_->user;
+  std::weak_ptr<StatsigContext> weak_ctx = context_;
+
+  EB(context_, ([weak_ctx, &layer_name, &result] {
+    USE_REF_WITH_RETURN(weak_ctx, shared_ctx, SharedPointerLost);
+
+    std::weak_ptr<EventLogger> weak_logger = shared_ctx->logger;
+
+    auto user = shared_ctx->user;
 
     const auto layer_name_actual = FromCompat(layer_name);
-    const auto layer = context_->store.GetLayer(layer_name_actual);
+    const auto layer = shared_ctx->store.GetLayer(layer_name_actual);
 
-    auto log_exposure = [layer_name_actual, layer, user, logger](
+    auto log_exposure = [layer_name_actual, layer, user, weak_logger](
         const std::string &param_name
     ) {
+      USE_REF(weak_logger, shared_logger);
+
       auto expo = internal::MakeLayerParamExposure(
           layer_name_actual,
           param_name,
           user,
           layer
       );
-      logger->Enqueue(expo);
+      shared_logger->Enqueue(expo);
     };
 
     result = Layer(

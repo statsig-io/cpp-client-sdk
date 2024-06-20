@@ -91,19 +91,19 @@ class NetworkClient {
   }
 
   static void Reset() {
-    GetInstance()._test_func_ = [&](const auto) {
-      return HttpResponse{"{}", 200};
+    GetInstance()._test_func_ = [&](const auto, const auto cb) {
+      cb(HttpResponse{"{}", 200});
     };
   }
 
-  std::function<HttpResponse(HttpRequest)> _test_func_;
+  std::function<void(HttpRequest, std::function<void(HttpResponse)>)> _test_func_;
 
  private:
   void PostImpl(
       const HttpRequest &request,
       const std::function<void(HttpResponse)> &callback
   ) const {
-    callback(_test_func_(request));
+    _test_func_(request, callback);
   }
 };
 

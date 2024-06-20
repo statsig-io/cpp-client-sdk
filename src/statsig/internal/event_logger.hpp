@@ -13,7 +13,7 @@
 
 namespace statsig::internal {
 
-class EventLogger {
+class EventLogger : public std::enable_shared_from_this<EventLogger> {
   using AsyncHelper = statsig_compatibility::AsyncHelper;
   using BackgroundTimerHandle = statsig_compatibility::BackgroundTimerHandle;
   using PlatformEventsHelper = statsig_compatibility::PlatformEventsHelper;
@@ -21,26 +21,15 @@ class EventLogger {
   using Log = statsig_compatibility::Log;
 
  public:
-  explicit EventLogger(
+  static std::shared_ptr<EventLogger> Create(
       std::string sdk_key,
       StatsigOptions &options,
-      NetworkService &network
-  )
-      : sdk_key_(std::move(sdk_key)),
-        options_(options),
-        network_(std::make_shared<NetworkService>(network)),
-        max_buffer_size_(
-            options.logging_max_buffer_size.value_or(
-                constants::kMaxQueuedEvents)),
-        logging_interval_ms_(
-            options.logging_interval_ms.value_or(constants::kLoggingIntervalMs)) {
-    RetryFailedEvents();
-    StartBackgroundFlusher();
-    RegisterPlatformEventHandlers();
+      std::shared_ptr<NetworkService> &network
+  ) {
+    return std::shared_ptr<EventLogger>(new EventLogger(std::move(sdk_key), options, network));
   }
 
-  ~EventLogger() {
-  }
+  ~EventLogger() = default;
 
   void Enqueue(const StatsigEventInternal &event) {
     WRITE_LOCK(rw_lock_);
@@ -72,8 +61,8 @@ class EventLogger {
 
  private:
   std::string sdk_key_;
-  StatsigOptions &options_;
-  std::shared_ptr<NetworkService> network_;
+  StatsigOptions options_;
+  std::weak_ptr<NetworkService> network_;
   std::shared_mutex rw_lock_;
   std::vector<StatsigEventInternal> events_;
   int max_buffer_size_;
@@ -84,6 +73,24 @@ class EventLogger {
   BackgroundTimerHandle background_flusher_handle_;
   PlatformEventRegistrationHandle application_will_deactivate_handle_;
   PlatformEventRegistrationHandle application_will_enter_background_handle_;
+
+  explicit EventLogger(
+      std::string sdk_key,
+      StatsigOptions &options,
+      std::shared_ptr<NetworkService> &network
+  )
+      : sdk_key_(std::move(sdk_key)),
+        options_(options),
+        network_(network),
+        max_buffer_size_(
+            options.logging_max_buffer_size.value_or(
+                constants::kMaxQueuedEvents)),
+        logging_interval_ms_(
+            options.logging_interval_ms.value_or(constants::kLoggingIntervalMs)) {
+    RetryFailedEvents();
+    StartBackgroundFlusher();
+    RegisterPlatformEventHandlers();
+  }
 
   void SaveFailedEvents(
       std::vector<StatsigEventInternal> events,
@@ -120,10 +127,12 @@ class EventLogger {
   }
 
   void RetryFailedEvents() {
-    std::weak_ptr<NetworkService> weak_net = network_;
-    async_helper_->RunInBackground([&, weak_net] {
-      const auto key = GetFailedEventCacheKey();
-      const auto cache = File::ReadFromCache(options_, key);
+    std::weak_ptr<EventLogger> weak_self = weak_from_this();
+    async_helper_->RunInBackground([weak_self] {
+      USE_REF(weak_self, shared_self);
+
+      const auto key = shared_self->GetFailedEventCacheKey();
+      const auto cache = File::ReadFromCache(shared_self->options_, key);
       if (!cache.has_value()) {
         return;
       }
@@ -132,7 +141,7 @@ class EventLogger {
           RetryableEventPayload>>(
           cache.value());
 
-      File::DeleteFromCache(options_, key);
+      File::DeleteFromCache(shared_self->options_, key);
 
       if (failures.code != Ok || !failures.value.has_value()) {
         return;
@@ -141,16 +150,20 @@ class EventLogger {
       for (const auto &failure : failures.value.value()) {
         const auto events = failure.events;
         const auto attempt = failure.attempts + 1;
-        USE_REF(weak_net, shared_net);
 
-        shared_net->SendEvents(
-            events,
-            [&, events, attempt](const NetworkResult<bool> &result) {
-              if (!result.value && attempt <=
-                  constants::kFailedEventPayloadRetryCount) {
-                SaveFailedEvents(events, attempt);
-              }
-            });
+        const auto net = shared_self->network_.lock();
+        if (!net) {
+          break;
+        }
+
+        net->SendEvents(events, [weak_self, events, attempt]
+            (const NetworkResult<bool> &result) {
+          USE_REF(weak_self, shared_self);
+
+          if (!result.value && attempt <= constants::kFailedEventPayloadRetryCount) {
+            shared_self->SaveFailedEvents(events, attempt);
+          }
+        });
       }
     });
   }
@@ -169,51 +182,60 @@ class EventLogger {
     auto local_events = std::move(events_);
     Log::Debug("Flushing " + std::to_string(local_events.size()) + " event(s)");
 
-    std::weak_ptr<NetworkService> weak_net = network_;
-    async_helper_->RunInBackground([this, weak_net, local_events]() {
-      USE_REF(weak_net, shared_net);
-      SendEvents(shared_net, local_events);
+    std::weak_ptr<EventLogger> weak_self = weak_from_this();
+    async_helper_->RunInBackground([weak_self, local_events]() {
+      USE_REF(weak_self, shared_self);
+      shared_self->SendEvents(local_events);
     });
   }
 
   void StartBackgroundFlusher() {
-    std::weak_ptr<NetworkService> weak_net = network_;
+    std::weak_ptr<EventLogger> weak_self = weak_from_this();
 
-    background_flusher_handle_ = async_helper_->StartBackgroundTimer([this, weak_net] {
-      USE_REF(weak_net, shared_net);
+    background_flusher_handle_ = async_helper_->StartBackgroundTimer([weak_self] {
+      USE_REF(weak_self, shared_self);
       Log::Debug("Attempting background flush...");
-      Flush();
+      shared_self->Flush();
     }, logging_interval_ms_);
   }
 
   void RegisterPlatformEventHandlers() {
-    std::weak_ptr<NetworkService> weak_net = network_;
+    std::weak_ptr<EventLogger> weak_self = weak_from_this();
 
-    application_will_deactivate_handle_ = platform_events_helper_->RegisterOnApplicationWillDeactivateCallback([this, weak_net] {
-      USE_REF(weak_net, shared_net);
-      Log::Debug("Flushing due to application deactivation...");
-      Flush();
-    });
+    application_will_deactivate_handle_ =
+        platform_events_helper_->RegisterOnApplicationWillDeactivateCallback([weak_self] {
+          USE_REF(weak_self, shared_self);
+          Log::Debug("Flushing due to application deactivation...");
+          shared_self->Flush();
+        });
 
-    application_will_enter_background_handle_ = platform_events_helper_->RegisterOnApplicationWillEnterBackgroundCallback([this, weak_net] {
-      USE_REF(weak_net, shared_net);
-      Log::Debug("Flushing due to application entering background...");
-      Flush();
-    });
+    application_will_enter_background_handle_ =
+        platform_events_helper_->RegisterOnApplicationWillEnterBackgroundCallback([weak_self] {
+          USE_REF(weak_self, shared_self);
+          Log::Debug("Flushing due to application entering background...");
+          shared_self->Flush();
+        });
   }
 
   void SendEvents(
-      const std::shared_ptr<NetworkService> &network,
       const std::vector<StatsigEventInternal> &events
   ) {
-    network->SendEvents(
+    std::weak_ptr<EventLogger> weak_self = weak_from_this();
+
+    const auto net = network_.lock();
+    if (!net) {
+      return;
+    }
+
+    net->SendEvents(
         events,
-        [&, events](const NetworkResult<bool> &result) {
+        [weak_self, events](const NetworkResult<bool> &result) {
+          USE_REF(weak_self, shared_self);
 
           if (!result.value) {
             Log::Debug("Events failed to send " + std::to_string(events.size())
                            + " event(s). Will try again next session.");
-            SaveFailedEvents(events, 1);
+            shared_self->SaveFailedEvents(events, 1);
           } else {
             Log::Debug(std::to_string(events.size()) + " event(s) successfully sent");
           }

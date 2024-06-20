@@ -49,6 +49,8 @@ struct DataAdapterResult {
 
 class EvaluationsDataAdapter {
  public:
+  virtual ~EvaluationsDataAdapter() = default;
+
   virtual void Attach(
       std::string &sdk_key,
       StatsigOptions &options

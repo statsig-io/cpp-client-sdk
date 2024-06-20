@@ -34,32 +34,33 @@ std::unordered_map<int, bool> retryable_codes_{
 };
 }
 
-class NetworkService {
+class NetworkService: public std::enable_shared_from_this<NetworkService> {
   using string = std::string;
   using InitializeResponse = data::InitializeResponse;
   using Log = statsig_compatibility::Log;
 
  public:
-  explicit NetworkService(
-      string sdk_key,
+  static std::shared_ptr<NetworkService> Create(
+      std::string sdk_key,
       StatsigOptions &options
-  )
-      : sdk_key_(sdk_key),
-        options_(options),
-        diagnostics_(Diagnostics::Get(sdk_key)),
-        err_boundary_(ErrorBoundary(sdk_key)),
-        session_id_(UUID::v4()),
-        stable_id_(sdk_key, options) {}
+  ) {
+    return std::shared_ptr<NetworkService>(new NetworkService(std::move(sdk_key), options));
+  }
 
   void FetchValues(
       const StatsigUser &user,
       const std::optional<DataAdapterResult> &current,
-      const std::function<void(NetworkResult<InitializeResponse>)> &callback) {
-    err_boundary_.Capture(__func__, [this, callback, &user, &current]() {
+      const std::function<void(NetworkResult<InitializeResponse>)> &callback
+  ) {
+    const auto weak_self = weak_from_this();
+
+    err_boundary_.Capture(__func__, [weak_self, callback, user, current]() {
+      USE_REF_WITH_RETURN(weak_self, shared_self, SharedPointerLost);
+
       auto args = internal::InitializeRequestArgs{
           "djb2",
           user,
-          GetStatsigMetadata(),
+          shared_self->GetStatsigMetadata(),
       };
 
       const auto cache = DeserializeCacheValueIfValidFor204(user, current);
@@ -69,11 +70,11 @@ class NetworkService {
 
       auto serialized = internal::Json::Serialize(args);
       if (serialized.code == Ok && serialized.value.has_value()) {
-        PostWithRetry(
+        shared_self->PostWithRetry(
             constants::kEndpointInitialize,
             serialized.value.value(),
             constants::kInitializeRetryCount,
-            HandleFetchValuesResponse(diagnostics_, cache, callback)
+            HandleFetchValuesResponse(shared_self->diagnostics_, cache, callback)
         );
       }
 
@@ -129,6 +130,17 @@ class NetworkService {
         {constants::kBadNetworkErr, constants::kBadNetworkErr + std::to_string(response->status)}};
   }
 
+  explicit NetworkService(
+      string sdk_key,
+      StatsigOptions &options
+  )
+      : sdk_key_(sdk_key),
+        options_(options),
+        diagnostics_(Diagnostics::Get(sdk_key)),
+        err_boundary_(ErrorBoundary(sdk_key)),
+        session_id_(UUID::v4()),
+        stable_id_(sdk_key, options) {}
+
   std::unordered_map<string, string> GetHeaders() {
     std::unordered_map<string, string> headers(GetDefaultPlatformHeaders());
     headers.merge(std::unordered_map<string, string>{
@@ -150,7 +162,7 @@ class NetworkService {
 
   static std::optional<InitializeResponse> DeserializeCacheValueIfValidFor204(
       const StatsigUser &current_user,
-      const std::optional<DataAdapterResult>& cached_result
+      const std::optional<DataAdapterResult> &cached_result
   ) {
     if (!cached_result.has_value()) {
       return std::nullopt;
@@ -209,13 +221,16 @@ class NetworkService {
     if (is_initialize) { diagnostics_->Mark(markers::NetworkStart(attempt)); }
 
     const auto start = Time::now();
-    Post(endpoint, body, [&, endpoint, body, max_attempts, attempt, callback](HttpResponse response) {
+    const auto weak_self = weak_from_this();
+    Post(endpoint, body, [weak_self, is_initialize, start, endpoint, body, max_attempts, attempt, callback](HttpResponse response) {
+      USE_REF(weak_self, shared_self);
+
       const auto end = Time::now();
       Log::Debug("Request to " + endpoint + " completed. Status " + std::to_string(response.status) + ". Time "
                      + std::to_string(end - start) + "ms");
 
       if (is_initialize) {
-        diagnostics_->Mark(markers::NetworkEnd(
+        shared_self->diagnostics_->Mark(markers::NetworkEnd(
             attempt,
             response.status,
             response.text,
@@ -235,7 +250,7 @@ class NetworkService {
         return;
       }
 
-      PostWithRetry(endpoint, body, max_attempts, callback, attempt + 1);
+      shared_self->PostWithRetry(endpoint, body, max_attempts, callback, attempt + 1);
     });
   }
 

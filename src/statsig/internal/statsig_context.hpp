@@ -28,13 +28,13 @@ class StatsigContext {
       user(user.value_or(StatsigUser())),
       options(options.value_or(StatsigOptions())),
       err_boundary(ErrorBoundary(this->sdk_key)),
-      network(NetworkService(this->sdk_key, this->options)),
+      network(NetworkService::Create(this->sdk_key, this->options)),
       store(EvaluationStore()),
-      logger(EventLogger(this->sdk_key, this->options, this->network)),
-      data_adapter(
-          this->options.data_adapter
-              .value_or(new StatsigEvaluationsDataAdapter())
-      ) {
+      logger(EventLogger::Create(this->sdk_key, this->options, this->network)),
+      data_adapter(this->options.data_adapter.value_or(nullptr)) {
+    if (data_adapter == nullptr) {
+      data_adapter = StatsigEvaluationsDataAdapter::Create();
+    }
 
     data_adapter->Attach(this->sdk_key, this->options);
 
@@ -48,10 +48,10 @@ class StatsigContext {
   StatsigOptions options;
 
   ErrorBoundary err_boundary;
-  NetworkService network;
   EvaluationStore store;
-  EventLogger logger;
-  EvaluationsDataAdapter *data_adapter;
+  std::shared_ptr<NetworkService> network;
+  std::shared_ptr<EventLogger> logger;
+  std::shared_ptr<EvaluationsDataAdapter> data_adapter;
 };
 
 }
