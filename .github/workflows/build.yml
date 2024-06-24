@@ -1,0 +1,70 @@
+name: Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Get ZLIB
+        run: |
+          git clone https://github.com/daniel-statsig/zlib.git zlib
+
+      - name: Get OpenSSL
+        run: |
+          git clone https://github.com/daniel-statsig/openssl.git openssl
+
+      - name: Configure CMake
+        env:
+          OPENSSL_ROOT_DIR: ${{ github.workspace }}\openssl
+        run: >
+          cmake -S . -B build 
+          -DZLIB_LIBRARY="${{ github.workspace }}\zlib\lib\zlibstatic.lib" 
+          -DZLIB_INCLUDE_DIR="${{ github.workspace }}\zlib\include"
+
+      - name: Build Project
+        run: cmake --build build --config Release
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-latest-binaries
+          path: |
+            **/*/*StatsigClientSDK.dll
+            **/*/*StatsigClientSDK.lib
+            **/*/*StatsigClientSDK.pdb
+          retention-days: 30
+  
+  build-unix:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Build
+        run: |
+          cmake -S . -B build 
+          cmake --build build --config Release
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os }}-binaries
+          path: |
+            **/*/*StatsigClientSDK.so
+            **/*/*StatsigClientSDK.a
+            **/*/*StatsigClientSDK.dylib
+          retention-days: 30
+
+    

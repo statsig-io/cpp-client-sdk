@@ -11,7 +11,7 @@ add_executable(${PROJECT_NAME} ${TEST_SOURCES})
 
 # Add Statsig C++ Client
 add_subdirectory(.. statsig_sdk)
-target_link_libraries(${PROJECT_NAME} StatsigClientSDK)
+target_link_libraries(${PROJECT_NAME} StatsigClientSDK_shared)
 
 # === Third Party Deps ===
 
