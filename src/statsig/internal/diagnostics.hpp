@@ -37,6 +37,8 @@ class Diagnostics {
   }
 
   void SetUser(StatsigUser user) {
+    LOCK(mutex_);
+
     user_ = std::move(user);
   }
 
