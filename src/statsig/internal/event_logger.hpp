@@ -121,7 +121,8 @@ class EventLogger {
 
   void RetryFailedEvents() {
     std::weak_ptr<NetworkService> weak_net = network_;
-    async_helper_->RunInBackground([&, weak_net] {
+    async_helper_->RunInBackground([this, weak_net] {
+      USE_REF(weak_net, shared_net);
       const auto key = GetFailedEventCacheKey();
       const auto cache = File::ReadFromCache(options_, key);
       if (!cache.has_value()) {
@@ -141,11 +142,11 @@ class EventLogger {
       for (const auto &failure : failures.value.value()) {
         const auto events = failure.events;
         const auto attempt = failure.attempts + 1;
-        USE_REF(weak_net, shared_net);
 
         shared_net->SendEvents(
             events,
-            [&, events, attempt](const NetworkResult<bool> &result) {
+            [this, weak_net, events, attempt](const NetworkResult<bool> &result) {
+              USE_REF(weak_net, shared_net);
               if (!result.value && attempt <=
                   constants::kFailedEventPayloadRetryCount) {
                 SaveFailedEvents(events, attempt);
@@ -172,7 +173,7 @@ class EventLogger {
     std::weak_ptr<NetworkService> weak_net = network_;
     async_helper_->RunInBackground([this, weak_net, local_events]() {
       USE_REF(weak_net, shared_net);
-      SendEvents(shared_net, local_events);
+      SendEvents(local_events);
     });
   }
 
@@ -203,13 +204,14 @@ class EventLogger {
   }
 
   void SendEvents(
-      const std::shared_ptr<NetworkService> &network,
       const std::vector<StatsigEventInternal> &events
   ) {
-    network->SendEvents(
-        events,
-        [&, events](const NetworkResult<bool> &result) {
+    std::weak_ptr<NetworkService> weak_net = network_;
 
+    network_->SendEvents(
+        events,
+        [this, weak_net, events](const NetworkResult<bool> &result) {
+          USE_REF(weak_net, shared_net);
           if (!result.value) {
             Log::Debug("Events failed to send " + std::to_string(events.size())
                            + " event(s). Will try again next session.");

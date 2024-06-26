@@ -209,11 +209,14 @@ class NetworkService {
     if (is_initialize) { diagnostics_->Mark(markers::NetworkStart(attempt)); }
 
     const auto start = Time::now();
-    Post(endpoint, body, [&, endpoint, body, max_attempts, attempt, callback](HttpResponse response) {
+    std::weak_ptr<Diagnostics> weak_diagnostics = diagnostics_;
+
+    Post(endpoint, body, [this, weak_diagnostics, is_initialize, start, endpoint, body, max_attempts, attempt, callback](HttpResponse response) {
       const auto end = Time::now();
       Log::Debug("Request to " + endpoint + " completed. Status " + std::to_string(response.status) + ". Time "
                      + std::to_string(end - start) + "ms");
 
+      USE_REF(weak_diagnostics, shared_diagnostics);
       if (is_initialize) {
         diagnostics_->Mark(markers::NetworkEnd(
             attempt,
