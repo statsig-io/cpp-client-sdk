@@ -28,8 +28,8 @@ class StatsigContext {
       user(user.value_or(StatsigUser())),
       options(options.value_or(StatsigOptions())),
       err_boundary(ErrorBoundary(this->sdk_key)),
-      network(NetworkService::Create(this->sdk_key, this->options)),
       store(EvaluationStore()),
+      network(NetworkService::Create(this->sdk_key, this->options)),
       logger(EventLogger::Create(this->sdk_key, this->options, this->network)),
       data_adapter(this->options.data_adapter.value_or(nullptr)) {
     if (data_adapter == nullptr) {
