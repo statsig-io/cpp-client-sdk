@@ -65,7 +65,7 @@ class Diagnostics {
         {"context", StringToJsonValue("initialize")}
     };
 
-    const auto event = StatsigEventInternal{
+    StatsigEventInternal diagostic_event{
         "statsig::diagnostics",
         Time::now(),
         user_,
@@ -74,7 +74,7 @@ class Diagnostics {
         metadata
     };
 
-    events.push_back(event);
+    events.push_back(std::move(diagostic_event));
 
     statsig_compatibility::Log::Debug("Appended statsig::diagnostics");
   }

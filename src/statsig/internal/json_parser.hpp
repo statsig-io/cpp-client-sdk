@@ -14,6 +14,11 @@
 #include "statsig_compat/json_serialization/log_event_request_args_json.hpp"
 #include "statsig_compat/json_serialization/retryable_event_payload_json.hpp"
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable : 4702) // unreachable code
+#endif
+
 namespace statsig::internal {
 
 class Json {
@@ -94,3 +99,7 @@ class Json {
 };
 
 }
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
