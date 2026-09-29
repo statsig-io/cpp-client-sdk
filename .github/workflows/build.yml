@@ -9,7 +9,7 @@ on:
 
 jobs:
   build-windows:
-    runs-on: windows-latest
+    runs-on: blacksmith-2vcpu-windows-2025
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -47,7 +47,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ fromJSON('{"ubuntu-latest":"blacksmith-2vcpu-ubuntu-2404","macos-latest":"blacksmith-6vcpu-macos-latest"}')[matrix.os] }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
